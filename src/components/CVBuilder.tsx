@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Download, Save, Settings, Zap, FileText, User, Briefcase, GraduationCap, Award, Code, Languages, Plus, Trash2, Calendar, MapPin, Mail, Phone, Globe, Linkedin, ArrowLeft, ArrowRight, CheckCircle, Sparkles } from 'lucide-react';
+import { Eye, Download, Save, Settings, Zap, FileText, User, Briefcase, GraduationCap, Award, Code, Languages, Plus, Trash2, Calendar, MapPin, Mail, Phone, Globe, Linkedin, RotateCcw, AlertTriangle, Sparkles } from 'lucide-react';
 import { CVTemplate } from '../types';
 import { fetchCVTemplates } from '../services/templateService';
 import CVImportSection from './CVImportSection';
@@ -84,6 +84,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate | null>(null);
   const [templates, setTemplates] = useState<CVTemplate[]>([]);
   const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   const [cvData, setCvData] = useState<CVData>({
@@ -494,6 +495,51 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+  };
+
+  const handleClearAllData = () => {
+    // Clear all CV data
+    setCvData({
+      personalInfo: {
+        fullName: '',
+        title: '',
+        email: '',
+        phone: '',
+        location: '',
+        linkedin: '',
+        website: '',
+        photo: ''
+      },
+      summary: '',
+      experience: [],
+      education: [],
+      skills: [],
+      projects: [],
+      certifications: [],
+      languages: []
+    });
+    
+    // Clear localStorage
+    localStorage.removeItem('mocv_current_cv');
+    localStorage.removeItem('mocv_editing_cv');
+    
+    // Close confirmation modal
+    setShowClearConfirmation(false);
+    
+    // Show success feedback
+    // You could add a toast notification here
+  };
+
+  const loadDraftData = () => {
+    const savedData = localStorage.getItem('mocv_current_cv');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setCvData(parsed);
+      } catch (error) {
+        console.error('Error loading draft data:', error);
+      }
+    }
   };
 
   const renderPersonalInfo = () => (
@@ -1546,15 +1592,27 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
               
               <button
                 onClick={() => setShowSuggestions(!showSuggestions)}
-                className="flex items-center gap-2 px-4 py-2 border border-purple-300 text-purple-600 rounded-xl hover:bg-purple-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-all duration-200 hover:scale-105"
               >
                 <Zap className="h-4 w-4" />
                 AI Suggestions
               </button>
               
+              <div className="relative">
+                <button
+                  onClick={() => setShowClearConfirmation(true)}
+                  className="flex items-center gap-2 px-4 py-2 border border-orange-300 text-orange-600 rounded-lg hover:bg-orange-50 transition-all duration-200 hover:scale-105 group"
+                  title="Clear all data and start fresh"
+                >
+                  <RotateCcw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-300" />
+                  <span className="hidden sm:inline">Clear & Reset</span>
+                  <span className="sm:hidden">Reset</span>
+                </button>
+              </div>
+              
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:scale-105"
               >
                 <Eye className="h-4 w-4" />
                 {showPreview ? 'Hide Preview' : 'Show Preview'}
@@ -1562,7 +1620,7 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
               
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 hover:scale-105"
               >
                 <Save className="h-4 w-4" />
                 Save
@@ -1570,7 +1628,7 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
               
               <button
                 onClick={handleDownload}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 hover:scale-105"
               >
                 <Download className="h-4 w-4" />
                 Download
@@ -1682,6 +1740,66 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
         isVisible={showSuggestions}
         onClose={() => setShowSuggestions(false)}
       />
+
+      {/* Clear Confirmation Modal */}
+      {showClearConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 transform transition-all duration-300 scale-100">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="h-8 w-8 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Clear All Data?</h3>
+              <p className="text-gray-600">
+                This will permanently delete all your current CV data and cannot be undone. 
+                Make sure you've saved your work if needed.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                <h4 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  What will be cleared:
+                </h4>
+                <ul className="text-orange-800 text-sm space-y-1">
+                  <li>• All personal information</li>
+                  <li>• Work experience entries</li>
+                  <li>• Education details</li>
+                  <li>• Skills and certifications</li>
+                  <li>• Projects and languages</li>
+                  <li>• Auto-saved draft data</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowClearConfirmation(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleClearAllData}
+                  className="flex-1 px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200 font-medium flex items-center justify-center gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Clear All
+                </button>
+              </div>
+
+              <div className="text-center">
+                <button
+                  onClick={loadDraftData}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+                >
+                  Or load saved draft instead
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
