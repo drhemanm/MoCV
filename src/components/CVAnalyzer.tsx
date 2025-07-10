@@ -8,9 +8,10 @@ interface CVAnalyzerProps {
   targetMarket: TargetMarket | null;
   onAnalysisComplete: (analysis: CVAnalysis, cvText: string) => void;
   onCreateNew: () => void;
+  onBack: () => void;
 }
 
-const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ targetMarket, onAnalysisComplete, onCreateNew }) => {
+const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ targetMarket, onAnalysisComplete, onCreateNew, onBack }) => {
   const [cvText, setCvText] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -105,7 +106,7 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ targetMarket, onAnalysisComplet
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <div className="mb-6">
-            <BackButton onClick={onBack} label="Back to Home" variant="floating" />
+            <BackButton onClick={onBack} label="Back to Market Selection" variant="floating" />
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
             Upload your CV to get instant ATS scoring, keyword analysis, and personalized improvement suggestions. 

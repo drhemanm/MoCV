@@ -391,6 +391,7 @@ const App: React.FC = () => {
             targetMarket={selectedMarket}
             onAnalysisComplete={handleAnalysisComplete}
             onCreateNew={handleCreateNew}
+            onBack={() => setCurrentStep('market-selector')}
           />
         )}
 
