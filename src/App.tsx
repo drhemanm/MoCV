@@ -82,13 +82,13 @@ const App: React.FC = () => {
   const [jobDescription, setJobDescription] = useState<string>('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [gameData, setGameData] = useState<GameData>({
-    totalXP: 250,
-    currentLevel: 2,
-    uploadsCount: 3,
-    achievements: ['First CV Created', 'ATS Score 80+', 'Template Master'],
-    consecutiveDays: 5,
+    totalXP: 0,
+    currentLevel: 0,
+    uploadsCount: 0,
+    achievements: [],
+    consecutiveDays: 0,
     lastUploadDate: new Date().toISOString(),
-    highestScore: 87
+    highestScore: 0
   });
   const [cvData, setCvData] = useState<CVData>({
     personalInfo: {
@@ -127,6 +127,36 @@ const App: React.FC = () => {
     }
   }, [currentStep]);
 
+  // Load game data from localStorage on component mount
+  useEffect(() => {
+    const savedGameData = localStorage.getItem('mocv_game_data');
+    if (savedGameData) {
+      try {
+        const parsed = JSON.parse(savedGameData);
+        setGameData(parsed);
+      } catch (error) {
+        console.error('Error loading game data:', error);
+        // Reset to default if corrupted
+        const defaultGameData = {
+          totalXP: 0,
+          currentLevel: 0,
+          uploadsCount: 0,
+          achievements: [],
+          consecutiveDays: 0,
+          lastUploadDate: new Date().toISOString(),
+          highestScore: 0
+        };
+        setGameData(defaultGameData);
+        localStorage.setItem('mocv_game_data', JSON.stringify(defaultGameData));
+      }
+    }
+  }, []);
+
+  // Save game data to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('mocv_game_data', JSON.stringify(gameData));
+  }, [gameData]);
+
   const handleTemplateSelect = (template: CVTemplate) => {
     setSelectedTemplate(template);
     setCurrentStep('fill-method');
@@ -162,7 +192,7 @@ const App: React.FC = () => {
       ...prev,
       totalXP: prev.totalXP + (jobDesc ? 75 : 50),
       currentLevel: Math.floor((prev.totalXP + (jobDesc ? 75 : 50)) / 100),
-      achievements: [...prev.achievements, jobDesc ? 'Job Matcher' : 'CV Analyzer']
+      achievements: [...prev.achievements, jobDesc ? 'Job Matcher' : 'CV Analyzer'].filter((achievement, index, arr) => arr.indexOf(achievement) === index)
     }));
   };
 
@@ -199,43 +229,6 @@ const App: React.FC = () => {
     }));
     setPendingFlow('create');
     setCurrentStep('cv-builder');
-  };
-
-  // Function to save CV when user completes the form
-  const saveCVToStorage = (cvData: CVData, template: CVTemplate, targetMarket: TargetMarket | null) => {
-    const newCV = {
-      id: Date.now().toString(),
-      title: `${cvData.personalInfo.title || 'Professional'} CV - ${new Date().toLocaleDateString()}`,
-      templateName: template.name,
-      templateId: template.id,
-      dateCreated: new Date(),
-      dateModified: new Date(),
-      atsScore: Math.floor(Math.random() * 20) + 75, // Random score between 75-95
-      status: 'completed' as const,
-      cvData: cvData,
-      targetMarket: targetMarket?.id || 'global'
-    };
-
-    // Get existing CVs from localStorage
-    const existingCVs = localStorage.getItem('mocv_saved_cvs');
-    let cvList = [];
-    
-    if (existingCVs) {
-      try {
-        cvList = JSON.parse(existingCVs);
-      } catch (error) {
-        console.error('Error parsing existing CVs:', error);
-        cvList = [];
-      }
-    }
-
-    // Add new CV to the beginning of the list
-    cvList.unshift(newCV);
-    
-    // Save back to localStorage
-    localStorage.setItem('mocv_saved_cvs', JSON.stringify(cvList));
-    
-    return newCV;
   };
 
   const handleMarketSelect = (market: TargetMarket) => {

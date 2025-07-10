@@ -18,14 +18,18 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
   };
 
   const getXPForNextLevel = (currentLevel: number): number => {
-    return (currentLevel + 1) * 100;
+    return Math.max(100, (currentLevel + 1) * 100);
   };
 
   const getXPProgress = (): number => {
+    if (gameData.currentLevel === 0 && gameData.totalXP === 0) {
+      return 0;
+    }
     const currentLevelXP = gameData.currentLevel * 100;
     const nextLevelXP = getXPForNextLevel(gameData.currentLevel);
     const progressXP = gameData.totalXP - currentLevelXP;
-    return Math.min((progressXP / (nextLevelXP - currentLevelXP)) * 100, 100);
+    const progress = Math.min((progressXP / (nextLevelXP - currentLevelXP)) * 100, 100);
+    return Math.max(0, progress);
   };
 
   const currentBadge = getBadgeForLevel(gameData.currentLevel);
@@ -70,7 +74,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
           ></div>
         </div>
         <div className="text-xs text-gray-500 mt-1">
-          {nextLevelXP - gameData.totalXP} XP to next level
+          {Math.max(0, nextLevelXP - gameData.totalXP)} XP to next level
         </div>
       </div>
 
@@ -104,11 +108,11 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
           <div className="text-xs text-gray-500">CVs Created</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-bold text-green-600">{gameData.highestScore}%</div>
+          <div className="text-lg font-bold text-green-600">{gameData.highestScore || 0}%</div>
           <div className="text-xs text-gray-500">Best ATS Score</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-bold text-purple-600">{gameData.consecutiveDays}</div>
+          <div className="text-lg font-bold text-purple-600">{gameData.consecutiveDays || 0}</div>
           <div className="text-xs text-gray-500">Day Streak</div>
         </div>
       </div>

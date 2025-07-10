@@ -57,65 +57,13 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
 
   // Add some sample CVs for demonstration if none exist
   useEffect(() => {
-    if (!isLoading && cvs.length === 0) {
-      // Check if we should add sample data (only on first visit)
-      const hasVisited = localStorage.getItem('mocv_has_visited');
-      if (!hasVisited) {
-        const sampleCVs: SavedCV[] = [
-          {
-            id: 'sample-1',
-            title: 'Software Engineer CV - Tech Focus',
-            templateName: 'Modern Tech',
-            templateId: 'tech-focus',
-            dateCreated: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-            dateModified: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-            atsScore: 87,
-            status: 'completed',
-            cvData: {
-              personalInfo: {
-                fullName: 'John Doe',
-                title: 'Software Engineer',
-                email: 'john.doe@email.com'
-              }
-            },
-            targetMarket: 'mauritius'
-          },
-          {
-            id: 'sample-2',
-            title: 'Marketing Manager CV - Creative',
-            templateName: 'Creative Professional',
-            templateId: 'design-lite',
-            dateCreated: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
-            dateModified: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-            atsScore: 92,
-            status: 'published',
-            cvData: {
-              personalInfo: {
-                fullName: 'Jane Smith',
-                title: 'Marketing Manager',
-                email: 'jane.smith@email.com'
-              }
-            },
-            targetMarket: 'global'
-          }
-        ];
-        
-        setCvs(sampleCVs);
-        localStorage.setItem('mocv_saved_cvs', JSON.stringify(sampleCVs));
-        localStorage.setItem('mocv_has_visited', 'true');
-      }
-    }
+    // Remove sample data initialization - start clean
   }, [isLoading, cvs.length]);
 
-  // Remove the duplicate useEffect for localStorage saving
-  // Save CVs to localStorage whenever cvs state changes (but not for sample data)
+  // Save CVs to localStorage whenever cvs state changes
   useEffect(() => {
     if (cvs.length > 0 && !isLoading) {
-      // Only save if these aren't the initial sample CVs
-      const hasRealCVs = cvs.some(cv => !cv.id.startsWith('sample-'));
-      if (hasRealCVs) {
-        localStorage.setItem('mocv_saved_cvs', JSON.stringify(cvs));
-      }
+      localStorage.setItem('mocv_saved_cvs', JSON.stringify(cvs));
     }
   }, [cvs, isLoading]);
 

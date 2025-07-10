@@ -7,8 +7,8 @@ import AIEnhanceButton from './AIEnhanceButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
 import RichTextEditor from './RichTextEditor';
 import { ParsedCVData } from '../services/cvParsingService';
-import BackButton from './BackButton';
 import { TargetMarket } from '../types';
+import BackButton from './BackButton';
 
 interface CVBuilderProps {
   onBack: () => void;

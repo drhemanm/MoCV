@@ -20,6 +20,14 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
   onInterviewPrep,
   onMyCVs
 }) => {
+  // Function to clear all data and reset for demo purposes
+  const handleResetData = () => {
+    if (window.confirm('Are you sure you want to reset all data? This will clear all CVs, progress, and start fresh.')) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="container mx-auto px-4 py-16">
@@ -37,6 +45,16 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
             Get ATS-optimized CVs, AI-powered content, and beat international recruitment systems.
           </p>
+          
+          {/* Demo Reset Button - Remove in production */}
+          <div className="mb-8">
+            <button
+              onClick={handleResetData}
+              className="text-sm text-gray-500 hover:text-red-600 transition-colors border border-gray-300 px-4 py-2 rounded-lg hover:border-red-300"
+            >
+              🔄 Reset Demo Data (Clear All)
+            </button>
+          </div>
           
           {/* Key Benefits */}
           <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12">
