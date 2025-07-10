@@ -363,6 +363,93 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
     }));
   };
 
+  const addProject = () => {
+    const newProject = {
+      id: `project-${Date.now()}`,
+      name: '',
+      description: '',
+      technologies: [],
+      link: ''
+    };
+    setCvData(prev => ({
+      ...prev,
+      projects: [...prev.projects, newProject]
+    }));
+  };
+
+  const updateProject = (id: string, field: string, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      projects: prev.projects.map(project =>
+        project.id === id ? { ...project, [field]: value } : project
+      )
+    }));
+  };
+
+  const removeProject = (id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      projects: prev.projects.filter(project => project.id !== id)
+    }));
+  };
+
+  const addCertification = () => {
+    const newCert = {
+      id: `cert-${Date.now()}`,
+      name: '',
+      issuer: '',
+      date: '',
+      link: ''
+    };
+    setCvData(prev => ({
+      ...prev,
+      certifications: [...prev.certifications, newCert]
+    }));
+  };
+
+  const updateCertification = (id: string, field: string, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      certifications: prev.certifications.map(cert =>
+        cert.id === id ? { ...cert, [field]: value } : cert
+      )
+    }));
+  };
+
+  const removeCertification = (id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      certifications: prev.certifications.filter(cert => cert.id !== id)
+    }));
+  };
+
+  const addLanguage = () => {
+    const newLanguage = {
+      id: `lang-${Date.now()}`,
+      name: '',
+      proficiency: 'Intermediate' as const
+    };
+    setCvData(prev => ({
+      ...prev,
+      languages: [...prev.languages, newLanguage]
+    }));
+  };
+
+  const updateLanguage = (id: string, field: string, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      languages: prev.languages.map(lang =>
+        lang.id === id ? { ...lang, [field]: value } : lang
+      )
+    }));
+  };
+
+  const removeLanguage = (id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      languages: prev.languages.filter(lang => lang.id !== id)
+    }));
+  };
   const toggleSection = (sectionId: string) => {
     setSectionToggles(prev => ({
       ...prev,
@@ -1004,6 +1091,291 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
       )}
     </div>
   );
+  const renderProjects = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Award className="h-5 w-5 text-blue-600" />
+          Projects
+        </h3>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={sectionToggles.projects}
+              onChange={() => toggleSection('projects')}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Include in CV
+          </label>
+          <button
+            onClick={addProject}
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Project
+          </button>
+        </div>
+      </div>
+
+      {cvData.projects.map((project) => (
+        <div key={project.id} className="bg-gray-50 rounded-lg p-6 relative">
+          <button
+            onClick={() => removeProject(project.id)}
+            className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project Name *</label>
+              <input
+                type="text"
+                value={project.name}
+                onChange={(e) => updateProject(project.id, 'name', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="E-commerce Website"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Project Link (Optional)</label>
+              <input
+                type="url"
+                value={project.link}
+                onChange={(e) => updateProject(project.id, 'link', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://github.com/username/project"
+              />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Technologies Used</label>
+            <input
+              type="text"
+              value={project.technologies.join(', ')}
+              onChange={(e) => updateProject(project.id, 'technologies', e.target.value.split(',').map(t => t.trim()))}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="React, Node.js, MongoDB, Express"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Description *
+                <span className="text-gray-500 font-normal ml-2">(Describe the project and your role)</span>
+              </label>
+              <AIEnhanceButton
+                text={project.description}
+                sectionType="general"
+                onTextUpdate={(newText) => updateProject(project.id, 'description', newText)}
+              />
+            </div>
+            <RichTextEditor
+              value={project.description}
+              onChange={(value) => updateProject(project.id, 'description', value)}
+              placeholder="• Built a full-stack e-commerce platform with user authentication&#10;• Implemented payment processing and inventory management&#10;• Deployed using Docker and AWS with CI/CD pipeline"
+              className="min-h-32"
+            />
+          </div>
+        </div>
+      ))}
+
+      {cvData.projects.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <Award className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <p>No projects added yet</p>
+          <button
+            onClick={addProject}
+            className="mt-2 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Add your first project
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderCertifications = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Award className="h-5 w-5 text-blue-600" />
+          Certifications
+        </h3>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={sectionToggles.certifications}
+              onChange={() => toggleSection('certifications')}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Include in CV
+          </label>
+          <button
+            onClick={addCertification}
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Certification
+          </button>
+        </div>
+      </div>
+
+      {cvData.certifications.map((cert) => (
+        <div key={cert.id} className="bg-gray-50 rounded-lg p-6 relative">
+          <button
+            onClick={() => removeCertification(cert.id)}
+            className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Certification Name *</label>
+              <input
+                type="text"
+                value={cert.name}
+                onChange={(e) => updateCertification(cert.id, 'name', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="AWS Certified Solutions Architect"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Issuing Organization *</label>
+              <input
+                type="text"
+                value={cert.issuer}
+                onChange={(e) => updateCertification(cert.id, 'issuer', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Amazon Web Services"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date Obtained</label>
+              <input
+                type="month"
+                value={cert.date}
+                onChange={(e) => updateCertification(cert.id, 'date', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Verification Link (Optional)</label>
+              <input
+                type="url"
+                value={cert.link}
+                onChange={(e) => updateCertification(cert.id, 'link', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://credly.com/badges/..."
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {cvData.certifications.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <Award className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <p>No certifications added yet</p>
+          <button
+            onClick={addCertification}
+            className="mt-2 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Add your first certification
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderLanguages = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Languages className="h-5 w-5 text-blue-600" />
+          Languages
+        </h3>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={sectionToggles.languages}
+              onChange={() => toggleSection('languages')}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Include in CV
+          </label>
+          <button
+            onClick={addLanguage}
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Language
+          </button>
+        </div>
+      </div>
+
+      {cvData.languages.map((language) => (
+        <div key={language.id} className="bg-gray-50 rounded-lg p-6 relative">
+          <button
+            onClick={() => removeLanguage(language.id)}
+            className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+
+          <div className="grid md:grid-cols-2 gap-4 items-end">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Language *</label>
+              <input
+                type="text"
+                value={language.name}
+                onChange={(e) => updateLanguage(language.id, 'name', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="English"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Proficiency Level</label>
+              <select
+                value={language.proficiency}
+                onChange={(e) => updateLanguage(language.id, 'proficiency', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="Basic">Basic</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Fluent">Fluent</option>
+                <option value="Native">Native</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {cvData.languages.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <Languages className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <p>No languages added yet</p>
+          <button
+            onClick={addLanguage}
+            className="mt-2 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Add your first language
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   const renderPreview = () => (
     <div className="bg-white rounded-2xl shadow-xl p-8 min-h-[800px] border border-gray-200">
@@ -1154,6 +1526,86 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
           </div>
         )}
 
+        {/* Projects */}
+        {sectionToggles.projects && cvData.projects.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-1">
+              PROJECTS
+            </h3>
+            <div className="space-y-4">
+              {cvData.projects.map((project) => (
+                <div key={project.id}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{project.name}</h4>
+                      {project.technologies.length > 0 && (
+                        <p className="text-sm text-gray-600">{project.technologies.join(', ')}</p>
+                      )}
+                    </div>
+                    {project.link && (
+                      <a href={project.link} className="text-sm text-blue-600 hover:underline">
+                        View Project
+                      </a>
+                    )}
+                  </div>
+                  {project.description && (
+                    <div className="text-gray-700 whitespace-pre-wrap text-sm">
+                      {project.description}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Certifications */}
+        {sectionToggles.certifications && cvData.certifications.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-1">
+              CERTIFICATIONS
+            </h3>
+            <div className="space-y-3">
+              {cvData.certifications.map((cert) => (
+                <div key={cert.id} className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{cert.name}</h4>
+                    <p className="text-gray-700">{cert.issuer}</p>
+                  </div>
+                  <div className="text-right">
+                    {cert.date && (
+                      <div className="text-sm text-gray-600">
+                        {new Date(cert.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                      </div>
+                    )}
+                    {cert.link && (
+                      <a href={cert.link} className="text-sm text-blue-600 hover:underline">
+                        Verify
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Languages */}
+        {sectionToggles.languages && cvData.languages.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-300 pb-1">
+              LANGUAGES
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              {cvData.languages.map((language) => (
+                <div key={language.id} className="flex justify-between items-center">
+                  <span className="text-gray-700">{language.name}</span>
+                  <span className="text-sm text-gray-600">{language.proficiency}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Draft Watermark */}
         {isDraftMode && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1173,6 +1625,9 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
       case 'experience': return renderExperience();
       case 'education': return renderEducation();
       case 'skills': return renderSkills();
+      case 'projects': return renderProjects();
+      case 'certifications': return renderCertifications();
+      case 'languages': return renderLanguages();
       default: return renderPersonalInfo();
     }
   };
