@@ -1213,12 +1213,12 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowImport(true)}
-                className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium shadow-sm hover:shadow-md"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm"
               >
-                <Upload className="h-4 w-4" />
+                <FileText className="h-3.5 w-3.5" />
                 Import CV
               </button>
               
@@ -1232,27 +1232,27 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
               
               <button
                 onClick={() => setShowSuggestions(!showSuggestions)}
-                className="flex items-center gap-2 px-4 py-2.5 border border-purple-300 text-purple-600 rounded-xl hover:bg-purple-50 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-purple-300 text-purple-600 rounded-md hover:bg-purple-50 transition-colors text-sm"
               >
-                <Wand2 className="h-4 w-4" />
+                <Zap className="h-3.5 w-3.5" />
                 AI Suggestions
               </button>
               
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm"
               >
-                <Eye className="h-4 w-4" />
+                <Eye className="h-3.5 w-3.5" />
                 {showPreview ? 'Hide Preview' : 'Show Preview'}
               </button>
               
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm font-medium">
+              <div className="flex items-center gap-1.5">
+                <label className="flex items-center gap-1.5 text-xs">
                   <input
                     type="checkbox"
                     checked={isDraftMode}
                     onChange={(e) => setIsDraftMode(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
                   />
                   Draft Mode
                 </label>
@@ -1260,17 +1260,17 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
               
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm"
               >
-                <Save className="h-4 w-4" />
+                <Save className="h-3.5 w-3.5" />
                 Save
               </button>
               
               <button
                 onClick={handleDownload}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-3.5 w-3.5" />
                 Download
               </button>
             </div>
