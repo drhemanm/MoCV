@@ -191,13 +191,12 @@ const App: React.FC = () => {
   };
 
   const handleEditCV = (cv: any) => {
-    // For now, redirect to CV builder since we don't have the full form flow
-    // In the future, this would load the specific CV data into the form
-    console.log('Editing CV:', cv);
-    // Load CV data into the builder
-    if (cv.cvData) {
-      setCvData(cv.cvData);
-    }
+    // Store editing context and redirect to CV builder
+    localStorage.setItem('mocv_editing_cv', JSON.stringify({
+      cvData: cv.cvData,
+      cvId: cv.id,
+      isEditing: true
+    }));
     setPendingFlow('create');
     setCurrentStep('cv-builder');
   };

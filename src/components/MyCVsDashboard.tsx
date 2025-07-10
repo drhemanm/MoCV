@@ -118,6 +118,19 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
       }
     }
   }, [cvs, isLoading]);
+
+  const handleEditCV = (cv: SavedCV) => {
+    // When editing, we want to load the specific CV data
+    if (cv.cvData) {
+      // Store the CV data in localStorage for the CV builder to pick up
+      localStorage.setItem('mocv_editing_cv', JSON.stringify({
+        cvData: cv.cvData,
+        cvId: cv.id,
+        isEditing: true
+      }));
+    }
+    onEditCV(cv);
+  };
       
   const filteredAndSortedCVs = cvs
     .filter(cv => {
@@ -439,7 +452,7 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => onEditCV(cv)}
+                        onClick={() => handleEditCV(cv)}
                         className="bg-white text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300"
                         title="Edit CV"
                       >
@@ -485,7 +498,7 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onEditCV(cv)}
+                      onClick={() => handleEditCV(cv)}
                       className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-1"
                     >
                       <Edit3 className="h-3 w-3" />

@@ -179,8 +179,23 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
 
     loadTemplates();
 
-    // Don't auto-load previous data for new CV creation
-    // Users should start with a clean slate
+    // Check if we're editing an existing CV
+    const editingData = localStorage.getItem('mocv_editing_cv');
+    if (editingData) {
+      try {
+        const { cvData: editingCvData, isEditing } = JSON.parse(editingData);
+        if (isEditing && editingCvData) {
+          setCvData(editingCvData);
+          setHasUnsavedChanges(false);
+          // Clear the editing flag after loading
+          localStorage.removeItem('mocv_editing_cv');
+        }
+      } catch (error) {
+        console.error('Error loading editing CV data:', error);
+        localStorage.removeItem('mocv_editing_cv');
+      }
+    }
+    // Otherwise, start with a clean slate for new CV creation
   }, []);
 
   // Auto-save to localStorage
