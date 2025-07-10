@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Download, Save, Settings, Zap, FileText, User, Briefcase, GraduationCap, Award, Code, Languages, Plus, Trash2, Calendar, MapPin, Mail, Phone, Globe, Linkedin, RotateCcw, AlertTriangle, Sparkles } from 'lucide-react';
+import { Eye, Download, Save, Settings, Zap, FileText, User, Briefcase, GraduationCap, Award, Code, Languages, Plus, Trash2, Calendar, MapPin, Mail, Phone, Globe, Linkedin, RotateCcw, AlertTriangle, Sparkles, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { CVTemplate } from '../types';
 import { fetchCVTemplates } from '../services/templateService';
 import CVImportSection from './CVImportSection';
