@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, Plus, Trash2, User, Briefcase, GraduationCap, Award, Globe, FileText, Zap, Lightbulb } from 'lucide-react';
+import { Save, Download, Eye, Plus, Trash2, User, Briefcase, GraduationCap, Award, Globe, FileText, Zap, Lightbulb, Upload } from 'lucide-react';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
 import CVImportSection from './CVImportSection';
