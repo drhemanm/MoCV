@@ -1261,6 +1261,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         return renderCertifications();
       case 'languages':
         return renderLanguages();
+      case 'projects':
+        return renderProjects();
+      case 'certifications':
+        return renderCertifications();
+      case 'languages':
+        return renderLanguages();
       default:
         return renderPersonalInfo();
     }
