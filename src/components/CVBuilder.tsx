@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Download, Save, Settings, Zap, FileText, User, Briefcase, GraduationCap, Award, Code, Languages, Plus, Trash2, Calendar, MapPin, Mail, Phone, Globe, Linkedin, ArrowLeft, Sparkles, RefreshCw, Upload, Wand2 } from 'lucide-react';
+import { Eye, Download, Save, Settings, Zap, FileText, User, Briefcase, GraduationCap, Award, Code, Languages, Plus, Trash2, Calendar, MapPin, Mail, Phone, Globe, Linkedin, ArrowLeft, Sparkles, RefreshCw, Upload, Wand2, Loader2 } from 'lucide-react';
 import { CVTemplate } from '../types';
 import { fetchCVTemplates } from '../services/templateService';
 import CVImportSection from './CVImportSection';
@@ -9,6 +9,7 @@ import RichTextEditor from './RichTextEditor';
 import { ParsedCVData } from '../services/cvParsingService';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
+import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
 
 interface CVBuilderProps {
   onBack: () => void;
@@ -84,6 +85,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
   const [templates, setTemplates] = useState<CVTemplate[]>([]);
   const [isDraftMode, setIsDraftMode] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
   const [cvData, setCvData] = useState<CVData>({
     personalInfo: {
@@ -538,6 +540,50 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
     }
     
     alert('CV saved successfully!');
+  };
+
+  const handleGeneratePDF = async () => {
+    if (!cvData.personalInfo.fullName.trim()) {
+      alert('Please enter your full name before generating the CV');
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    
+    try {
+      // Get the selected template ID (you might want to store this in state)
+      const templateId = localStorage.getItem('mocv_selected_template') || 'classic-ats';
+      
+      // Generate PDF
+      const pdfBytes = await generateCVPDF(cvData, templateId);
+      
+      // Create filename
+      const sanitizedName = cvData.personalInfo.fullName
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+      
+      const filename = `MoCV_${sanitizedName}.pdf`;
+      
+      // Download PDF
+      downloadPDF(pdfBytes, filename);
+      
+      // Award XP for generating CV
+      const gameData = JSON.parse(localStorage.getItem('mocv_game_data') || '{}');
+      const newGameData = {
+        ...gameData,
+        totalXP: (gameData.totalXP || 0) + 25,
+        currentLevel: Math.floor(((gameData.totalXP || 0) + 25) / 100),
+        achievements: [...(gameData.achievements || []), 'PDF Generator'].filter((achievement, index, arr) => arr.indexOf(achievement) === index)
+      };
+      localStorage.setItem('mocv_game_data', JSON.stringify(newGameData));
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const handleDownload = () => {
@@ -1722,11 +1768,21 @@ ${cvData.skills.map(skill => skill.name).join(', ')}
               </button>
               
               <button
-                onClick={handleDownload}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                onClick={handleGeneratePDF}
+                disabled={isGeneratingPDF || !cvData.personalInfo.fullName.trim()}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
-                <Download className="h-3.5 w-3.5" />
-                Download
+                {isGeneratingPDF ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Generate PDF
+                  </>
+                )}
               </button>
             </div>
           </div>

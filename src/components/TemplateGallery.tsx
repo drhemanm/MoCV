@@ -34,6 +34,12 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     return matchesCategory && matchesSearch;
   });
 
+  const handleTemplateSelect = (template: CVTemplate) => {
+    // Store selected template for PDF generation
+    localStorage.setItem('mocv_selected_template', template.id);
+    onTemplateSelect(template);
+  };
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Beginner': return 'text-green-600 bg-green-100';
@@ -419,7 +425,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                         Preview
                       </button>
                       <button
-                        onClick={() => onTemplateSelect(template)}
+                        onClick={() => handleTemplateSelect(template)}
                         className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75"
                       >
                         <Zap className="h-4 w-4" />
@@ -474,7 +480,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                       Preview
                     </button>
                     <button
-                      onClick={() => onTemplateSelect(template)}
+                      onClick={() => handleTemplateSelect(template)}
                       className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
                     >
                       <Star className="h-4 w-4" />

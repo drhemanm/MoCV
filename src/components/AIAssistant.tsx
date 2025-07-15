@@ -111,6 +111,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ targetMarket, template, onCom
 
   const handleComplete = () => {
     if (generatedContent) {
+      // Store template selection for PDF generation
+      localStorage.setItem('mocv_selected_template', template.id);
+      
       const cvData = {
         personalInfo: {
           fullName: '',
