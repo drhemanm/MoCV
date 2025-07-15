@@ -86,7 +86,7 @@ const templateStyles: { [key: string]: TemplateStyle } = {
     accentColor: [0, 0.6, 0.4],
     layout: 'minimal'
   },
-  'executive': {
+  'leadership': {
     primaryColor: [0.1, 0.1, 0.1],
     secondaryColor: [0.3, 0.3, 0.3],
     textColor: [0, 0, 0],
@@ -97,19 +97,23 @@ const templateStyles: { [key: string]: TemplateStyle } = {
 
 export class PDFGenerator {
   private doc: PDFDocument;
+  private currentPage: any;
   private currentY: number;
   private pageWidth: number;
   private pageHeight: number;
   private margin: number;
   private style: TemplateStyle;
   private fonts: any = {};
+  private lineHeight: number = 14;
+  private sectionSpacing: number = 20;
+  private itemSpacing: number = 12;
 
   constructor() {
-    this.currentY = 0;
     this.pageWidth = 595.28; // A4 width in points
     this.pageHeight = 841.89; // A4 height in points
     this.margin = 50;
     this.style = templateStyles['classic-ats'];
+    this.currentY = this.pageHeight - this.margin; // Start from top
   }
 
   async initialize(templateId: string = 'classic-ats') {
@@ -120,30 +124,44 @@ export class PDFGenerator {
     this.fonts.regular = await this.doc.embedFont(StandardFonts.Helvetica);
     this.fonts.bold = await this.doc.embedFont(StandardFonts.HelveticaBold);
     this.fonts.italic = await this.doc.embedFont(StandardFonts.HelveticaOblique);
+    
+    // Create first page
+    this.addPage();
   }
 
   private addPage() {
-    const page = this.doc.addPage([this.pageWidth, this.pageHeight]);
-    this.currentY = this.pageHeight - this.margin;
-    return page;
+    this.currentPage = this.doc.addPage([this.pageWidth, this.pageHeight]);
+    this.currentY = this.pageHeight - this.margin; // Reset to top of new page
+    return this.currentPage;
   }
 
   private checkPageSpace(requiredSpace: number) {
-    if (this.currentY - requiredSpace < this.margin) {
+    if (this.currentY - requiredSpace < this.margin + 50) { // Leave more space at bottom
       this.addPage();
     }
   }
 
-  private drawText(page: any, text: string, x: number, y: number, options: any = {}) {
+  private moveDown(space: number = this.lineHeight) {
+    this.currentY -= space;
+    this.checkPageSpace(50); // Check if we need a new page
+  }
+
+  private drawText(text: string, x: number, options: any = {}) {
     const {
       font = this.fonts.regular,
       size = 10,
       color = this.style.textColor,
-      maxWidth = this.pageWidth - 2 * this.margin
+      maxWidth = this.pageWidth - 2 * this.margin,
+      indent = 0
     } = options;
 
+    if (!text || text.trim() === '') return this.currentY;
+
+    // Clean and prepare text
+    const cleanText = text.replace(/[^\x20-\x7E\n]/g, ' ').trim();
+    
     // Handle text wrapping
-    const words = text.split(' ');
+    const words = cleanText.split(/\s+/);
     const lines: string[] = [];
     let currentLine = '';
 
@@ -151,13 +169,14 @@ export class PDFGenerator {
       const testLine = currentLine ? `${currentLine} ${word}` : word;
       const textWidth = font.widthOfTextAtSize(testLine, size);
       
-      if (textWidth <= maxWidth) {
+      if (textWidth <= maxWidth - indent) {
         currentLine = testLine;
       } else {
         if (currentLine) {
           lines.push(currentLine);
           currentLine = word;
         } else {
+          // Word is too long, break it
           lines.push(word);
         }
       }
@@ -167,41 +186,46 @@ export class PDFGenerator {
       lines.push(currentLine);
     }
 
-    // Draw each line
-    let lineY = y;
+    // Draw each line with proper Y positioning
     for (const line of lines) {
-      page.drawText(line, {
-        x,
-        y: lineY,
+      this.checkPageSpace(size + 5);
+      
+      this.currentPage.drawText(line, {
+        x: x + indent,
+        y: this.currentY,
         size,
         font,
         color: rgb(color[0], color[1], color[2])
       });
-      lineY -= size + 2;
+      
+      this.moveDown(size + 3); // Move down for next line
     }
 
-    return lineY - 5; // Return the Y position after the text
+    return this.currentY;
   }
 
-  private drawSectionHeader(page: any, title: string) {
-    this.checkPageSpace(30);
+  private drawSectionHeader(title: string) {
+    this.checkPageSpace(40);
+    
+    // Add extra space before section
+    this.moveDown(this.sectionSpacing);
     
     // Draw section line
-    page.drawLine({
-      start: { x: this.margin, y: this.currentY - 5 },
-      end: { x: this.pageWidth - this.margin, y: this.currentY - 5 },
+    this.currentPage.drawLine({
+      start: { x: this.margin, y: this.currentY + 5 },
+      end: { x: this.pageWidth - this.margin, y: this.currentY + 5 },
       thickness: 1,
       color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2])
     });
 
     // Draw section title
-    this.currentY = this.drawText(page, title.toUpperCase(), this.margin, this.currentY - 15, {
+    this.drawText(title.toUpperCase(), this.margin, {
       font: this.fonts.bold,
       size: 12,
       color: this.style.primaryColor
     });
 
-    this.currentY -= 10;
+    this.moveDown(8); // Space after section header
   }
 
   private formatDate(dateString: string): string {
@@ -214,147 +238,199 @@ export class PDFGenerator {
     }
   }
 
-  private cleanText(text: string): string {
+  private cleanBulletPoints(text: string): string {
     return text
-      .replace(/[•\-\*]\s*/g, '• ') // Normalize bullet points
-      .replace(/\n\s*\n/g, '\n') // Remove extra line breaks
-      .trim();
+      .split('\n')
+      .map(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('•') && !trimmed.startsWith('-') && !trimmed.startsWith('*')) {
+          return `• ${trimmed}`;
+        }
+        return trimmed.replace(/^[\-\*]\s*/, '• ');
+      })
+      .filter(line => line.length > 0)
+      .join('\n');
   }
 
   async generatePDF(cvData: CVData, templateId: string = 'classic-ats'): Promise<Uint8Array> {
     await this.initialize(templateId);
-    const page = this.addPage();
 
-    // Header Section
-    this.drawHeader(page, cvData.personalInfo);
+    try {
+      // Header Section
+      this.drawHeader(cvData.personalInfo);
 
-    // Professional Summary
-    if (cvData.summary) {
-      this.drawSummary(page, cvData.summary);
+      // Professional Summary
+      if (cvData.summary && cvData.summary.trim()) {
+        this.drawSummary(cvData.summary);
+      }
+
+      // Experience Section
+      if (cvData.experience && cvData.experience.length > 0) {
+        this.drawExperience(cvData.experience);
+      }
+
+      // Education Section
+      if (cvData.education && cvData.education.length > 0) {
+        this.drawEducation(cvData.education);
+      }
+
+      // Skills Section
+      if (cvData.skills && cvData.skills.length > 0) {
+        this.drawSkills(cvData.skills);
+      }
+
+      // Projects Section
+      if (cvData.projects && cvData.projects.length > 0) {
+        this.drawProjects(cvData.projects);
+      }
+
+      // Certifications Section
+      if (cvData.certifications && cvData.certifications.length > 0) {
+        this.drawCertifications(cvData.certifications);
+      }
+
+      // Languages Section
+      if (cvData.languages && cvData.languages.length > 0) {
+        this.drawLanguages(cvData.languages);
+      }
+
+      return await this.doc.save();
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      throw new Error('Failed to generate PDF. Please check your data and try again.');
     }
-
-    // Experience Section
-    if (cvData.experience.length > 0) {
-      this.drawExperience(page, cvData.experience);
-    }
-
-    // Education Section
-    if (cvData.education.length > 0) {
-      this.drawEducation(page, cvData.education);
-    }
-
-    // Skills Section
-    if (cvData.skills.length > 0) {
-      this.drawSkills(page, cvData.skills);
-    }
-
-    // Projects Section
-    if (cvData.projects.length > 0) {
-      this.drawProjects(page, cvData.projects);
-    }
-
-    // Certifications Section
-    if (cvData.certifications.length > 0) {
-      this.drawCertifications(page, cvData.certifications);
-    }
-
-    // Languages Section
-    if (cvData.languages.length > 0) {
-      this.drawLanguages(page, cvData.languages);
-    }
-
-    return await this.doc.save();
   }
 
-  private drawHeader(page: any, personalInfo: any) {
-    // Name
-    this.currentY = this.drawText(page, personalInfo.fullName, this.margin, this.currentY, {
-      font: this.fonts.bold,
-      size: 20,
-      color: this.style.primaryColor
-    });
+  private drawHeader(personalInfo: any) {
+    this.checkPageSpace(100);
 
-    // Title
-    if (personalInfo.title) {
-      this.currentY = this.drawText(page, personalInfo.title, this.margin, this.currentY - 5, {
-        font: this.fonts.regular,
-        size: 14,
-        color: this.style.secondaryColor
+    // Name - larger, bold, centered
+    if (personalInfo.fullName) {
+      const nameWidth = this.fonts.bold.widthOfTextAtSize(personalInfo.fullName, 24);
+      const nameX = (this.pageWidth - nameWidth) / 2;
+      
+      this.currentPage.drawText(personalInfo.fullName, {
+        x: nameX,
+        y: this.currentY,
+        size: 24,
+        font: this.fonts.bold,
+        color: rgb(this.style.primaryColor[0], this.style.primaryColor[1], this.style.primaryColor[2])
       });
+      this.moveDown(30);
     }
 
-    // Contact Information
+    // Title - centered, medium size
+    if (personalInfo.title) {
+      const titleWidth = this.fonts.regular.widthOfTextAtSize(personalInfo.title, 16);
+      const titleX = (this.pageWidth - titleWidth) / 2;
+      
+      this.currentPage.drawText(personalInfo.title, {
+        x: titleX,
+        y: this.currentY,
+        size: 16,
+        font: this.fonts.regular,
+        color: rgb(this.style.secondaryColor[0], this.style.secondaryColor[1], this.style.secondaryColor[2])
+      });
+      this.moveDown(25);
+    }
+
+    // Contact Information - centered, smaller
     const contactInfo = [
       personalInfo.email,
       personalInfo.phone,
       personalInfo.location,
       personalInfo.linkedin,
       personalInfo.website
-    ].filter(Boolean).join(' | ');
+    ].filter(Boolean);
 
-    if (contactInfo) {
-      this.currentY = this.drawText(page, contactInfo, this.margin, this.currentY - 10, {
-        size: 9,
-        color: this.style.secondaryColor
+    if (contactInfo.length > 0) {
+      const contactText = contactInfo.join(' | ');
+      const contactWidth = this.fonts.regular.widthOfTextAtSize(contactText, 10);
+      const contactX = (this.pageWidth - contactWidth) / 2;
+      
+      this.currentPage.drawText(contactText, {
+        x: contactX,
+        y: this.currentY,
+        size: 10,
+        font: this.fonts.regular,
+        color: rgb(this.style.secondaryColor[0], this.style.secondaryColor[1], this.style.secondaryColor[2])
       });
+      this.moveDown(20);
     }
 
-    this.currentY -= 20;
-  }
-
-  private drawSummary(page: any, summary: string) {
-    this.drawSectionHeader(page, 'Professional Summary');
-    this.currentY = this.drawText(page, this.cleanText(summary), this.margin, this.currentY, {
-      size: 10
+    // Add separator line
+    this.currentPage.drawLine({
+      start: { x: this.margin, y: this.currentY },
+      end: { x: this.pageWidth - this.margin, y: this.currentY },
+      thickness: 0.5,
+      color: rgb(0.8, 0.8, 0.8)
     });
-    this.currentY -= 15;
+    this.moveDown(10);
   }
 
-  private drawExperience(page: any, experience: any[]) {
-    this.drawSectionHeader(page, 'Professional Experience');
+  private drawSummary(summary: string) {
+    this.drawSectionHeader('Professional Summary');
+    this.drawText(summary, this.margin, {
+      size: 11,
+      maxWidth: this.pageWidth - 2 * this.margin
+    });
+  }
 
-    for (const exp of experience) {
+  private drawExperience(experience: any[]) {
+    this.drawSectionHeader('Professional Experience');
+
+    for (let i = 0; i < experience.length; i++) {
+      const exp = experience[i];
       this.checkPageSpace(80);
 
-      // Job title and company
-      const titleLine = `${exp.title} | ${exp.company}`;
-      this.currentY = this.drawText(page, titleLine, this.margin, this.currentY, {
+      // Job title and company - bold
+      const titleLine = `${exp.title || 'Position'} | ${exp.company || 'Company'}`;
+      this.drawText(titleLine, this.margin, {
         font: this.fonts.bold,
-        size: 11,
+        size: 12,
         color: this.style.primaryColor
       });
 
-      // Location and dates
+      // Location and dates - smaller, secondary color
       const dateRange = exp.current 
         ? `${this.formatDate(exp.startDate)} - Present`
         : `${this.formatDate(exp.startDate)} - ${this.formatDate(exp.endDate)}`;
       
       const locationDate = [exp.location, dateRange].filter(Boolean).join(' | ');
-      this.currentY = this.drawText(page, locationDate, this.margin, this.currentY - 5, {
-        size: 9,
-        color: this.style.secondaryColor
-      });
-
-      // Description
-      if (exp.description) {
-        this.currentY = this.drawText(page, this.cleanText(exp.description), this.margin, this.currentY - 5, {
-          size: 10
+      if (locationDate) {
+        this.drawText(locationDate, this.margin, {
+          size: 10,
+          color: this.style.secondaryColor
         });
       }
 
-      this.currentY -= 15;
+      // Description with bullet points
+      if (exp.description && exp.description.trim()) {
+        const cleanDescription = this.cleanBulletPoints(exp.description);
+        this.drawText(cleanDescription, this.margin, {
+          size: 10,
+          indent: 15, // Indent bullet points
+          maxWidth: this.pageWidth - 2 * this.margin - 15
+        });
+      }
+
+      // Add space between experience items
+      if (i < experience.length - 1) {
+        this.moveDown(this.itemSpacing);
+      }
     }
   }
 
-  private drawEducation(page: any, education: any[]) {
-    this.drawSectionHeader(page, 'Education');
+  private drawEducation(education: any[]) {
+    this.drawSectionHeader('Education');
 
-    for (const edu of education) {
-      this.checkPageSpace(50);
+    for (let i = 0; i < education.length; i++) {
+      const edu = education[i];
+      this.checkPageSpace(60);
 
-      // Degree and school
-      const degreeLine = `${edu.degree} | ${edu.school}`;
-      this.currentY = this.drawText(page, degreeLine, this.margin, this.currentY, {
+      // Degree and school - bold
+      const degreeLine = `${edu.degree || 'Degree'} | ${edu.school || 'Institution'}`;
+      this.drawText(degreeLine, this.margin, {
         font: this.fonts.bold,
         size: 11,
         color: this.style.primaryColor
@@ -363,25 +439,28 @@ export class PDFGenerator {
       // Location and graduation date
       const locationDate = [edu.location, this.formatDate(edu.graduationDate)].filter(Boolean).join(' | ');
       if (locationDate) {
-        this.currentY = this.drawText(page, locationDate, this.margin, this.currentY - 5, {
-          size: 9,
+        this.drawText(locationDate, this.margin, {
+          size: 10,
           color: this.style.secondaryColor
         });
       }
 
       // GPA if provided
       if (edu.gpa) {
-        this.currentY = this.drawText(page, `GPA: ${edu.gpa}`, this.margin, this.currentY - 5, {
-          size: 9
+        this.drawText(`GPA: ${edu.gpa}`, this.margin, {
+          size: 10
         });
       }
 
-      this.currentY -= 15;
+      // Add space between education items
+      if (i < education.length - 1) {
+        this.moveDown(this.itemSpacing);
+      }
     }
   }
 
-  private drawSkills(page: any, skills: any[]) {
-    this.drawSectionHeader(page, 'Skills');
+  private drawSkills(skills: any[]) {
+    this.drawSectionHeader('Skills');
 
     // Group skills by category
     const skillsByCategory: { [key: string]: string[] } = {};
@@ -396,34 +475,34 @@ export class PDFGenerator {
     for (const [category, skillList] of Object.entries(skillsByCategory)) {
       this.checkPageSpace(30);
 
-      // Category header
-      this.currentY = this.drawText(page, `${category}:`, this.margin, this.currentY, {
+      // Category header - bold
+      this.drawText(`${category}:`, this.margin, {
         font: this.fonts.bold,
-        size: 10,
+        size: 11,
         color: this.style.primaryColor
       });
 
-      // Skills list
+      // Skills list - indented
       const skillsText = skillList.join(' • ');
-      this.currentY = this.drawText(page, skillsText, this.margin + 80, this.currentY + 12, {
+      this.drawText(skillsText, this.margin, {
         size: 10,
-        maxWidth: this.pageWidth - this.margin - 100
+        indent: 20,
+        maxWidth: this.pageWidth - 2 * this.margin - 20
       });
 
-      this.currentY -= 10;
+      this.moveDown(8);
     }
-
-    this.currentY -= 5;
   }
 
-  private drawProjects(page: any, projects: any[]) {
-    this.drawSectionHeader(page, 'Projects');
+  private drawProjects(projects: any[]) {
+    this.drawSectionHeader('Projects');
 
-    for (const project of projects) {
-      this.checkPageSpace(60);
+    for (let i = 0; i < projects.length; i++) {
+      const project = projects[i];
+      this.checkPageSpace(70);
 
-      // Project name
-      this.currentY = this.drawText(page, project.name, this.margin, this.currentY, {
+      // Project name - bold
+      this.drawText(project.name || 'Project', this.margin, {
         font: this.fonts.bold,
         size: 11,
         color: this.style.primaryColor
@@ -432,40 +511,45 @@ export class PDFGenerator {
       // Technologies
       if (project.technologies && project.technologies.length > 0) {
         const techText = `Technologies: ${project.technologies.join(', ')}`;
-        this.currentY = this.drawText(page, techText, this.margin, this.currentY - 5, {
-          size: 9,
+        this.drawText(techText, this.margin, {
+          size: 10,
           color: this.style.secondaryColor
         });
       }
 
       // Description
       if (project.description) {
-        this.currentY = this.drawText(page, this.cleanText(project.description), this.margin, this.currentY - 5, {
-          size: 10
+        this.drawText(project.description, this.margin, {
+          size: 10,
+          indent: 10
         });
       }
 
       // Link
       if (project.link) {
-        this.currentY = this.drawText(page, `Link: ${project.link}`, this.margin, this.currentY - 5, {
+        this.drawText(`Link: ${project.link}`, this.margin, {
           size: 9,
           color: this.style.accentColor
         });
       }
 
-      this.currentY -= 15;
+      // Add space between projects
+      if (i < projects.length - 1) {
+        this.moveDown(this.itemSpacing);
+      }
     }
   }
 
-  private drawCertifications(page: any, certifications: any[]) {
-    this.drawSectionHeader(page, 'Certifications');
+  private drawCertifications(certifications: any[]) {
+    this.drawSectionHeader('Certifications');
 
-    for (const cert of certifications) {
+    for (let i = 0; i < certifications.length; i++) {
+      const cert = certifications[i];
       this.checkPageSpace(40);
 
-      // Certification name and issuer
-      const certLine = `${cert.name} | ${cert.issuer}`;
-      this.currentY = this.drawText(page, certLine, this.margin, this.currentY, {
+      // Certification name and issuer - bold
+      const certLine = `${cert.name || 'Certification'} | ${cert.issuer || 'Issuer'}`;
+      this.drawText(certLine, this.margin, {
         font: this.fonts.bold,
         size: 11,
         color: this.style.primaryColor
@@ -473,25 +557,29 @@ export class PDFGenerator {
 
       // Date
       if (cert.date) {
-        this.currentY = this.drawText(page, this.formatDate(cert.date), this.margin, this.currentY - 5, {
-          size: 9,
+        this.drawText(this.formatDate(cert.date), this.margin, {
+          size: 10,
           color: this.style.secondaryColor
         });
       }
 
-      this.currentY -= 15;
+      // Add space between certifications
+      if (i < certifications.length - 1) {
+        this.moveDown(this.itemSpacing);
+      }
     }
   }
 
-  private drawLanguages(page: any, languages: any[]) {
-    this.drawSectionHeader(page, 'Languages');
+  private drawLanguages(languages: any[]) {
+    this.drawSectionHeader('Languages');
 
-    const languageList = languages.map(lang => `${lang.name} (${lang.proficiency})`).join(' • ');
-    this.currentY = this.drawText(page, languageList, this.margin, this.currentY, {
+    const languageList = languages
+      .map(lang => `${lang.name} (${lang.proficiency})`)
+      .join(' • ');
+    
+    this.drawText(languageList, this.margin, {
       size: 10
     });
-
-    this.currentY -= 15;
   }
 }
 
@@ -503,15 +591,23 @@ export async function generateCVPDF(cvData: CVData, templateId: string = 'classi
 
 // Function to trigger PDF download
 export function downloadPDF(pdfBytes: Uint8Array, filename: string) {
-  const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  URL.revokeObjectURL(url);
+  try {
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up the URL object
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  } catch (error) {
+    console.error('Download error:', error);
+    throw new Error('Failed to download PDF. Please try again.');
+  }
 }

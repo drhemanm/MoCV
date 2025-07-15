@@ -551,6 +551,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
     setIsGeneratingPDF(true);
     
     try {
+      // Show loading message
+      console.log('Generating PDF with template:', selectedTemplate?.id);
+      
       // Get the selected template ID (you might want to store this in state)
       const templateId = localStorage.getItem('mocv_selected_template') || 'classic-ats';
       
@@ -578,9 +581,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
       };
       localStorage.setItem('mocv_game_data', JSON.stringify(newGameData));
       
+      // Show success message
+      alert(`PDF "${filename}" has been generated and downloaded successfully!`);
+      
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      alert('Failed to generate PDF. Please check your data and try again.');
     } finally {
       setIsGeneratingPDF(false);
     }
