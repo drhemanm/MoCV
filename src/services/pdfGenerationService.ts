@@ -61,15 +61,17 @@ export interface TemplateStyle {
   secondaryColor: [number, number, number];
   textColor: [number, number, number];
   accentColor: [number, number, number];
+  backgroundColor: [number, number, number];
   layout: 'classic' | 'modern' | 'minimal' | 'executive';
 }
 
 const templateStyles: { [key: string]: TemplateStyle } = {
   'classic-ats': {
-    primaryColor: [0.2, 0.2, 0.2],
+    primaryColor: [0.15, 0.15, 0.15],
     secondaryColor: [0.4, 0.4, 0.4],
-    textColor: [0, 0, 0],
+    textColor: [0.2, 0.2, 0.2],
     accentColor: [0.2, 0.4, 0.8],
+    backgroundColor: [1, 1, 1],
     layout: 'classic'
   },
   'modern-minimal': {
@@ -77,6 +79,7 @@ const templateStyles: { [key: string]: TemplateStyle } = {
     secondaryColor: [0.3, 0.3, 0.3],
     textColor: [0.2, 0.2, 0.2],
     accentColor: [0.4, 0.2, 0.8],
+    backgroundColor: [0.98, 0.98, 0.98],
     layout: 'modern'
   },
   'tech-focus': {
@@ -84,6 +87,7 @@ const templateStyles: { [key: string]: TemplateStyle } = {
     secondaryColor: [0.2, 0.5, 0.8],
     textColor: [0.1, 0.1, 0.1],
     accentColor: [0, 0.6, 0.4],
+    backgroundColor: [0.97, 0.99, 1],
     layout: 'minimal'
   },
   'leadership': {
@@ -91,6 +95,7 @@ const templateStyles: { [key: string]: TemplateStyle } = {
     secondaryColor: [0.3, 0.3, 0.3],
     textColor: [0, 0, 0],
     accentColor: [0.6, 0.4, 0.2],
+    backgroundColor: [1, 1, 1],
     layout: 'executive'
   }
 };
@@ -104,16 +109,16 @@ export class PDFGenerator {
   private margin: number;
   private style: TemplateStyle;
   private fonts: any = {};
-  private lineHeight: number = 14;
-  private sectionSpacing: number = 20;
-  private itemSpacing: number = 12;
+  private lineHeight: number = 16;
+  private sectionSpacing: number = 24;
+  private itemSpacing: number = 16;
 
   constructor() {
     this.pageWidth = 595.28; // A4 width in points
     this.pageHeight = 841.89; // A4 height in points
-    this.margin = 50;
+    this.margin = 60;
     this.style = templateStyles['classic-ats'];
-    this.currentY = this.pageHeight - this.margin; // Start from top
+    this.currentY = this.pageHeight - this.margin;
   }
 
   async initialize(templateId: string = 'classic-ats') {
@@ -124,6 +129,7 @@ export class PDFGenerator {
     this.fonts.regular = await this.doc.embedFont(StandardFonts.Helvetica);
     this.fonts.bold = await this.doc.embedFont(StandardFonts.HelveticaBold);
     this.fonts.italic = await this.doc.embedFont(StandardFonts.HelveticaOblique);
+    this.fonts.boldItalic = await this.doc.embedFont(StandardFonts.HelveticaBoldOblique);
     
     // Create first page
     this.addPage();
@@ -131,36 +137,46 @@ export class PDFGenerator {
 
   private addPage() {
     this.currentPage = this.doc.addPage([this.pageWidth, this.pageHeight]);
-    this.currentY = this.pageHeight - this.margin; // Reset to top of new page
+    this.currentY = this.pageHeight - this.margin;
+    
+    // Add subtle background
+    if (this.style.backgroundColor[0] < 1 || this.style.backgroundColor[1] < 1 || this.style.backgroundColor[2] < 1) {
+      this.currentPage.drawRectangle({
+        x: 0,
+        y: 0,
+        width: this.pageWidth,
+        height: this.pageHeight,
+        color: rgb(this.style.backgroundColor[0], this.style.backgroundColor[1], this.style.backgroundColor[2])
+      });
+    }
+    
     return this.currentPage;
   }
 
   private checkPageSpace(requiredSpace: number) {
-    if (this.currentY - requiredSpace < this.margin + 50) { // Leave more space at bottom
+    if (this.currentY - requiredSpace < this.margin + 80) {
       this.addPage();
     }
   }
 
   private moveDown(space: number = this.lineHeight) {
     this.currentY -= space;
-    this.checkPageSpace(50); // Check if we need a new page
+    this.checkPageSpace(60);
   }
 
   private drawText(text: string, x: number, options: any = {}) {
     const {
       font = this.fonts.regular,
-      size = 10,
+      size = 11,
       color = this.style.textColor,
       maxWidth = this.pageWidth - 2 * this.margin,
-      indent = 0
+      indent = 0,
+      align = 'left'
     } = options;
 
     if (!text || text.trim() === '') return this.currentY;
 
-    // Clean and prepare text
     const cleanText = text.replace(/[^\x20-\x7E\n]/g, ' ').trim();
-    
-    // Handle text wrapping
     const words = cleanText.split(/\s+/);
     const lines: string[] = [];
     let currentLine = '';
@@ -176,7 +192,6 @@ export class PDFGenerator {
           lines.push(currentLine);
           currentLine = word;
         } else {
-          // Word is too long, break it
           lines.push(word);
         }
       }
@@ -186,46 +201,62 @@ export class PDFGenerator {
       lines.push(currentLine);
     }
 
-    // Draw each line with proper Y positioning
     for (const line of lines) {
-      this.checkPageSpace(size + 5);
+      this.checkPageSpace(size + 8);
+      
+      let textX = x + indent;
+      if (align === 'center') {
+        const textWidth = font.widthOfTextAtSize(line, size);
+        textX = (this.pageWidth - textWidth) / 2;
+      } else if (align === 'right') {
+        const textWidth = font.widthOfTextAtSize(line, size);
+        textX = this.pageWidth - this.margin - textWidth;
+      }
       
       this.currentPage.drawText(line, {
-        x: x + indent,
+        x: textX,
         y: this.currentY,
         size,
         font,
         color: rgb(color[0], color[1], color[2])
       });
       
-      this.moveDown(size + 3); // Move down for next line
+      this.moveDown(size + 4);
     }
 
     return this.currentY;
   }
 
   private drawSectionHeader(title: string) {
-    this.checkPageSpace(40);
-    
-    // Add extra space before section
+    this.checkPageSpace(50);
     this.moveDown(this.sectionSpacing);
     
-    // Draw section line
-    this.currentPage.drawLine({
-      start: { x: this.margin, y: this.currentY + 5 },
-      end: { x: this.pageWidth - this.margin, y: this.currentY + 5 },
-      thickness: 1,
+    // Draw decorative line before section
+    this.currentPage.drawRectangle({
+      x: this.margin,
+      y: this.currentY + 8,
+      width: 40,
+      height: 3,
       color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2])
     });
 
-    // Draw section title
+    // Draw section title with enhanced styling
     this.drawText(title.toUpperCase(), this.margin, {
       font: this.fonts.bold,
-      size: 12,
+      size: 14,
       color: this.style.primaryColor
     });
 
-    this.moveDown(8); // Space after section header
+    // Draw full-width line under section
+    this.currentPage.drawLine({
+      start: { x: this.margin, y: this.currentY + 5 },
+      end: { x: this.pageWidth - this.margin, y: this.currentY + 5 },
+      thickness: 0.8,
+      color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2]),
+      opacity: 0.3
+    });
+
+    this.moveDown(12);
   }
 
   private formatDate(dateString: string): string {
@@ -256,42 +287,42 @@ export class PDFGenerator {
     await this.initialize(templateId);
 
     try {
-      // Header Section
-      this.drawHeader(cvData.personalInfo);
+      // Enhanced Header Section
+      this.drawEnhancedHeader(cvData.personalInfo);
 
-      // Professional Summary
+      // Professional Summary with better styling
       if (cvData.summary && cvData.summary.trim()) {
-        this.drawSummary(cvData.summary);
+        this.drawEnhancedSummary(cvData.summary);
       }
 
-      // Experience Section
+      // Experience Section with improved layout
       if (cvData.experience && cvData.experience.length > 0) {
-        this.drawExperience(cvData.experience);
+        this.drawEnhancedExperience(cvData.experience);
       }
 
-      // Education Section
-      if (cvData.education && cvData.education.length > 0) {
-        this.drawEducation(cvData.education);
-      }
-
-      // Skills Section
+      // Skills Section with visual elements
       if (cvData.skills && cvData.skills.length > 0) {
-        this.drawSkills(cvData.skills);
+        this.drawEnhancedSkills(cvData.skills);
       }
 
       // Projects Section
       if (cvData.projects && cvData.projects.length > 0) {
-        this.drawProjects(cvData.projects);
+        this.drawEnhancedProjects(cvData.projects);
+      }
+
+      // Education Section
+      if (cvData.education && cvData.education.length > 0) {
+        this.drawEnhancedEducation(cvData.education);
       }
 
       // Certifications Section
       if (cvData.certifications && cvData.certifications.length > 0) {
-        this.drawCertifications(cvData.certifications);
+        this.drawEnhancedCertifications(cvData.certifications);
       }
 
       // Languages Section
       if (cvData.languages && cvData.languages.length > 0) {
-        this.drawLanguages(cvData.languages);
+        this.drawEnhancedLanguages(cvData.languages);
       }
 
       return await this.doc.save();
@@ -301,284 +332,378 @@ export class PDFGenerator {
     }
   }
 
-  private drawHeader(personalInfo: any) {
-    this.checkPageSpace(100);
+  private drawEnhancedHeader(personalInfo: any) {
+    this.checkPageSpace(120);
 
-    // Name - larger, bold, centered
+    // Background accent bar
+    this.currentPage.drawRectangle({
+      x: 0,
+      y: this.currentY - 10,
+      width: this.pageWidth,
+      height: 80,
+      color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2]),
+      opacity: 0.08
+    });
+
+    // Name - large, bold, with better spacing
     if (personalInfo.fullName) {
-      const nameWidth = this.fonts.bold.widthOfTextAtSize(personalInfo.fullName, 24);
-      const nameX = (this.pageWidth - nameWidth) / 2;
-      
-      this.currentPage.drawText(personalInfo.fullName, {
-        x: nameX,
-        y: this.currentY,
-        size: 24,
+      this.drawText(personalInfo.fullName, this.margin, {
         font: this.fonts.bold,
-        color: rgb(this.style.primaryColor[0], this.style.primaryColor[1], this.style.primaryColor[2])
+        size: 28,
+        color: this.style.primaryColor,
+        align: 'center'
       });
-      this.moveDown(30);
+      this.moveDown(8);
     }
 
-    // Title - centered, medium size
+    // Title - professional styling
     if (personalInfo.title) {
-      const titleWidth = this.fonts.regular.widthOfTextAtSize(personalInfo.title, 16);
-      const titleX = (this.pageWidth - titleWidth) / 2;
-      
-      this.currentPage.drawText(personalInfo.title, {
-        x: titleX,
-        y: this.currentY,
+      this.drawText(personalInfo.title, this.margin, {
+        font: this.fonts.regular,
         size: 16,
-        font: this.fonts.regular,
-        color: rgb(this.style.secondaryColor[0], this.style.secondaryColor[1], this.style.secondaryColor[2])
-      });
-      this.moveDown(25);
-    }
-
-    // Contact Information - centered, smaller
-    const contactInfo = [
-      personalInfo.email,
-      personalInfo.phone,
-      personalInfo.location,
-      personalInfo.linkedin,
-      personalInfo.website
-    ].filter(Boolean);
-
-    if (contactInfo.length > 0) {
-      const contactText = contactInfo.join(' | ');
-      const contactWidth = this.fonts.regular.widthOfTextAtSize(contactText, 10);
-      const contactX = (this.pageWidth - contactWidth) / 2;
-      
-      this.currentPage.drawText(contactText, {
-        x: contactX,
-        y: this.currentY,
-        size: 10,
-        font: this.fonts.regular,
-        color: rgb(this.style.secondaryColor[0], this.style.secondaryColor[1], this.style.secondaryColor[2])
+        color: this.style.accentColor,
+        align: 'center'
       });
       this.moveDown(20);
     }
 
-    // Add separator line
+    // Contact Information - enhanced layout
+    const contactInfo = [];
+    if (personalInfo.email) contactInfo.push(`📧 ${personalInfo.email}`);
+    if (personalInfo.phone) contactInfo.push(`📱 ${personalInfo.phone}`);
+    if (personalInfo.location) contactInfo.push(`📍 ${personalInfo.location}`);
+    if (personalInfo.linkedin) contactInfo.push(`💼 ${personalInfo.linkedin}`);
+    if (personalInfo.website) contactInfo.push(`🌐 ${personalInfo.website}`);
+
+    if (contactInfo.length > 0) {
+      // Split into two lines if too many items
+      if (contactInfo.length > 3) {
+        const firstLine = contactInfo.slice(0, 3).join('  •  ');
+        const secondLine = contactInfo.slice(3).join('  •  ');
+        
+        this.drawText(firstLine, this.margin, {
+          font: this.fonts.regular,
+          size: 10,
+          color: this.style.secondaryColor,
+          align: 'center'
+        });
+        
+        this.drawText(secondLine, this.margin, {
+          font: this.fonts.regular,
+          size: 10,
+          color: this.style.secondaryColor,
+          align: 'center'
+        });
+      } else {
+        const contactText = contactInfo.join('  •  ');
+        this.drawText(contactText, this.margin, {
+          font: this.fonts.regular,
+          size: 10,
+          color: this.style.secondaryColor,
+          align: 'center'
+        });
+      }
+      this.moveDown(15);
+    }
+
+    // Decorative separator
     this.currentPage.drawLine({
-      start: { x: this.margin, y: this.currentY },
-      end: { x: this.pageWidth - this.margin, y: this.currentY },
-      thickness: 0.5,
-      color: rgb(0.8, 0.8, 0.8)
+      start: { x: this.margin + 100, y: this.currentY },
+      end: { x: this.pageWidth - this.margin - 100, y: this.currentY },
+      thickness: 1.5,
+      color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2]),
+      opacity: 0.6
     });
-    this.moveDown(10);
+    this.moveDown(15);
   }
 
-  private drawSummary(summary: string) {
+  private drawEnhancedSummary(summary: string) {
     this.drawSectionHeader('Professional Summary');
+    
+    // Add background box for summary
+    const summaryHeight = Math.ceil(summary.length / 80) * 16 + 20;
+    this.currentPage.drawRectangle({
+      x: this.margin - 10,
+      y: this.currentY - summaryHeight + 10,
+      width: this.pageWidth - 2 * this.margin + 20,
+      height: summaryHeight,
+      color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2]),
+      opacity: 0.05
+    });
+
     this.drawText(summary, this.margin, {
-      size: 11,
+      size: 12,
+      color: this.style.textColor,
       maxWidth: this.pageWidth - 2 * this.margin
     });
   }
 
-  private drawExperience(experience: any[]) {
+  private drawEnhancedExperience(experience: any[]) {
     this.drawSectionHeader('Professional Experience');
 
     for (let i = 0; i < experience.length; i++) {
       const exp = experience[i];
-      this.checkPageSpace(80);
+      this.checkPageSpace(100);
 
-      // Job title and company - bold
-      const titleLine = `${exp.title || 'Position'} | ${exp.company || 'Company'}`;
+      // Company and title with enhanced styling
+      const titleLine = exp.title || 'Position';
+      const companyLine = exp.company || 'Company';
+      
       this.drawText(titleLine, this.margin, {
         font: this.fonts.bold,
-        size: 12,
+        size: 13,
         color: this.style.primaryColor
       });
 
-      // Location and dates - smaller, secondary color
+      this.drawText(companyLine, this.margin, {
+        font: this.fonts.bold,
+        size: 11,
+        color: this.style.accentColor
+      });
+
+      // Location and dates with better formatting
       const dateRange = exp.current 
         ? `${this.formatDate(exp.startDate)} - Present`
         : `${this.formatDate(exp.startDate)} - ${this.formatDate(exp.endDate)}`;
       
-      const locationDate = [exp.location, dateRange].filter(Boolean).join(' | ');
+      const locationDate = [exp.location, dateRange].filter(Boolean).join(' • ');
       if (locationDate) {
         this.drawText(locationDate, this.margin, {
+          font: this.fonts.italic,
           size: 10,
           color: this.style.secondaryColor
         });
       }
 
-      // Description with bullet points
+      // Description with enhanced bullet points
       if (exp.description && exp.description.trim()) {
         const cleanDescription = this.cleanBulletPoints(exp.description);
+        this.moveDown(6);
         this.drawText(cleanDescription, this.margin, {
-          size: 10,
-          indent: 15, // Indent bullet points
-          maxWidth: this.pageWidth - 2 * this.margin - 15
+          size: 11,
+          indent: 20,
+          maxWidth: this.pageWidth - 2 * this.margin - 20,
+          color: this.style.textColor
         });
       }
 
-      // Add space between experience items
+      // Add separator line between experiences
       if (i < experience.length - 1) {
         this.moveDown(this.itemSpacing);
+        this.currentPage.drawLine({
+          start: { x: this.margin + 20, y: this.currentY },
+          end: { x: this.pageWidth - this.margin - 20, y: this.currentY },
+          thickness: 0.5,
+          color: rgb(0.8, 0.8, 0.8)
+        });
+        this.moveDown(8);
       }
     }
   }
 
-  private drawEducation(education: any[]) {
-    this.drawSectionHeader('Education');
-
-    for (let i = 0; i < education.length; i++) {
-      const edu = education[i];
-      this.checkPageSpace(60);
-
-      // Degree and school - bold
-      const degreeLine = `${edu.degree || 'Degree'} | ${edu.school || 'Institution'}`;
-      this.drawText(degreeLine, this.margin, {
-        font: this.fonts.bold,
-        size: 11,
-        color: this.style.primaryColor
-      });
-
-      // Location and graduation date
-      const locationDate = [edu.location, this.formatDate(edu.graduationDate)].filter(Boolean).join(' | ');
-      if (locationDate) {
-        this.drawText(locationDate, this.margin, {
-          size: 10,
-          color: this.style.secondaryColor
-        });
-      }
-
-      // GPA if provided
-      if (edu.gpa) {
-        this.drawText(`GPA: ${edu.gpa}`, this.margin, {
-          size: 10
-        });
-      }
-
-      // Add space between education items
-      if (i < education.length - 1) {
-        this.moveDown(this.itemSpacing);
-      }
-    }
-  }
-
-  private drawSkills(skills: any[]) {
-    this.drawSectionHeader('Skills');
+  private drawEnhancedSkills(skills: any[]) {
+    this.drawSectionHeader('Skills & Competencies');
 
     // Group skills by category
-    const skillsByCategory: { [key: string]: string[] } = {};
+    const skillsByCategory: { [key: string]: any[] } = {};
     skills.forEach(skill => {
       const category = skill.category || 'General';
       if (!skillsByCategory[category]) {
         skillsByCategory[category] = [];
       }
-      skillsByCategory[category].push(skill.name);
+      skillsByCategory[category].push(skill);
     });
 
     for (const [category, skillList] of Object.entries(skillsByCategory)) {
-      this.checkPageSpace(30);
+      this.checkPageSpace(40);
 
-      // Category header - bold
-      this.drawText(`${category}:`, this.margin, {
+      // Category header with styling
+      this.drawText(category, this.margin, {
         font: this.fonts.bold,
-        size: 11,
-        color: this.style.primaryColor
+        size: 12,
+        color: this.style.accentColor
       });
 
-      // Skills list - indented
-      const skillsText = skillList.join(' • ');
-      this.drawText(skillsText, this.margin, {
-        size: 10,
-        indent: 20,
-        maxWidth: this.pageWidth - 2 * this.margin - 20
+      // Skills in a more visual format
+      const skillsPerRow = 3;
+      const skillChunks = [];
+      for (let i = 0; i < skillList.length; i += skillsPerRow) {
+        skillChunks.push(skillList.slice(i, i + skillsPerRow));
+      }
+
+      skillChunks.forEach(chunk => {
+        const skillTexts = chunk.map(skill => {
+          const dots = '●'.repeat(skill.level || 3) + '○'.repeat(5 - (skill.level || 3));
+          return `${skill.name} ${dots}`;
+        });
+        
+        this.drawText(skillTexts.join('    '), this.margin, {
+          size: 10,
+          indent: 15,
+          color: this.style.textColor
+        });
       });
 
-      this.moveDown(8);
+      this.moveDown(12);
     }
   }
 
-  private drawProjects(projects: any[]) {
-    this.drawSectionHeader('Projects');
+  private drawEnhancedProjects(projects: any[]) {
+    this.drawSectionHeader('Key Projects');
 
     for (let i = 0; i < projects.length; i++) {
       const project = projects[i];
-      this.checkPageSpace(70);
+      this.checkPageSpace(80);
 
-      // Project name - bold
+      // Project name with enhanced styling
       this.drawText(project.name || 'Project', this.margin, {
         font: this.fonts.bold,
-        size: 11,
+        size: 12,
         color: this.style.primaryColor
       });
 
-      // Technologies
+      // Technologies with visual tags
       if (project.technologies && project.technologies.length > 0) {
-        const techText = `Technologies: ${project.technologies.join(', ')}`;
+        const techText = `Technologies: ${project.technologies.join(' • ')}`;
         this.drawText(techText, this.margin, {
+          font: this.fonts.italic,
           size: 10,
-          color: this.style.secondaryColor
+          color: this.style.accentColor,
+          indent: 10
         });
       }
 
       // Description
       if (project.description) {
         this.drawText(project.description, this.margin, {
-          size: 10,
+          size: 11,
+          indent: 10,
+          color: this.style.textColor
+        });
+      }
+
+      // Link with special formatting
+      if (project.link) {
+        this.drawText(`🔗 ${project.link}`, this.margin, {
+          size: 9,
+          color: this.style.accentColor,
           indent: 10
         });
       }
 
-      // Link
-      if (project.link) {
-        this.drawText(`Link: ${project.link}`, this.margin, {
-          size: 9,
-          color: this.style.accentColor
-        });
-      }
-
-      // Add space between projects
       if (i < projects.length - 1) {
         this.moveDown(this.itemSpacing);
       }
     }
   }
 
-  private drawCertifications(certifications: any[]) {
+  private drawEnhancedEducation(education: any[]) {
+    this.drawSectionHeader('Education');
+
+    for (let i = 0; i < education.length; i++) {
+      const edu = education[i];
+      this.checkPageSpace(60);
+
+      // Degree and school with enhanced styling
+      const degreeLine = edu.degree || 'Degree';
+      const schoolLine = edu.school || 'Institution';
+      
+      this.drawText(degreeLine, this.margin, {
+        font: this.fonts.bold,
+        size: 12,
+        color: this.style.primaryColor
+      });
+
+      this.drawText(schoolLine, this.margin, {
+        font: this.fonts.regular,
+        size: 11,
+        color: this.style.accentColor
+      });
+
+      // Location and graduation date
+      const locationDate = [edu.location, this.formatDate(edu.graduationDate)].filter(Boolean).join(' • ');
+      if (locationDate) {
+        this.drawText(locationDate, this.margin, {
+          font: this.fonts.italic,
+          size: 10,
+          color: this.style.secondaryColor
+        });
+      }
+
+      // GPA with special formatting
+      if (edu.gpa) {
+        this.drawText(`GPA: ${edu.gpa}`, this.margin, {
+          size: 10,
+          color: this.style.textColor,
+          indent: 10
+        });
+      }
+
+      if (i < education.length - 1) {
+        this.moveDown(this.itemSpacing);
+      }
+    }
+  }
+
+  private drawEnhancedCertifications(certifications: any[]) {
     this.drawSectionHeader('Certifications');
 
     for (let i = 0; i < certifications.length; i++) {
       const cert = certifications[i];
-      this.checkPageSpace(40);
+      this.checkPageSpace(50);
 
-      // Certification name and issuer - bold
-      const certLine = `${cert.name || 'Certification'} | ${cert.issuer || 'Issuer'}`;
+      // Certification name and issuer
+      const certLine = `${cert.name || 'Certification'} • ${cert.issuer || 'Issuer'}`;
       this.drawText(certLine, this.margin, {
         font: this.fonts.bold,
         size: 11,
         color: this.style.primaryColor
       });
 
-      // Date
+      // Date with icon
       if (cert.date) {
-        this.drawText(this.formatDate(cert.date), this.margin, {
+        this.drawText(`📅 ${this.formatDate(cert.date)}`, this.margin, {
           size: 10,
-          color: this.style.secondaryColor
+          color: this.style.secondaryColor,
+          indent: 10
         });
       }
 
-      // Add space between certifications
+      // Verification link
+      if (cert.verificationLink) {
+        this.drawText(`🔗 Verify: ${cert.verificationLink}`, this.margin, {
+          size: 9,
+          color: this.style.accentColor,
+          indent: 10
+        });
+      }
+
       if (i < certifications.length - 1) {
         this.moveDown(this.itemSpacing);
       }
     }
   }
 
-  private drawLanguages(languages: any[]) {
+  private drawEnhancedLanguages(languages: any[]) {
     this.drawSectionHeader('Languages');
 
-    const languageList = languages
-      .map(lang => `${lang.name} (${lang.proficiency})`)
-      .join(' • ');
-    
-    this.drawText(languageList, this.margin, {
-      size: 10
+    // Create a more visual language display
+    const languageChunks = [];
+    for (let i = 0; i < languages.length; i += 2) {
+      languageChunks.push(languages.slice(i, i + 2));
+    }
+
+    languageChunks.forEach(chunk => {
+      const languageTexts = chunk.map(lang => {
+        const proficiencyIcon = lang.proficiency === 'Fluent' ? '🌟' : 
+                               lang.proficiency === 'Intermediate' ? '⭐' : '✨';
+        return `${proficiencyIcon} ${lang.name} (${lang.proficiency})`;
+      });
+      
+      this.drawText(languageTexts.join('    '), this.margin, {
+        size: 11,
+        color: this.style.textColor
+      });
     });
   }
 }
