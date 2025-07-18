@@ -633,23 +633,6 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
                       <Edit3 className="h-3 w-3" />
                       Edit
                     </button>
-                    <button
-                      onClick={() => handleDownload(cv)}
-                      className="flex-1 border border-gray-300 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center justify-center gap-1"
-                      disabled={isGeneratingPDF}
-                    >
-                      {isGeneratingPDF ? (
-                        <>
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-3 w-3" />
-                          Download
-                        </>
-                      )}
-                    </button>
                     <div className="relative group">
                       <button className="p-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                         <Filter className="h-3 w-3" />
