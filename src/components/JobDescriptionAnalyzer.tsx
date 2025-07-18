@@ -3,6 +3,7 @@ import { Target, Upload, FileText, TrendingUp, CheckCircle, AlertCircle, Zap, Aw
 import { CVAnalysis } from '../types';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
+import { extractTextFromFile } from '../services/cvParsingService';
 
 interface JobDescriptionAnalyzerProps {
   targetMarket: TargetMarket | null;
@@ -37,13 +38,12 @@ const JobDescriptionAnalyzer: React.FC<JobDescriptionAnalyzerProps> = ({ targetM
   };
 
   const handleFile = async (file: File) => {
-    if (file.type === 'application/pdf') {
-      setCvText("Sample CV text extracted from PDF...\n\nJohn Doe\nSoftware Engineer\n\nExperience:\n- Senior Developer at Tech Corp (2020-2023)\n- Junior Developer at StartupXYZ (2018-2020)\n\nSkills: JavaScript, React, Node.js, Python, AWS, Docker");
-    } else if (file.type === 'text/plain') {
-      const text = await file.text();
-      setCvText(text);
-    } else {
-      alert('Please upload a PDF or text file');
+    try {
+      const extractedText = await extractTextFromFile(file);
+      setCvText(extractedText);
+    } catch (error) {
+      console.error('File parsing error:', error);
+      alert('Failed to parse the file. Please ensure it\'s a valid PDF, DOCX, or TXT file.');
     }
   };
 
