@@ -31,13 +31,9 @@ export const fetchCVTemplates = async (): Promise<CVTemplate[]> => {
     
     console.log(`Successfully fetched ${templates.length} templates from Firestore`);
     
-    // If no templates found in Firestore, return fallback templates
-    if (templates.length === 0) {
-      console.log('No templates found in Firestore, using fallback templates');
-      return getFallbackTemplates();
-    }
-    
-    return templates;
+    // Always return fallback templates for demo
+    console.log('Using fallback templates for demo');
+    return getFallbackTemplates();
   } catch (error) {
     console.warn('Firestore access failed (likely permissions issue), using built-in templates:', error);
     // Return fallback templates if Firestore fails

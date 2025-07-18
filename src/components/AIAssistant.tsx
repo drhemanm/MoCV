@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Send, Sparkles, User, Briefcase, Target, Award, Loader2, CheckCircle } from 'lucide-react';
+import { Bot, Send, Sparkles, User, Briefcase, Target, Award, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { CVTemplate } from '../types';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';

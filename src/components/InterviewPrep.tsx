@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { MessageCircle, Upload, FileText, Send, Bot, User, Trophy, Target, CheckCircle, AlertCircle, Lightbulb } from 'lucide-react';
+import { MessageCircle, Upload, FileText, Send, Bot, User, Trophy, Target, CheckCircle, AlertCircle, Lightbulb, ArrowLeft } from 'lucide-react';
 import { CVAnalysis } from '../types';
 import BackButton from './BackButton';
+import { extractTextFromFile } from '../services/cvParsingService';
 
 interface InterviewPrepProps {
   onBack: () => void;
@@ -55,13 +56,12 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
   };
 
   const handleFile = async (file: File) => {
-    if (file.type === 'application/pdf') {
-      setCvText("John Doe\nSenior Software Engineer\n\nExperience:\n- Led development team of 8 engineers at TechCorp (2020-2023)\n- Implemented microservices architecture reducing system downtime by 40%\n- Mentored junior developers and conducted technical interviews\n\nSkills: JavaScript, React, Node.js, Python, AWS, Docker, Kubernetes, Team Leadership");
-    } else if (file.type === 'text/plain') {
-      const text = await file.text();
-      setCvText(text);
-    } else {
-      alert('Please upload a PDF or text file');
+    try {
+      const extractedText = await extractTextFromFile(file);
+      setCvText(extractedText);
+    } catch (error) {
+      console.error('File parsing error:', error);
+      alert('Failed to parse the file. Please ensure it\'s a valid PDF, DOCX, or TXT file.');
     }
   };
 
