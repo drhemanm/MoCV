@@ -182,16 +182,55 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
       if (!silent) {
         // Award XP for saving
         const gameData = JSON.parse(localStorage.getItem('mocv_game_data') || '{}');
-        const updatedGameData = {
-          ...gameData,
-          totalXP: (gameData.totalXP || 0) + 25,
-          currentLevel: Math.floor(((gameData.totalXP || 0) + 25) / 100),
-          uploadsCount: (gameData.uploadsCount || 0) + (isEditing ? 0 : 1)
-        };
-        localStorage.setItem('mocv_game_data', JSON.stringify(updatedGameData));
+      // Generate a unique ID for the CV
+      const cvId = Date.now().toString();
+      
+      // Create the CV object to save
+      const cvToSave = {
+        id: cvId,
+        title: cvData.personalInfo.fullName ? `${cvData.personalInfo.fullName}'s CV` : 'My CV',
+        templateName: selectedTemplate || 'Professional Template',
+        templateId: selectedTemplate || 'classic-ats',
+        dateCreated: new Date(),
+        dateModified: new Date(),
+        atsScore: Math.floor(Math.random() * 20) + 80, // Mock ATS score
+        status: 'completed' as const,
+        cvData: cvData,
+        targetMarket: targetMarket?.name || 'Global'
+      };
+      
+      // Get existing CVs from localStorage
+      const existingCVs = localStorage.getItem('mocv_saved_cvs');
+      let savedCVs = [];
+      
+      if (existingCVs) {
+        try {
+          savedCVs = JSON.parse(existingCVs);
+        } catch (error) {
+          console.error('Error parsing existing CVs:', error);
+          savedCVs = [];
+        }
       }
+      
+      // Add the new CV to the beginning of the array
+      savedCVs.unshift(cvToSave);
+      
+      // Save back to localStorage
+      localStorage.setItem('mocv_saved_cvs', JSON.stringify(savedCVs));
+      
+      // Show success message
+      setShowSaveSuccess(true);
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setShowSaveSuccess(false);
+      }, 3000);
+      
+      console.log('CV saved successfully:', cvToSave);
+        };
     } catch (error) {
       console.error('Error saving CV:', error);
+      alert('Failed to save CV. Please try again.');
     } finally {
       if (!silent) setIsSaving(false);
     }
