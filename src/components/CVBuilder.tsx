@@ -1417,23 +1417,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               
               {/* ATS Score */}
               <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
-                <h4 className="font-semibold text-gray-900 mb-2">ATS Score</h4>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${calculateATSScore(cvData)}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {calculateATSScore(cvData)}%
-                  </span>
-                </div>
-                <p className="text-xs text-gray-600 mt-1">
-                  {calculateATSScore(cvData) >= 80 ? 'Excellent!' : 
-                   calculateATSScore(cvData) >= 60 ? 'Good progress' : 
-                   'Keep adding content'}
-                </p>
               </div>
             </div>
           </div>
