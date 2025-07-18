@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Edit3, Download, Plus, Search, Filter, Calendar, TrendingUp, Eye, Trash2, Copy, Share2, Star, Clock, CheckCircle } from 'lucide-react';
+import { FileText, Edit3, Download, Plus, Search, Filter, Calendar, TrendingUp, Eye, Trash2, Copy, Share2, Star, Clock, CheckCircle, X } from 'lucide-react';
 import { SavedCV } from '../types';
 import BackButton from './BackButton';
+import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
 
 interface MyCVsDashboardProps {
   onBack: () => void;
@@ -15,6 +16,8 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'completed' | 'published'>('all');
   const [sortBy, setSortBy] = useState<'dateModified' | 'dateCreated' | 'title' | 'atsScore'>('dateModified');
   const [isLoading, setIsLoading] = useState(true);
+  const [previewCV, setPreviewCV] = useState<SavedCV | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   useEffect(() => {
     const loadCVs = async () => {
@@ -126,18 +129,30 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
     return 'text-red-600 bg-red-100';
   };
 
-  const handleDownload = (cv: SavedCV) => {
-    // Simulate PDF download
-    console.log('Downloading CV:', cv.title);
-    
-    // Create a simple PDF download simulation
-    const element = document.createElement('a');
-    const file = new Blob([`CV: ${cv.title}\nCreated: ${cv.dateCreated}\nTemplate: ${cv.templateName}`], {type: 'text/plain'});
-    element.href = URL.createObjectURL(file);
-    element.download = `${cv.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  const handleDownload = async (cv: SavedCV) => {
+    if (!cv.cvData) {
+      alert('CV data not available for download');
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    try {
+      // Generate PDF using the CV data
+      const pdfBytes = await generateCVPDF(cv.cvData, cv.templateId || 'classic-ats');
+      
+      // Download the PDF
+      const filename = `${cv.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      downloadPDF(pdfBytes, filename);
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const handlePreview = (cv: SavedCV) => {
+    setPreviewCV(cv);
   };
 
   const handleDuplicate = (cv: SavedCV) => {
@@ -302,6 +317,166 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
         </div>
       </div>
 
+      {/* CV Preview Modal */}
+      {previewCV && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <Eye className="h-6 w-6 text-blue-600" />
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">{previewCV.title}</h2>
+                  <p className="text-sm text-gray-500">Template: {previewCV.templateName}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewCV(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {previewCV.cvData ? (
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <div className="bg-white rounded border p-8 shadow-sm max-w-none">
+                    {/* CV Preview Content */}
+                    <div className="space-y-6">
+                      {/* Header */}
+                      <div className="text-center border-b pb-4">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                          {previewCV.cvData.personalInfo?.fullName || 'Your Name'}
+                        </h1>
+                        <p className="text-lg text-gray-600 mb-2">
+                          {previewCV.cvData.personalInfo?.title || 'Your Title'}
+                        </p>
+                        <div className="text-sm text-gray-500 space-x-2">
+                          {previewCV.cvData.personalInfo?.email && (
+                            <span>{previewCV.cvData.personalInfo.email}</span>
+                          )}
+                          {previewCV.cvData.personalInfo?.phone && (
+                            <span>• {previewCV.cvData.personalInfo.phone}</span>
+                          )}
+                          {previewCV.cvData.personalInfo?.location && (
+                            <span>• {previewCV.cvData.personalInfo.location}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Summary */}
+                      {previewCV.cvData.summary && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">Professional Summary</h3>
+                          <p className="text-gray-700 leading-relaxed">{previewCV.cvData.summary}</p>
+                        </div>
+                      )}
+
+                      {/* Experience */}
+                      {previewCV.cvData.experience && previewCV.cvData.experience.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">Professional Experience</h3>
+                          <div className="space-y-4">
+                            {previewCV.cvData.experience.map((exp: any, index: number) => (
+                              <div key={index} className="border-l-2 border-blue-200 pl-4">
+                                <h4 className="font-semibold text-gray-900">{exp.title}</h4>
+                                <p className="text-blue-600 font-medium">{exp.company}</p>
+                                <p className="text-sm text-gray-500 mb-2">
+                                  {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
+                                  {exp.location && ` • ${exp.location}`}
+                                </p>
+                                {exp.description && (
+                                  <div className="text-gray-700 text-sm whitespace-pre-line">
+                                    {exp.description}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Skills */}
+                      {previewCV.cvData.skills && previewCV.cvData.skills.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">Skills</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {previewCV.cvData.skills.map((skill: any, index: number) => (
+                              <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                                {skill.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Education */}
+                      {previewCV.cvData.education && previewCV.cvData.education.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">Education</h3>
+                          <div className="space-y-3">
+                            {previewCV.cvData.education.map((edu: any, index: number) => (
+                              <div key={index}>
+                                <h4 className="font-semibold text-gray-900">{edu.degree}</h4>
+                                <p className="text-blue-600">{edu.school}</p>
+                                <p className="text-sm text-gray-500">
+                                  {edu.graduationDate} {edu.location && `• ${edu.location}`}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">CV data not available for preview</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Last modified: {previewCV.dateModified.toLocaleDateString()}</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPreviewCV(null)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => handleDownload(previewCV)}
+                  disabled={isGeneratingPDF}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isGeneratingPDF ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Generating PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Download PDF
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* CV Grid or Empty State */}
       <div className="container mx-auto px-4 py-8">
         {filteredAndSortedCVs.length === 0 && cvs.length === 0 ? (
@@ -409,11 +584,17 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
                       <button
                         onClick={() => handleDownload(cv)}
                         className="bg-white text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75"
-                        title="Download PDF"
+                        title={isGeneratingPDF ? "Generating PDF..." : "Download PDF"}
+                        disabled={isGeneratingPDF}
                       >
-                        <Download className="h-4 w-4" />
+                        {isGeneratingPDF ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
                       </button>
                       <button
+                        onClick={() => handlePreview(cv)}
                         className="bg-white text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-150"
                         title="Preview"
                       >
@@ -455,9 +636,19 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
                     <button
                       onClick={() => handleDownload(cv)}
                       className="flex-1 border border-gray-300 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center justify-center gap-1"
+                      disabled={isGeneratingPDF}
                     >
-                      <Download className="h-3 w-3" />
-                      Download
+                      {isGeneratingPDF ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600"></div>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-3 w-3" />
+                          Download
+                        </>
+                      )}
                     </button>
                     <div className="relative group">
                       <button className="p-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -478,6 +669,13 @@ const MyCVsDashboard: React.FC<MyCVsDashboardProps> = ({ onBack, onEditCV, onCre
                         >
                           <Share2 className="h-3 w-3" />
                           Share
+                        </button>
+                        <button
+                          onClick={() => handlePreview(cv)}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        >
+                          <Eye className="h-3 w-3" />
+                          Preview
                         </button>
                         <hr className="my-1" />
                         <button
