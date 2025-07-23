@@ -443,10 +443,10 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
                 <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
                   <h3 className="font-semibold text-yellow-900 mb-2">💡 Upload Tips:</h3>
                   <ul className="text-yellow-800 text-sm space-y-1">
-                    <li>• For best results with PDFs, try copying and pasting your CV text directly</li>
+                    <li>• If PDF upload shows garbled text, copy and paste your CV text manually instead</li>
                     <li>• DOCX files usually work better than PDFs for text extraction</li>
                     <li>• Make sure your CV has clear section headers</li>
-                    <li>• You can always paste your CV text manually if upload doesn't work</li>
+                    <li>• Manual text input often gives the best results for analysis</li>
                   </ul>
                 </div>
               </div>

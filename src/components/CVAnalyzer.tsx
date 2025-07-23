@@ -167,7 +167,7 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ targetMarket, onAnalysisComplet
               {/* PDF Notice */}
               <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
                 <p className="text-yellow-800 text-sm">
-                  <strong>Note:</strong> For best results with PDF files, we recommend copying and pasting your CV text directly into the text area below, or uploading a DOCX file.
+                  <strong>PDF Upload Tip:</strong> If you see garbled text after uploading a PDF, please copy and paste your CV text directly into the text area below instead. DOCX files typically work better for automatic text extraction.
                 </p>
               </div>
 

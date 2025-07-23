@@ -44,53 +44,46 @@ export interface ParsedCVData {
 // Extract text from PDF using a simple approach (in production, use proper PDF parsing)
 const extractTextFromPDF = async (file: File): Promise<string> => {
   try {
-    // Try to extract text from PDF
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
     
-    // Convert to string and try to extract readable text
-    let text = '';
-    
-    // Simple text extraction - look for readable text patterns
+    // Convert to string for text extraction
     const decoder = new TextDecoder('utf-8', { fatal: false });
     const rawText = decoder.decode(uint8Array);
     
-    // Extract text between common PDF text markers
-    const textMatches = rawText.match(/\((.*?)\)/g) || [];
-    const streamMatches = rawText.match(/stream\s*(.*?)\s*endstream/gs) || [];
+    // Check if this looks like binary PDF data (contains PDF markers and binary content)
+    const hasPDFMarkers = rawText.includes('PDF') || rawText.includes('endobj') || rawText.includes('stream');
+    const hasBinaryContent = /[^\x20-\x7E\n\r\t]/.test(rawText.substring(0, 1000));
     
-    // Try to extract readable text
+    if (hasPDFMarkers && hasBinaryContent) {
+      // This is a binary PDF file that needs proper parsing
+      console.log('Binary PDF detected - text extraction not possible with current method');
+      return '';
+    }
+    
+    // Try to extract readable text for simple PDFs
+    const textMatches = rawText.match(/\(([^)]+)\)/g) || [];
     let extractedText = '';
     
-    // Method 1: Extract text from parentheses (common in PDFs)
     textMatches.forEach(match => {
       const cleanText = match.replace(/[()]/g, '').trim();
-      if (cleanText.length > 2 && /[a-zA-Z]/.test(cleanText)) {
+      // Only include text that looks like readable content
+      if (cleanText.length > 2 && /^[a-zA-Z0-9\s@.,\-_]+$/.test(cleanText)) {
         extractedText += cleanText + ' ';
       }
     });
     
-    // Method 2: Look for readable text patterns in the raw content
-    const readableTextRegex = /[A-Za-z][A-Za-z\s]{10,}/g;
-    const readableMatches = rawText.match(readableTextRegex) || [];
-    readableMatches.forEach(match => {
-      if (match.trim().length > 10) {
-        extractedText += match.trim() + '\n';
-      }
-    });
-    
-    // Clean up the extracted text
+    // Clean and validate extracted text
     extractedText = extractedText
       .replace(/\s+/g, ' ')
-      .replace(/[^\w\s@.,\-()]/g, ' ')
       .trim();
     
-    // If we got some meaningful text, return it
-    if (extractedText.length > 50 && extractedText.includes('@')) {
+    // Return text only if it looks meaningful (has email or reasonable length)
+    if (extractedText.length > 20 && (/\S+@\S+\.\S+/.test(extractedText) || extractedText.length > 100)) {
       return extractedText;
     }
     
-    // If extraction failed, return empty string to prompt manual input
+    // Return empty string to trigger manual input prompt
     return '';
   } catch (error) {
     console.error('PDF parsing error:', error);
