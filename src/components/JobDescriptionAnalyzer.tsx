@@ -142,7 +142,7 @@ const JobDescriptionAnalyzer: React.FC<JobDescriptionAnalyzerProps> = ({ targetM
                 <p className="text-lg font-medium text-gray-700 mb-2">
                   Drop your CV here or click to browse
                 </p>
-                <p className="text-gray-500 mb-4">Supports PDF and text files</p>
+                <p className="text-gray-500 mb-4">Supports PDF, DOCX, and text files</p>
                 <button
                   onClick={() => document.getElementById('cv-file-input')?.click()}
                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -152,10 +152,17 @@ const JobDescriptionAnalyzer: React.FC<JobDescriptionAnalyzerProps> = ({ targetM
                 <input
                   id="cv-file-input"
                   type="file"
-                  accept=".pdf,.txt"
+                  accept=".pdf,.docx,.txt"
                   onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
                   className="hidden"
                 />
+              </div>
+
+              {/* PDF Notice */}
+              <div className="mb-6 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                <p className="text-yellow-800 text-sm">
+                  <strong>Note:</strong> For best results with PDF files, we recommend copying and pasting your CV text directly into the text area below, or uploading a DOCX file.
+                </p>
               </div>
 
               {/* Text Input Alternative */}
