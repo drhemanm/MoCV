@@ -44,39 +44,57 @@ export interface ParsedCVData {
 // Extract text from PDF using a simple approach (in production, use proper PDF parsing)
 const extractTextFromPDF = async (file: File): Promise<string> => {
   try {
-    // For now, we'll provide a fallback message for PDF files
-    // In a production environment, you would use a proper PDF parsing library
-    const fallbackText = `
-John Doe
-Software Engineer
-john.doe@email.com | +1-234-567-8900 | LinkedIn: linkedin.com/in/johndoe
-
-PROFESSIONAL SUMMARY
-Experienced software engineer with 5+ years of expertise in web development. 
-Proven track record of delivering scalable applications and leading development teams.
-
-EXPERIENCE
-Senior Software Engineer | Tech Company | 2020-2023
-• Led development of web applications serving 100K+ users
-• Implemented microservices architecture improving system performance by 40%
-• Mentored junior developers and conducted code reviews
-
-Software Engineer | Previous Company | 2018-2020
-• Developed responsive web applications using React and Node.js
-• Collaborated with cross-functional teams to deliver projects on time
-• Optimized database queries improving application speed by 30%
-
-SKILLS
-JavaScript, TypeScript, React, Node.js, Python, AWS, Docker, Git
-
-EDUCATION
-Bachelor of Science in Computer Science | University Name | 2018
-`;
+    // Try to extract text from PDF
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
     
-    return fallbackText.trim();
+    // Convert to string and try to extract readable text
+    let text = '';
+    
+    // Simple text extraction - look for readable text patterns
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    const rawText = decoder.decode(uint8Array);
+    
+    // Extract text between common PDF text markers
+    const textMatches = rawText.match(/\((.*?)\)/g) || [];
+    const streamMatches = rawText.match(/stream\s*(.*?)\s*endstream/gs) || [];
+    
+    // Try to extract readable text
+    let extractedText = '';
+    
+    // Method 1: Extract text from parentheses (common in PDFs)
+    textMatches.forEach(match => {
+      const cleanText = match.replace(/[()]/g, '').trim();
+      if (cleanText.length > 2 && /[a-zA-Z]/.test(cleanText)) {
+        extractedText += cleanText + ' ';
+      }
+    });
+    
+    // Method 2: Look for readable text patterns in the raw content
+    const readableTextRegex = /[A-Za-z][A-Za-z\s]{10,}/g;
+    const readableMatches = rawText.match(readableTextRegex) || [];
+    readableMatches.forEach(match => {
+      if (match.trim().length > 10) {
+        extractedText += match.trim() + '\n';
+      }
+    });
+    
+    // Clean up the extracted text
+    extractedText = extractedText
+      .replace(/\s+/g, ' ')
+      .replace(/[^\w\s@.,\-()]/g, ' ')
+      .trim();
+    
+    // If we got some meaningful text, return it
+    if (extractedText.length > 50 && extractedText.includes('@')) {
+      return extractedText;
+    }
+    
+    // If extraction failed, return empty string to prompt manual input
+    throw new Error('PDF text extraction failed - please paste text manually');
   } catch (error) {
     console.error('PDF parsing error:', error);
-    throw new Error('Unable to parse PDF file. Please try uploading a text file or manually paste your CV content.');
+    throw new Error('Unable to parse PDF file. Please paste your CV text manually for best results.');
   }
 };
 
