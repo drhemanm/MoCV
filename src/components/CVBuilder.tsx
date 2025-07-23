@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, Plus, Trash2, User, Briefcase, GraduationCap, Award, Globe, FileText, Zap, Lightbulb, Upload } from 'lucide-react';
+import { Save, Download, Eye, Plus, Trash2, User, Briefcase, GraduationCap, Award, Globe, FileText, Zap, Lightbulb, Upload, Palette } from 'lucide-react';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
 import CVImportSection from './CVImportSection';
@@ -7,6 +7,7 @@ import AIEnhanceButton from './AIEnhanceButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
 import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
 import { parseCV, ParsedCVData } from '../services/cvParsingService';
+import CVTemplatePreview from './CVTemplatePreview';
 
 interface CVBuilderProps {
   targetMarket: TargetMarket | null;
@@ -97,6 +98,22 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('classic-professional');
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+
+  // Available templates
+  const availableTemplates = [
+    { id: 'classic-professional', name: 'Classic Professional', description: 'Traditional and ATS-friendly' },
+    { id: 'modern-minimal', name: 'Modern Minimal', description: 'Clean and contemporary design' },
+    { id: 'creative-designer', name: 'Creative Designer', description: 'Colorful and artistic layout' },
+    { id: 'tech-developer', name: 'Tech Developer', description: 'Terminal-inspired for developers' },
+    { id: 'executive-leader', name: 'Executive Leader', description: 'Professional for senior roles' },
+    { id: 'academic-researcher', name: 'Academic Researcher', description: 'Formal academic format' },
+    { id: 'startup-entrepreneur', name: 'Startup Entrepreneur', description: 'Dynamic and innovative' },
+    { id: 'consulting-analyst', name: 'Consulting Analyst', description: 'Business-focused layout' },
+    { id: 'healthcare-professional', name: 'Healthcare Professional', description: 'Medical and clinical focus' },
+    { id: 'marketing-creative', name: 'Marketing Creative', description: 'Vibrant and engaging design' }
+  ];
 
   // Load existing CV data if editing
   useEffect(() => {
@@ -1300,12 +1317,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         return renderCertifications();
       case 'languages':
         return renderLanguages();
-      case 'projects':
-        return renderProjects();
-      case 'certifications':
-        return renderCertifications();
-      case 'languages':
-        return renderLanguages();
       default:
         return renderPersonalInfo();
     }
@@ -1333,6 +1344,14 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
             </div>
             
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowTemplateSelector(!showTemplateSelector)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              >
+                <Palette className="h-4 w-4" />
+                Templates
+              </button>
+              
               <button
                 onClick={() => setShowImportModal(true)}
                 className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
@@ -1386,13 +1405,39 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               </button>
             </div>
           </div>
+
+          {/* Template Selector */}
+          {showTemplateSelector && (
+            <div className="mt-4 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+              <h3 className="font-semibold text-gray-900 mb-3">Choose Template Style</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {availableTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => {
+                      setSelectedTemplateId(template.id);
+                      setShowTemplateSelector(false);
+                    }}
+                    className={`p-3 rounded-lg border-2 transition-all text-left ${
+                      selectedTemplateId === template.id
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="font-medium text-sm text-gray-900">{template.name}</div>
+                    <div className="text-xs text-gray-600 mt-1">{template.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+        <div className="grid lg:grid-cols-5 gap-8">
           {/* Sidebar Navigation */}
-          <div className="w-64 flex-shrink-0">
+          <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
               <h3 className="font-semibold text-gray-900 mb-4">CV Sections</h3>
               <nav className="space-y-2">
@@ -1422,9 +1467,27 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-              {renderCurrentSection()}
+          <div className="lg:col-span-3 lg:sticky lg:top-24">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Live Preview - {availableTemplates.find(t => t.id === selectedTemplateId)?.name}
+                  </h3>
+                  <div className="text-sm text-gray-500">
+                    Updates automatically as you type
+                  </div>
+                </div>
+              </div>
+              
+              <div className="h-96 lg:h-[600px] overflow-y-auto">
+                <CVTemplatePreview
+                  templateId={selectedTemplateId}
+                  cvData={cvData}
+                  className="h-full"
+                />
+              </div>
             </div>
           </div>
         </div>
