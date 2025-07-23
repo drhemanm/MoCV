@@ -1,6 +1,7 @@
 import React from 'react';
-import { Trophy, Star, Zap, Target, Award, Crown, Sparkles } from 'lucide-react';
+import { Trophy, Star, Zap, Target, Award, Crown, Sparkles, TrendingUp } from 'lucide-react';
 import { GameData, Badge } from '../types';
+import gamificationService from '../services/gamificationService';
 
 interface GameProgressProps {
   gameData: GameData;
@@ -8,33 +9,10 @@ interface GameProgressProps {
 }
 
 const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) => {
-  const getBadgeForLevel = (level: number): Badge => {
-    if (level >= 10) return { level: 'Master', icon: '👑', color: 'text-purple-600 bg-purple-100', message: 'CV Master! You\'ve mastered the art of CV creation!' };
-    if (level >= 7) return { level: 'Expert', icon: '🏆', color: 'text-yellow-600 bg-yellow-100', message: 'CV Expert! Your skills are impressive!' };
-    if (level >= 5) return { level: 'Pro', icon: '⭐', color: 'text-blue-600 bg-blue-100', message: 'CV Pro! You\'re getting really good at this!' };
-    if (level >= 3) return { level: 'Advanced', icon: '🚀', color: 'text-green-600 bg-green-100', message: 'Advanced user! Keep up the great work!' };
-    if (level >= 1) return { level: 'Beginner', icon: '🌱', color: 'text-teal-600 bg-teal-100', message: 'Welcome to MoCV! You\'re on your way!' };
-    return { level: 'Starter', icon: '✨', color: 'text-gray-600 bg-gray-100', message: 'Just getting started!' };
-  };
-
-  const getXPForNextLevel = (currentLevel: number): number => {
-    return Math.max(100, (currentLevel + 1) * 100);
-  };
-
-  const getXPProgress = (): number => {
-    if (gameData.currentLevel === 0 && gameData.totalXP === 0) {
-      return 0;
-    }
-    const currentLevelXP = gameData.currentLevel * 100;
-    const nextLevelXP = getXPForNextLevel(gameData.currentLevel);
-    const progressXP = gameData.totalXP - currentLevelXP;
-    const progress = Math.min((progressXP / (nextLevelXP - currentLevelXP)) * 100, 100);
-    return Math.max(0, progress);
-  };
-
-  const currentBadge = getBadgeForLevel(gameData.currentLevel);
-  const nextLevelXP = getXPForNextLevel(gameData.currentLevel);
-  const xpProgress = getXPProgress();
+  const currentBadge = gamificationService.getLevelBadge();
+  const nextLevelXP = gamificationService.getXPForNextLevel();
+  const xpProgress = gamificationService.getLevelProgress();
+  const xpNeeded = nextLevelXP - gameData.totalXP;
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
@@ -61,6 +39,19 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
         </div>
       </div>
 
+      {/* Recent XP Gain */}
+      {gameData.lastXPGain && (
+        <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 mb-1">
+            <Star className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-semibold text-blue-900">Recent XP</span>
+          </div>
+          <div className="text-xs text-blue-700">
+            +{gameData.lastXPGain.amount} XP - {gameData.lastXPGain.reason}
+          </div>
+        </div>
+      )}
+
       {/* XP Progress Bar */}
       <div className="mb-6">
         <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -74,7 +65,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
           ></div>
         </div>
         <div className="text-xs text-gray-500 mt-1">
-          {Math.max(0, nextLevelXP - gameData.totalXP)} XP to next level
+          {Math.max(0, xpNeeded)} XP to next level
         </div>
       </div>
 
@@ -88,7 +79,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
           {gameData.achievements.length > 0 ? (
             gameData.achievements.slice(-3).map((achievement, index) => (
               <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                <Star className="h-4 w-4 text-yellow-500" />
+                <Trophy className="h-4 w-4 text-yellow-500" />
                 <span className="text-sm text-gray-700">{achievement}</span>
               </div>
             ))
@@ -104,7 +95,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
         <div className="text-center">
-          <div className="text-lg font-bold text-blue-600">{gameData.uploadsCount}</div>
+          <div className="text-lg font-bold text-blue-600">{gameData.totalCVsCreated || gameData.uploadsCount}</div>
           <div className="text-xs text-gray-500">CVs Created</div>
         </div>
         <div className="text-center">
@@ -112,8 +103,20 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
           <div className="text-xs text-gray-500">Best ATS Score</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-bold text-purple-600">{gameData.consecutiveDays || 0}</div>
+          <div className="text-lg font-bold text-purple-600">{gameData.streakCount || gameData.consecutiveDays || 0}</div>
           <div className="text-xs text-gray-500">Day Streak</div>
+        </div>
+      </div>
+
+      {/* Additional Stats */}
+      <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
+        <div className="text-center">
+          <div className="text-sm font-bold text-green-600">{gameData.totalAnalyses || 0}</div>
+          <div className="text-xs text-gray-500">Analyses</div>
+        </div>
+        <div className="text-center">
+          <div className="text-sm font-bold text-orange-600">{gameData.totalInterviews || 0}</div>
+          <div className="text-xs text-gray-500">Interviews</div>
         </div>
       </div>
     </div>

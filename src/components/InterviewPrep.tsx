@@ -3,6 +3,7 @@ import { MessageCircle, Upload, FileText, Send, Bot, User, Trophy, Target, Check
 import { CVAnalysis } from '../types';
 import BackButton from './BackButton';
 import { extractTextFromFile } from '../services/cvParsingService';
+import gamificationService from '../services/gamificationService';
 
 interface InterviewPrepProps {
   onBack: () => void;
@@ -34,6 +35,14 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [readinessScore, setReadinessScore] = useState(0);
   const [dragActive, setDragActive] = useState(false);
+
+  // Award XP when interview is completed
+  useEffect(() => {
+    if (currentStep === 'results' && readinessScore > 0) {
+      const result = gamificationService.trackInterviewPractice();
+      // You could show XP notification here if needed
+    }
+  }, [currentStep, readinessScore]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();

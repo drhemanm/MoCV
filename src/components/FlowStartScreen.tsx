@@ -2,6 +2,7 @@ import React from 'react';
 import { Eye, Plus, Target, Sparkles, TrendingUp, FileText, Zap, Award, Users, Globe, MessageCircle, FolderOpen } from 'lucide-react';
 import GameProgress from './GameProgress';
 import { GameData } from '../types';
+import gamificationService from '../services/gamificationService';
 
 interface FlowStartScreenProps {
   gameData: GameData;
@@ -23,7 +24,8 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
   // Function to clear all data and reset for demo purposes
   const handleResetData = () => {
     if (window.confirm('Are you sure you want to reset all data? This will clear all CVs, progress, and start fresh.')) {
-      localStorage.clear();
+      gamificationService.resetGameData();
+      localStorage.removeItem('mocv_saved_cvs');
       window.location.reload();
     }
   };

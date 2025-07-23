@@ -29,6 +29,15 @@ export interface GameData {
   consecutiveDays: number;
   lastUploadDate: string;
   highestScore: number;
+  streakCount: number;
+  totalCVsCreated: number;
+  totalAnalyses: number;
+  totalInterviews: number;
+  lastXPGain?: {
+    amount: number;
+    reason: string;
+    timestamp: Date;
+  };
 }
 
 export interface Badge {

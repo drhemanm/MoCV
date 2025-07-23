@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, Download, Eye, ArrowRight, Zap, FileText, Users, Trophy, Star, ChevronRight, Bot, User, Wand2 } from 'lucide-react';
 import { CVTemplate, CVAnalysis } from './types';
 import { fetchCVTemplates } from './services/templateService';
+import gamificationService from './services/gamificationService';
+import XPNotification from './components/XPNotification';
 import TemplatePreview from './components/TemplatePreview';
 import TemplateGallery from './components/TemplateGallery';
 import AIAssistant from './components/AIAssistant';
@@ -81,15 +83,14 @@ const App: React.FC = () => {
   const [analyzedCVText, setAnalyzedCVText] = useState<string>('');
   const [jobDescription, setJobDescription] = useState<string>('');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [gameData, setGameData] = useState<GameData>({
-    totalXP: 0,
-    currentLevel: 0,
-    uploadsCount: 0,
-    achievements: [],
-    consecutiveDays: 0,
-    lastUploadDate: new Date().toISOString(),
-    highestScore: 0
-  });
+  const [gameData, setGameData] = useState<GameData>(gamificationService.getGameData());
+  const [xpNotification, setXpNotification] = useState<{
+    xpGain: number;
+    reason: string;
+    levelUp?: boolean;
+    newLevel?: number;
+    achievements?: string[];
+  } | null>(null);
   const [cvData, setCvData] = useState<CVData>({
     personalInfo: {
       fullName: '',
@@ -109,6 +110,12 @@ const App: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
+  // Subscribe to gamification service
+  useEffect(() => {
+    const unsubscribe = gamificationService.subscribe(setGameData);
+    return unsubscribe;
+  }, []);
+
   useEffect(() => {
     const loadTemplates = async () => {
       setIsLoading(true);
@@ -126,38 +133,19 @@ const App: React.FC = () => {
       loadTemplates();
     }
   }, [currentStep]);
-
-  // Load game data from localStorage on component mount
-  useEffect(() => {
-    const savedGameData = localStorage.getItem('mocv_game_data');
-    if (savedGameData) {
-      try {
-        const parsed = JSON.parse(savedGameData);
-        setGameData(parsed);
-      } catch (error) {
-        console.error('Error loading game data:', error);
-        // Reset to default if corrupted
-        const defaultGameData = {
-          totalXP: 0,
-          currentLevel: 0,
-          uploadsCount: 0,
-          achievements: [],
-          consecutiveDays: 0,
-          lastUploadDate: new Date().toISOString(),
-          highestScore: 0
-        };
-        setGameData(defaultGameData);
-        localStorage.setItem('mocv_game_data', JSON.stringify(defaultGameData));
-      }
-    }
-  }, []);
-
-  // Save game data to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('mocv_game_data', JSON.stringify(gameData));
-  }, [gameData]);
-
   const handleTemplateSelect = (template: CVTemplate) => {
+    // Award XP for template selection
+    const result = gamificationService.trackTemplateSelection();
+    if (result.levelUp || result.achievements) {
+      setXpNotification({
+        xpGain: 15,
+        reason: 'Template selected',
+        levelUp: result.levelUp,
+        newLevel: result.newLevel,
+        achievements: result.achievements
+      });
+    }
+    
     setSelectedTemplate(template);
     setCurrentStep('fill-method');
   };
@@ -172,6 +160,18 @@ const App: React.FC = () => {
   };
 
   const handleAIComplete = (generatedData: Partial<CVData>) => {
+    // Award XP for completing AI assistant
+    const result = gamificationService.trackProfileCompletion();
+    if (result.levelUp || result.achievements) {
+      setXpNotification({
+        xpGain: 30,
+        reason: 'Profile completed with AI',
+        levelUp: result.levelUp,
+        newLevel: result.newLevel,
+        achievements: result.achievements
+      });
+    }
+    
     setCvData(prev => ({
       ...prev,
       ...generatedData
@@ -180,20 +180,27 @@ const App: React.FC = () => {
   };
 
   const handleAnalysisComplete = (analysis: CVAnalysis, cvText: string, jobDesc?: string) => {
+    // Award XP for analysis
+    const result = jobDesc 
+      ? gamificationService.trackJobMatchAnalysis()
+      : gamificationService.trackCVAnalysis(analysis.score);
+    
+    if (result.levelUp || result.achievements) {
+      setXpNotification({
+        xpGain: jobDesc ? 60 : 50,
+        reason: jobDesc ? 'Job match analysis completed' : 'CV analyzed',
+        levelUp: result.levelUp,
+        newLevel: result.newLevel,
+        achievements: result.achievements
+      });
+    }
+    
     setCvAnalysis(analysis);
     setAnalyzedCVText(cvText);
     if (jobDesc) {
       setJobDescription(jobDesc);
     }
     setCurrentStep('improver');
-    
-    // Award XP for analysis
-    setGameData(prev => ({
-      ...prev,
-      totalXP: prev.totalXP + (jobDesc ? 75 : 50),
-      currentLevel: Math.floor((prev.totalXP + (jobDesc ? 75 : 50)) / 100),
-      achievements: [...prev.achievements, jobDesc ? 'Job Matcher' : 'CV Analyzer'].filter((achievement, index, arr) => arr.indexOf(achievement) === index)
-    }));
   };
 
   const handleCreateNew = () => {
@@ -444,6 +451,23 @@ const App: React.FC = () => {
 
         {currentStep === 'final' && selectedTemplate && (
           <div className="min-h-screen bg-gray-50 py-8">
+            {/* Award XP for CV completion */}
+            {(() => {
+              const result = gamificationService.trackCVCreation();
+              if (result.levelUp || result.achievements) {
+                setTimeout(() => {
+                  setXpNotification({
+                    xpGain: 100,
+                    reason: 'CV created successfully!',
+                    levelUp: result.levelUp,
+                    newLevel: result.newLevel,
+                    achievements: result.achievements
+                  });
+                }, 500);
+              }
+              return null;
+            })()}
+            
             <div className="container mx-auto px-4">
               <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
@@ -515,6 +539,18 @@ const App: React.FC = () => {
         isOpen={isChatOpen} 
         onToggle={() => setIsChatOpen(!isChatOpen)} 
       />
+      
+      {/* XP Notification */}
+      {xpNotification && (
+        <XPNotification
+          xpGain={xpNotification.xpGain}
+          reason={xpNotification.reason}
+          levelUp={xpNotification.levelUp}
+          newLevel={xpNotification.newLevel}
+          achievements={xpNotification.achievements}
+          onClose={() => setXpNotification(null)}
+        />
+      )}
     </div>
   );
 };
