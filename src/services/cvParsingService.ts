@@ -91,10 +91,10 @@ const extractTextFromPDF = async (file: File): Promise<string> => {
     }
     
     // If extraction failed, return empty string to prompt manual input
-    throw new Error('PDF text extraction failed - please paste text manually');
+    return '';
   } catch (error) {
     console.error('PDF parsing error:', error);
-    throw new Error('Unable to parse PDF file. Please paste your CV text manually for best results.');
+    return '';
   }
 };
 
