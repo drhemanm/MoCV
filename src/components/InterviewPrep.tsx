@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MessageCircle, Upload, FileText, Send, Bot, User, Trophy, Target, CheckCircle, AlertCircle, Lightbulb, X, ArrowLeft } from 'lucide-react';
 import { CVAnalysis } from '../types';
 import BackButton from './BackButton';
+import { extractTextFromFile } from '../services/cvParsingService';
 
 interface InterviewPrepProps {
   onBack: () => void;
@@ -55,13 +56,38 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
   };
 
   const handleFile = async (file: File) => {
-    if (file.type === 'application/pdf') {
-      setCvText("John Doe\nSenior Software Engineer\n\nExperience:\n- Led development team of 8 engineers at TechCorp (2020-2023)\n- Implemented microservices architecture reducing system downtime by 40%\n- Mentored junior developers and conducted technical interviews\n\nSkills: JavaScript, React, Node.js, Python, AWS, Docker, Kubernetes, Team Leadership");
-    } else if (file.type === 'text/plain') {
-      const text = await file.text();
-      setCvText(text);
-    } else {
-      alert('Please upload a PDF or text file');
+    try {
+      const extractedText = await extractTextFromFile(file);
+      setCvText(extractedText);
+      
+      // Show success message
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      successMessage.textContent = 'CV uploaded successfully!';
+      document.body.appendChild(successMessage);
+      
+      // Remove success message after 3 seconds
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
+      }, 3000);
+      
+    } catch (error) {
+      console.error('File parsing error:', error);
+      
+      // Show error message
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      errorMessage.textContent = 'Failed to parse CV. Please try a different file or paste your CV text directly.';
+      document.body.appendChild(errorMessage);
+      
+      // Remove error message after 5 seconds
+      setTimeout(() => {
+        if (document.body.contains(errorMessage)) {
+          document.body.removeChild(errorMessage);
+        }
+      }, 5000);
     }
   };
 
@@ -285,7 +311,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
                   <p className="text-lg font-medium text-gray-700 mb-2">
                     Drop your CV here or click to browse
                   </p>
-                  <p className="text-gray-500 mb-4">Supports PDF and text files</p>
+                  <p className="text-gray-500 mb-4">Supports PDF, DOCX, and text files</p>
                   <button
                     onClick={() => document.getElementById('cv-file-input')?.click()}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -295,7 +321,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
                   <input
                     id="cv-file-input"
                     type="file"
-                    accept=".pdf,.txt"
+                    accept=".pdf,.docx,.txt"
                     onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
                     className="hidden"
                   />
@@ -362,6 +388,17 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
                     <li>• Real-time feedback on your answers</li>
                     <li>• Interview readiness score</li>
                     <li>• Specific improvement suggestions</li>
+                  </ul>
+                </div>
+                
+                {/* File Upload Tips */}
+                <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                  <h3 className="font-semibold text-yellow-900 mb-2">💡 Upload Tips:</h3>
+                  <ul className="text-yellow-800 text-sm space-y-1">
+                    <li>• For best results with PDFs, try copying and pasting your CV text directly</li>
+                    <li>• DOCX files usually work better than PDFs for text extraction</li>
+                    <li>• Make sure your CV has clear section headers</li>
+                    <li>• You can always paste your CV text manually if upload doesn't work</li>
                   </ul>
                 </div>
               </div>
