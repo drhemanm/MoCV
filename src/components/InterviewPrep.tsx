@@ -127,6 +127,20 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
           document.body.removeChild(errorMessage);
         }
       }, 5000);
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      errorMessage.innerHTML = `
+        <div>Failed to parse CV file.</div>
+        <div class="text-xs mt-1">Please try pasting your CV text directly below.</div>
+      `;
+      document.body.appendChild(errorMessage);
+      
+      // Remove error message after 5 seconds
+      setTimeout(() => {
+        if (document.body.contains(errorMessage)) {
+          document.body.removeChild(errorMessage);
+        }
+      }, 5000);
     }
   };
 
