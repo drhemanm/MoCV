@@ -184,6 +184,16 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ targetMarket, onAnalysisComplet
                   placeholder="Paste your CV content here..."
                 />
               </div>
+              
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setCvText('')}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                >
+                  <X className="h-4 w-4" />
+                  Clear CV Text
+                </button>
+              </div>
 
               {/* Job Description Input */}
               <div className="mt-6">
@@ -197,6 +207,16 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ targetMarket, onAnalysisComplet
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   placeholder="Paste the job description you're applying for..."
                 />
+              </div>
+              
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setJobDescription('')}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                >
+                  <X className="h-4 w-4" />
+                  Clear Job Description
+                </button>
               </div>
 
               <button

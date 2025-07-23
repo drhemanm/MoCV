@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, Plus, Trash2, User, Briefcase, GraduationCap, Award, Globe, FileText, Zap, Lightbulb, Upload, Palette } from 'lucide-react';
+import { Save, Download, Eye, Plus, Trash2, User, Briefcase, GraduationCap, Award, Globe, FileText, Zap, Lightbulb, Upload, Palette, X } from 'lucide-react';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
 import CVImportSection from './CVImportSection';
@@ -603,6 +603,28 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           />
         </div>
       </div>
+      
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setCvData(prev => ({
+            ...prev,
+            personalInfo: {
+              fullName: '',
+              title: '',
+              email: '',
+              phone: '',
+              location: '',
+              linkedin: '',
+              website: ''
+            }
+          }))}
+          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+        >
+          <X className="h-4 w-4" />
+          Clear Personal Info
+        </button>
+      </div>
     </div>
   );
 
@@ -634,6 +656,17 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           {cvData.summary.length}/500 characters
         </div>
       </div>
+      
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setCvData(prev => ({ ...prev, summary: '' }))}
+          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+        >
+          <X className="h-4 w-4" />
+          Clear Summary
+        </button>
+      </div>
     </div>
   );
 
@@ -650,6 +683,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         >
           <Plus className="h-4 w-4" />
           Add Experience
+        </button>
+        <button
+          onClick={() => setCvData(prev => ({ ...prev, experience: [] }))}
+          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Clear All Experience
         </button>
       </div>
 
@@ -792,6 +832,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           <Plus className="h-4 w-4" />
           Add Education
         </button>
+        <button
+          onClick={() => setCvData(prev => ({ ...prev, education: [] }))}
+          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Clear All Education
+        </button>
       </div>
 
       {cvData.education.length === 0 ? (
@@ -897,6 +944,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           <Plus className="h-4 w-4" />
           Add Skill
         </button>
+        <button
+          onClick={() => setCvData(prev => ({ ...prev, skills: [] }))}
+          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Clear All Skills
+        </button>
       </div>
 
       {cvData.skills.length === 0 ? (
@@ -984,6 +1038,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         >
           <Plus className="h-4 w-4" />
           Add Project
+        </button>
+        <button
+          onClick={() => setCvData(prev => ({ ...prev, projects: [] }))}
+          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Clear All Projects
         </button>
       </div>
 
@@ -1078,6 +1139,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           <Plus className="h-4 w-4" />
           Add Certification
         </button>
+        <button
+          onClick={() => setCvData(prev => ({ ...prev, certifications: [] }))}
+          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Clear All Certifications
+        </button>
       </div>
 
       {cvData.certifications.length === 0 ? (
@@ -1169,6 +1237,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         >
           <Plus className="h-4 w-4" />
           Add Language
+        </button>
+        <button
+          onClick={() => setCvData(prev => ({ ...prev, languages: [] }))}
+          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Clear All Languages
         </button>
       </div>
 
@@ -1288,21 +1363,37 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <BackButton onClick={onBack} label="Back" />
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
-                <p className="text-sm text-gray-600">
-                  {targetMarket ? `Optimized for ${targetMarket.flag} ${targetMarket.name}` : 'Create your professional CV'}
-                  {lastSaved && (
-                    <span className="ml-2 text-green-600">
-                      • Last saved {lastSaved.toLocaleTimeString()}
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
+          <div className="flex justify-between items-center">
+            <BackButton onClick={onBack} label="Back to Home" />
+            
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to clear all CV data? This action cannot be undone.')) {
+                  setCvData({
+                    personalInfo: {
+                      fullName: '',
+                      title: '',
+                      email: '',
+                      phone: '',
+                      location: '',
+                      linkedin: '',
+                      website: ''
+                    },
+                    summary: '',
+                    experience: [],
+                    education: [],
+                    skills: [],
+                    projects: [],
+                    certifications: [],
+                    languages: []
+                  });
+                }
+              }}
+              className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Clear All Data
+            </button>
             
             <div className="flex items-center gap-3">
               <button

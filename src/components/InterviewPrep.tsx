@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageCircle, Upload, FileText, Send, Bot, User, Trophy, Target, CheckCircle, AlertCircle, Lightbulb } from 'lucide-react';
+import { MessageCircle, Upload, FileText, Send, Bot, User, Trophy, Target, CheckCircle, AlertCircle, Lightbulb, X, ArrowLeft } from 'lucide-react';
 import { CVAnalysis } from '../types';
 import BackButton from './BackButton';
 
@@ -313,6 +313,16 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
                     placeholder="Paste your CV content here..."
                   />
                 </div>
+                
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => setCvText('')}
+                    className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear CV Text
+                  </button>
+                </div>
               </div>
 
               {/* Job Description Section */}
@@ -333,6 +343,16 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                     placeholder="Paste the complete job description here..."
                   />
+                </div>
+                
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => setJobDescription('')}
+                    className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear Job Description
+                  </button>
                 </div>
 
                 <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">

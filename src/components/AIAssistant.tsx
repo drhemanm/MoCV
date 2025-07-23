@@ -305,6 +305,16 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ targetMarket, template, onCom
               className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
             />
           </div>
+          
+          <div className="flex justify-end">
+            <button
+              onClick={() => updateResponse('')}
+              className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+            >
+              <X className="h-4 w-4" />
+              Clear Response
+            </button>
+          </div>
 
           {/* Navigation */}
           <div className="flex justify-between">

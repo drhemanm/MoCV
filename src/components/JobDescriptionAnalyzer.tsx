@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Upload, FileText, TrendingUp, CheckCircle, AlertCircle, Zap, Award } from 'lucide-react';
+import { Target, Upload, FileText, TrendingUp, CheckCircle, AlertCircle, Zap, Award, X } from 'lucide-react';
 import { CVAnalysis } from '../types';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
@@ -178,6 +178,16 @@ const JobDescriptionAnalyzer: React.FC<JobDescriptionAnalyzerProps> = ({ targetM
                   placeholder="Paste your CV content here..."
                 />
               </div>
+              
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setCvText('')}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                >
+                  <X className="h-4 w-4" />
+                  Clear CV Text
+                </button>
+              </div>
             </div>
 
             {/* Job Description Section */}
@@ -198,6 +208,16 @@ const JobDescriptionAnalyzer: React.FC<JobDescriptionAnalyzerProps> = ({ targetM
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                   placeholder="Paste the full job description here including requirements, responsibilities, and qualifications..."
                 />
+              </div>
+              
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => setJobDescription('')}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
+                >
+                  <X className="h-4 w-4" />
+                  Clear Job Description
+                </button>
               </div>
 
               <div className="bg-green-50 rounded-lg p-4 border border-green-200">
