@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Save, Download, Eye, Lock, Sun, Moon, Minimize, Expand
+  Save, Download, Eye, Lock, Sun, Moon, Compress, Expand
 } from 'lucide-react';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
@@ -83,7 +83,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack, isPro = fal
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
           <button onClick={() => setCompactView(!compactView)} className="hover:scale-105 transition">
-            {compactView ? <Expand className="h-5 w-5" /> : <Minimize className="h-5 w-5" />}
+            {compactView ? <Expand className="h-5 w-5" /> : <Compress className="h-5 w-5" />}
           </button>
           <button onClick={handleGeneratePDF} disabled={isGeneratingPDF} className="bg-blue-600 text-white px-4 py-2 rounded-lg">
             <Download className="h-4 w-4" /> PDF
