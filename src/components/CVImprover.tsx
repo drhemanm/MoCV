@@ -28,7 +28,7 @@ const CVImprover: React.FC<CVImproverProps> = ({ targetMarket, analysis, origina
   const handleImproveSection = async (sectionId: string) => {
     setIsImproving(true);
     
-    // Simulate AI improvement with realistic delay
+    // Simulate AI improvement
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     const mockImprovements: { [key: string]: string } = {

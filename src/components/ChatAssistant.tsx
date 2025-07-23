@@ -93,9 +93,14 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({ isOpen, onToggle }) => {
     try {
       let response: string;
       
-      // Always use fallback responses for demo
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
-      response = getFallbackResponse(currentMessage);
+      if (serviceStatus.openaiAvailable) {
+        // Use OpenAI service
+        response = await chatWithAssistant(currentMessage, messages);
+      } else {
+        // Use fallback responses
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+        response = getFallbackResponse(currentMessage);
+      }
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
