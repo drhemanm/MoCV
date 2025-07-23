@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, Upload, FileText, Send, Bot, User, Trophy, Target, CheckCircle, AlertCircle, Lightbulb, X, ArrowLeft } from 'lucide-react';
 import { CVAnalysis } from '../types';
 import BackButton from './BackButton';
