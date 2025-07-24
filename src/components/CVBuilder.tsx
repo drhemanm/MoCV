@@ -107,6 +107,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [currentTemplate, setCurrentTemplate] = useState<CVTemplate | null>(selectedTemplate || null);
   
   const [cvData, setCvData] = useState<CVData>({
     personalInfo: {
@@ -129,6 +130,22 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
 
   // Load existing CV data if editing
   useEffect(() => {
+    // Load template information
+    if (selectedTemplate) {
+      setCurrentTemplate(selectedTemplate);
+    } else {
+      // Try to load from localStorage
+      const savedTemplateData = localStorage.getItem('mocv_selected_template_data');
+      if (savedTemplateData) {
+        try {
+          const templateData = JSON.parse(savedTemplateData);
+          setCurrentTemplate(templateData);
+        } catch (error) {
+          console.error('Error loading template data:', error);
+        }
+      }
+    }
+
     const editingData = localStorage.getItem('mocv_editing_cv');
     if (editingData) {
       try {
