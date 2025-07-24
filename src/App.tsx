@@ -149,7 +149,7 @@ const App: React.FC = () => {
     console.log('Template selected in App:', template.name);
     setSelectedTemplate(template);
     
-    // Navigate directly to CV builder with selected template
+    // Store template data and navigate to market selector
     localStorage.setItem('mocv_selected_template', template.id);
     localStorage.setItem('mocv_selected_template_data', JSON.stringify(template));
     
@@ -165,7 +165,8 @@ const App: React.FC = () => {
     localStorage.setItem('mocv_selected_template_content', JSON.stringify(templateInfo));
     
     console.log('Template data stored:', templateInfo);
-    setCurrentStep('cv-builder');
+    setPendingFlow('create');
+    setCurrentStep('market-selector');
   };
 
   const handleFillMethodSelect = (method: 'manual' | 'ai') => {
@@ -223,7 +224,7 @@ const App: React.FC = () => {
 
   const handleCreateNew = () => {
     setPendingFlow('create');
-    setCurrentStep('market-selector');
+    setCurrentStep('templates');
   };
 
   const handleImproveCV = () => {
@@ -265,7 +266,12 @@ const App: React.FC = () => {
         setCurrentStep('analyzer');
         break;
       case 'create':
-        setCurrentStep('cv-builder');
+        // If we have a selected template, go to CV builder, otherwise go to templates
+        if (selectedTemplate) {
+          setCurrentStep('cv-builder');
+        } else {
+          setCurrentStep('templates');
+        }
         break;
       case 'job-match':
         setCurrentStep('job-analyzer');
@@ -392,7 +398,8 @@ const App: React.FC = () => {
           <CVBuilder
             targetMarket={selectedMarket}
             selectedTemplate={selectedTemplate}
-            onBack={() => setCurrentStep('start')}
+            onBack={() => setCurrentStep('templates')}
+            onChangeTemplate={() => setCurrentStep('templates')}
           />
         )}
         

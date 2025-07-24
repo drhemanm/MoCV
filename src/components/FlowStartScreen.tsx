@@ -200,9 +200,10 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                     </div>
                     <button
                       onClick={onCreateNew}
-                      className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-200 transform hover:scale-105"
+                      className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
                     >
-                      Browse Templates
+                      <FileText className="h-5 w-5" />
+                      Choose Template & Create CV
                     </button>
                   </div>
                 </div>

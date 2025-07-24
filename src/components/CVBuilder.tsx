@@ -27,6 +27,7 @@ interface CVBuilderProps {
   targetMarket: TargetMarket | null;
   selectedTemplate?: CVTemplate | null;
   onBack: () => void;
+  onChangeTemplate?: () => void;
 }
 
 interface CVData {
@@ -1712,6 +1713,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
                     </p>
                   </div>
                 </div>
+                <button
+                  onClick={() => setCurrentStep('templates')}
+                  className="ml-auto text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Change Template
+                </button>
               </div>
             </div>
           )}

@@ -387,10 +387,17 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           <div className="flex items-center justify-between mb-6">
             <BackButton onClick={onBack} label="Back" />
             <div className="text-center">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Choose Your Template</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Choose Your CV Template
+                {targetMarket && (
+                  <span className="block text-lg text-blue-600 font-normal mt-1">
+                    for {targetMarket.flag} {targetMarket.name}
+                  </span>
+                )}
+              </h1>
               <p className="text-gray-600">
-                Select a professional template optimized for your industry and career level
-                {targetMarket && ` • Optimized for ${targetMarket.flag} ${targetMarket.name}`}
+                Select a professional template optimized for your industry and career level.
+                After selecting a template, you'll proceed to the CV builder.
               </p>
             </div>
             <div className="w-16"></div> {/* Spacer for centering */}
@@ -572,15 +579,15 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                         console.log('Template selected:', template.name);
                         handleTemplateSelect(template);
                       }}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 transform hover:scale-105"
                     >
                       <Zap className="h-4 w-4" />
-                      Select
+                      Use Template
                     </button>
                   </div>
                 </div>
               </div>
-            ))}
+            onBack={() => setCurrentStep('start')}
           </div>
         )}
       </div>
