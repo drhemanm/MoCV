@@ -1233,10 +1233,17 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                   Description (Optional)
                 </label>
                 <textarea
+                  dir="ltr"
                   value={cert.description || ''}
                   onChange={(e) => updateCertification(cert.id, 'description', e.target.value)}
                   rows={3}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                  style={{
+                    direction: 'ltr',
+                    textAlign: 'left',
+                    unicodeBidi: 'embed',
+                    writingMode: 'horizontal-tb'
+                  }}
                   placeholder="Brief description of what this certification covers..."
                 />
               </div>

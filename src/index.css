@@ -2,7 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CRITICAL: Fix for text direction issues - Force LTR everywhere */
+/* CRITICAL: Fix for text direction issues - Force LTR everywhere with maximum specificity */
+html, body, * {
+  direction: ltr !important;
+}
+
 input, 
 textarea, 
 [contenteditable],
@@ -16,26 +20,36 @@ div[contenteditable] {
   writing-mode: horizontal-tb !important;
 }
 
-/* Force text input direction globally */
-* {
-  direction: ltr !important;
-}
-
-/* Specific overrides for any remaining issues */
+/* Additional specific targeting for text inputs */
 input[type="text"],
 input[type="email"], 
 input[type="tel"],
 input[type="url"],
-textarea {
+input[type="password"],
+input[type="search"],
+textarea,
+[contenteditable="true"],
+[contenteditable] {
   direction: ltr !important;
   text-align: left !important;
   unicode-bidi: embed !important;
   writing-mode: horizontal-tb !important;
 }
-*/
 
-/* ContentEditable specific fixes */
-[contenteditable="true"] {
+/* React component specific overrides */
+.w-full.p-3.border,
+textarea.w-full,
+input.w-full {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+  writing-mode: horizontal-tb !important;
+}
+
+/* Tailwind CSS class overrides */
+.resize-none,
+.focus\:ring-2,
+.focus\:ring-blue-500 {
   direction: ltr !important;
   text-align: left !important;
   unicode-bidi: embed !important;
