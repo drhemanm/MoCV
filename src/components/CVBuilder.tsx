@@ -38,19 +38,6 @@ import { ParsedCVData } from '../services/cvParsingService';
 import { getTemplateContentByType } from '../services/templateService';
 import gamificationService from '../services/gamificationService';
 
-interface CVTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  icon: React.ReactElement;
-  markdownUrl: string;
-  tags: string[];
-  difficulty: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 interface CVBuilderProps {
   targetMarket: TargetMarket | null;
   selectedTemplate?: CVTemplate | null;
@@ -203,7 +190,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
         console.error('Error loading editing data:', error);
       }
     }
-  }, [selectedTemplate]);
+  }, []);
 
   // Auto-save functionality
   useEffect(() => {
@@ -273,6 +260,20 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
     }));
     setShowImport(false);
   };
+
+  // Load template content
+  useEffect(() => {
+    if (currentTemplate) {
+      try {
+        const content = getTemplateContentByType(currentTemplate.markdownUrl || 'fallback-classic');
+        setTemplateContent(content);
+        console.log('Template content loaded for:', currentTemplate.name);
+      } catch (error) {
+        console.error('Error loading template content:', error);
+        setTemplateContent(getTemplateContentByType('fallback-classic'));
+      }
+    }
+  }, [currentTemplate]);
 
   const addExperience = () => {
     const newExp = {
@@ -1535,6 +1536,22 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
     }
   };
 
+  const getTemplateIcon = (templateId: string) => {
+    const iconMap: { [key: string]: React.ReactElement } = {
+      'classic-ats': React.createElement(FileText, { className: "h-5 w-5" }),
+      'modern-minimal': React.createElement(Sparkles, { className: "h-5 w-5" }),
+      'tech-focus': React.createElement(Code, { className: "h-5 w-5" }),
+      'project-based': React.createElement(Target, { className: "h-5 w-5" }),
+      'academic': React.createElement(BookOpen, { className: "h-5 w-5" }),
+      'fresh-graduate': React.createElement(GraduationCap, { className: "h-5 w-5" }),
+      'career-change': React.createElement(RefreshCw, { className: "h-5 w-5" }),
+      'leadership': React.createElement(Crown, { className: "h-5 w-5" }),
+      'design-lite': React.createElement(Palette, { className: "h-5 w-5" }),
+      'ai-aided': React.createElement(Brain, { className: "h-5 w-5" })
+    };
+    return iconMap[templateId] || React.createElement(FileText, { className: "h-5 w-5" });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1543,12 +1560,20 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <BackButton onClick={onBack} label="Back" />
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
-                <p className="text-sm text-gray-600">
-                  Create your professional CV
-                  {targetMarket && ` • Optimized for ${targetMarket.flag} ${targetMarket.name}`}
-                </p>
+              <div className="flex items-center gap-3">
+                {currentTemplate && (
+                  <div className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                    {getTemplateIcon(currentTemplate.id)}
+                    <span className="text-sm font-medium">{currentTemplate.name}</span>
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
+                  <p className="text-sm text-gray-600">
+                    Create your professional CV
+                    {targetMarket && ` • Optimized for ${targetMarket.name}`}
+                  </p>
+                </div>
               </div>
             </div>
             
