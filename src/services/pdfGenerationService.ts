@@ -49,7 +49,7 @@ export interface CVData {
     date: string;
     verificationLink?: string;
   }>;
-  languages: Array<{
+  languages?: Array<{
     id: string;
     name: string;
     proficiency: string;
@@ -83,7 +83,7 @@ const templateStyles: { [key: string]: TemplateStyle } = {
     secondaryColor: [0.3, 0.3, 0.3],
     textColor: [0.15, 0.15, 0.15],
     accentColor: [0.4, 0.2, 0.8],
-    backgroundColor: [0.98, 0.98, 0.98],
+    backgroundColor: [1, 1, 1],
     headerColor: [0.4, 0.2, 0.8],
     layout: 'modern'
   },
@@ -92,7 +92,7 @@ const templateStyles: { [key: string]: TemplateStyle } = {
     secondaryColor: [0.2, 0.5, 0.8],
     textColor: [0.1, 0.1, 0.1],
     accentColor: [0, 0.6, 0.4],
-    backgroundColor: [0.97, 0.99, 1],
+    backgroundColor: [1, 1, 1],
     headerColor: [0, 0.3, 0.6],
     layout: 'modern'
   },
@@ -116,14 +116,14 @@ export class PDFGenerator {
   private margin: number;
   private style: TemplateStyle;
   private fonts: any = {};
-  private lineHeight: number = 14;
-  private sectionSpacing: number = 20;
-  private itemSpacing: number = 12;
+  private lineHeight: number = 16;
+  private sectionSpacing: number = 24;
+  private itemSpacing: number = 16;
 
   constructor() {
     this.pageWidth = 595.28; // A4 width in points
     this.pageHeight = 841.89; // A4 height in points
-    this.margin = 50;
+    this.margin = 60;
     this.style = templateStyles['classic-ats'];
     this.currentY = this.pageHeight - this.margin;
   }
@@ -136,7 +136,6 @@ export class PDFGenerator {
     this.fonts.regular = await this.doc.embedFont(StandardFonts.Helvetica);
     this.fonts.bold = await this.doc.embedFont(StandardFonts.HelveticaBold);
     this.fonts.italic = await this.doc.embedFont(StandardFonts.HelveticaOblique);
-    this.fonts.boldItalic = await this.doc.embedFont(StandardFonts.HelveticaBoldOblique);
     
     // Create first page
     this.addPage();
@@ -145,16 +144,6 @@ export class PDFGenerator {
   private addPage() {
     this.currentPage = this.doc.addPage([this.pageWidth, this.pageHeight]);
     this.currentY = this.pageHeight - this.margin;
-    
-    // Add subtle background
-    this.currentPage.drawRectangle({
-      x: 0,
-      y: 0,
-      width: this.pageWidth,
-      height: this.pageHeight,
-      color: rgb(this.style.backgroundColor[0], this.style.backgroundColor[1], this.style.backgroundColor[2])
-    });
-    
     return this.currentPage;
   }
 
@@ -169,49 +158,18 @@ export class PDFGenerator {
     this.checkPageSpace(60);
   }
 
-  private drawText(text: string, x: number, options: any = {}) {
-    const {
-      font = this.fonts.regular,
-      size = 10,
-      color = this.style.textColor,
-      maxWidth = this.pageWidth - 2 * this.margin,
-      indent = 0,
-      align = 'left'
-    } = options;
-
-    if (!text || text.trim() === '') return this.currentY;
-
-    const cleanText = text.replace(/[^\x20-\x7E\n\u00A0-\u017F\u0100-\u024F]/g, ' ').trim();
-    const lines = this.wrapText(cleanText, font, size, maxWidth - indent);
-
-    for (const line of lines) {
-      this.checkPageSpace(size + 6);
-      
-      let textX = x + indent;
-      if (align === 'center') {
-        const textWidth = font.widthOfTextAtSize(line, size);
-        textX = (this.pageWidth - textWidth) / 2;
-      } else if (align === 'right') {
-        const textWidth = font.widthOfTextAtSize(line, size);
-        textX = this.pageWidth - this.margin - textWidth;
-      }
-      
-      this.currentPage.drawText(line, {
-        x: textX,
-        y: this.currentY,
-        size,
-        font,
-        color: rgb(color[0], color[1], color[2])
-      });
-      
-      this.moveDown(size + 3);
-    }
-
-    return this.currentY;
+  private cleanText(text: string): string {
+    if (!text) return '';
+    // Remove problematic characters and normalize text
+    return text
+      .replace(/[^\x20-\x7E\n\u00A0-\u017F]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private wrapText(text: string, font: any, size: number, maxWidth: number): string[] {
-    const words = text.split(/\s+/);
+    const cleanedText = this.cleanText(text);
+    const words = cleanedText.split(/\s+/);
     const lines: string[] = [];
     let currentLine = '';
 
@@ -239,49 +197,87 @@ export class PDFGenerator {
     return lines;
   }
 
+  private drawText(text: string, x: number, options: any = {}) {
+    const {
+      font = this.fonts.regular,
+      size = 11,
+      color = this.style.textColor,
+      maxWidth = this.pageWidth - 2 * this.margin,
+      indent = 0,
+      align = 'left'
+    } = options;
+
+    if (!text || text.trim() === '') return this.currentY;
+
+    const cleanText = this.cleanText(text);
+    const lines = this.wrapText(cleanText, font, size, maxWidth - indent);
+
+    for (const line of lines) {
+      this.checkPageSpace(size + 8);
+      
+      let textX = x + indent;
+      if (align === 'center') {
+        const textWidth = font.widthOfTextAtSize(line, size);
+        textX = (this.pageWidth - textWidth) / 2;
+      }
+      
+      this.currentPage.drawText(line, {
+        x: textX,
+        y: this.currentY,
+        size,
+        font,
+        color: rgb(color[0], color[1], color[2])
+      });
+      
+      this.moveDown(size + 4);
+    }
+
+    return this.currentY;
+  }
+
   private drawSectionHeader(title: string) {
-    this.checkPageSpace(40);
+    this.checkPageSpace(50);
     this.moveDown(this.sectionSpacing);
     
-    // Draw section background
-    this.currentPage.drawRectangle({
-      x: this.margin - 5,
-      y: this.currentY - 5,
-      width: this.pageWidth - 2 * this.margin + 10,
-      height: 25,
-      color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2]),
-      opacity: 0.1
-    });
-
     // Draw section title
     this.drawText(title.toUpperCase(), this.margin, {
       font: this.fonts.bold,
-      size: 12,
+      size: 14,
       color: this.style.accentColor
     });
 
     // Draw underline
     this.currentPage.drawLine({
-      start: { x: this.margin, y: this.currentY + 8 },
-      end: { x: this.pageWidth - this.margin, y: this.currentY + 8 },
-      thickness: 1,
+      start: { x: this.margin, y: this.currentY + 10 },
+      end: { x: this.pageWidth - this.margin, y: this.currentY + 10 },
+      thickness: 2,
       color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2])
     });
 
-    this.moveDown(8);
+    this.moveDown(12);
   }
 
   private formatDate(dateString: string): string {
     if (!dateString) return '';
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      // Handle various date formats
+      if (dateString.includes('/')) {
+        const [month, year] = dateString.split('/');
+        return `${month}/${year}`;
+      }
+      if (dateString.includes('-')) {
+        const [year, month] = dateString.split('-');
+        return `${month}/${year}`;
+      }
+      return dateString;
     } catch {
       return dateString;
     }
   }
 
   private formatBulletPoints(text: string): string[] {
+    if (!text) return [];
+    
     return text
       .split('\n')
       .map(line => line.trim())
@@ -344,82 +340,70 @@ export class PDFGenerator {
   }
 
   private drawHeader(personalInfo: any) {
-    this.checkPageSpace(100);
-
-    // Header background
-    this.currentPage.drawRectangle({
-      x: 0,
-      y: this.currentY - 15,
-      width: this.pageWidth,
-      height: 70,
-      color: rgb(this.style.headerColor[0], this.style.headerColor[1], this.style.headerColor[2]),
-      opacity: this.style.layout === 'modern' ? 1 : 0.1
-    });
+    this.checkPageSpace(120);
 
     // Name
     if (personalInfo.fullName) {
       this.drawText(personalInfo.fullName, this.margin, {
         font: this.fonts.bold,
-        size: 24,
-        color: this.style.layout === 'modern' ? [1, 1, 1] : this.style.primaryColor,
+        size: 28,
+        color: this.style.primaryColor,
         align: 'center'
       });
-      this.moveDown(6);
+      this.moveDown(8);
     }
 
     // Title
     if (personalInfo.title) {
       this.drawText(personalInfo.title, this.margin, {
         font: this.fonts.regular,
-        size: 14,
-        color: this.style.layout === 'modern' ? [0.9, 0.9, 0.9] : this.style.accentColor,
-        align: 'center'
-      });
-      this.moveDown(15);
-    }
-
-    // Contact Information
-    const contactInfo = [];
-    if (personalInfo.email) contactInfo.push(personalInfo.email);
-    if (personalInfo.phone) contactInfo.push(personalInfo.phone);
-    if (personalInfo.location) contactInfo.push(personalInfo.location);
-    if (personalInfo.linkedin) contactInfo.push(personalInfo.linkedin);
-
-    if (contactInfo.length > 0) {
-      const contactText = contactInfo.join(' | ');
-      this.drawText(contactText, this.margin, {
-        font: this.fonts.regular,
-        size: 9,
-        color: this.style.layout === 'modern' ? [0.8, 0.8, 0.8] : this.style.secondaryColor,
+        size: 16,
+        color: this.style.accentColor,
         align: 'center'
       });
       this.moveDown(20);
     }
+
+    // Contact Information
+    const contactInfo = [];
+    if (personalInfo.email) contactInfo.push(`Email: ${personalInfo.email}`);
+    if (personalInfo.phone) contactInfo.push(`Phone: ${personalInfo.phone}`);
+    if (personalInfo.location) contactInfo.push(`Location: ${personalInfo.location}`);
+    if (personalInfo.linkedin) contactInfo.push(`LinkedIn: ${personalInfo.linkedin}`);
+
+    if (contactInfo.length > 0) {
+      // Draw contact info in a centered block
+      for (const contact of contactInfo) {
+        this.drawText(contact, this.margin, {
+          font: this.fonts.regular,
+          size: 10,
+          color: this.style.secondaryColor,
+          align: 'center'
+        });
+      }
+      this.moveDown(20);
+    }
+
+    // Draw separator line
+    this.currentPage.drawLine({
+      start: { x: this.margin, y: this.currentY },
+      end: { x: this.pageWidth - this.margin, y: this.currentY },
+      thickness: 1,
+      color: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2])
+    });
+    this.moveDown(20);
   }
 
   private drawSummary(summary: string) {
     this.drawSectionHeader('Professional Summary');
     
-    // Summary box
-    const summaryLines = this.wrapText(summary, this.fonts.regular, 11, this.pageWidth - 2 * this.margin - 20);
-    const boxHeight = summaryLines.length * 14 + 20;
-    
-    this.currentPage.drawRectangle({
-      x: this.margin - 10,
-      y: this.currentY - boxHeight + 10,
-      width: this.pageWidth - 2 * this.margin + 20,
-      height: boxHeight,
-      color: rgb(0.97, 0.97, 0.97),
-      borderColor: rgb(this.style.accentColor[0], this.style.accentColor[1], this.style.accentColor[2]),
-      borderWidth: 1,
-      opacity: 0.8
-    });
-
     this.drawText(summary, this.margin, {
       size: 11,
       color: this.style.textColor,
-      indent: 10
+      maxWidth: this.pageWidth - 2 * this.margin
     });
+    
+    this.moveDown(10);
   }
 
   private drawExperience(experience: any[]) {
@@ -427,43 +411,52 @@ export class PDFGenerator {
 
     for (let i = 0; i < experience.length; i++) {
       const exp = experience[i];
-      this.checkPageSpace(80);
+      this.checkPageSpace(100);
 
-      // Job title and company
-      this.drawText(exp.title || 'Position', this.margin, {
-        font: this.fonts.bold,
-        size: 12,
-        color: this.style.primaryColor
-      });
+      // Job title
+      if (exp.title) {
+        this.drawText(exp.title, this.margin, {
+          font: this.fonts.bold,
+          size: 13,
+          color: this.style.primaryColor
+        });
+      }
 
-      this.drawText(exp.company || 'Company', this.margin, {
-        font: this.fonts.bold,
-        size: 11,
-        color: this.style.accentColor
-      });
+      // Company
+      if (exp.company) {
+        this.drawText(exp.company, this.margin, {
+          font: this.fonts.bold,
+          size: 12,
+          color: this.style.accentColor
+        });
+      }
 
       // Location and dates
+      const locationParts = [];
+      if (exp.location) locationParts.push(exp.location);
+      
       const dateRange = exp.current 
         ? `${this.formatDate(exp.startDate)} - Present`
         : `${this.formatDate(exp.startDate)} - ${this.formatDate(exp.endDate)}`;
       
-      const locationDate = [exp.location, dateRange].filter(Boolean).join(' | ');
-      if (locationDate) {
-        this.drawText(locationDate, this.margin, {
+      if (dateRange.trim() !== ' - ') locationParts.push(dateRange);
+      
+      if (locationParts.length > 0) {
+        this.drawText(locationParts.join(' | '), this.margin, {
           font: this.fonts.italic,
-          size: 9,
+          size: 10,
           color: this.style.secondaryColor
         });
       }
 
       // Description
       if (exp.description && exp.description.trim()) {
-        this.moveDown(4);
+        this.moveDown(6);
         const bulletPoints = this.formatBulletPoints(exp.description);
         for (const bullet of bulletPoints) {
           this.drawText(bullet, this.margin, {
             size: 10,
-            indent: 15,
+            indent: 20,
             color: this.style.textColor
           });
         }
@@ -481,7 +474,7 @@ export class PDFGenerator {
     // Group skills by category
     const skillsByCategory: { [key: string]: any[] } = {};
     skills.forEach(skill => {
-      const category = skill.category || 'Technical';
+      const category = skill.category || 'Technical Skills';
       if (!skillsByCategory[category]) {
         skillsByCategory[category] = [];
       }
@@ -489,7 +482,7 @@ export class PDFGenerator {
     });
 
     for (const [category, skillList] of Object.entries(skillsByCategory)) {
-      this.checkPageSpace(30);
+      this.checkPageSpace(40);
 
       // Category header
       this.drawText(`${category}:`, this.margin, {
@@ -498,15 +491,15 @@ export class PDFGenerator {
         color: this.style.accentColor
       });
 
-      // Skills in rows
+      // Skills in a readable format
       const skillNames = skillList.map(skill => skill.name).join(' • ');
       this.drawText(skillNames, this.margin, {
         size: 10,
-        indent: 15,
+        indent: 20,
         color: this.style.textColor
       });
 
-      this.moveDown(8);
+      this.moveDown(12);
     }
   }
 
@@ -515,23 +508,25 @@ export class PDFGenerator {
 
     for (let i = 0; i < projects.length; i++) {
       const project = projects[i];
-      this.checkPageSpace(60);
+      this.checkPageSpace(80);
 
       // Project name
-      this.drawText(project.name || 'Project', this.margin, {
-        font: this.fonts.bold,
-        size: 11,
-        color: this.style.primaryColor
-      });
+      if (project.name) {
+        this.drawText(project.name, this.margin, {
+          font: this.fonts.bold,
+          size: 12,
+          color: this.style.primaryColor
+        });
+      }
 
       // Technologies
       if (project.technologies && project.technologies.length > 0) {
         const techText = `Technologies: ${project.technologies.join(', ')}`;
         this.drawText(techText, this.margin, {
           font: this.fonts.italic,
-          size: 9,
+          size: 10,
           color: this.style.accentColor,
-          indent: 10
+          indent: 15
         });
       }
 
@@ -539,17 +534,17 @@ export class PDFGenerator {
       if (project.description) {
         this.drawText(project.description, this.margin, {
           size: 10,
-          indent: 10,
+          indent: 15,
           color: this.style.textColor
         });
       }
 
       // Link
       if (project.link) {
-        this.drawText(`Link: ${project.link}`, this.margin, {
+        this.drawText(`Project Link: ${project.link}`, this.margin, {
           size: 9,
           color: this.style.accentColor,
-          indent: 10
+          indent: 15
         });
       }
 
@@ -564,28 +559,35 @@ export class PDFGenerator {
 
     for (let i = 0; i < education.length; i++) {
       const edu = education[i];
-      this.checkPageSpace(50);
+      this.checkPageSpace(60);
 
       // Degree
-      this.drawText(edu.degree || 'Degree', this.margin, {
-        font: this.fonts.bold,
-        size: 11,
-        color: this.style.primaryColor
-      });
+      if (edu.degree) {
+        this.drawText(edu.degree, this.margin, {
+          font: this.fonts.bold,
+          size: 12,
+          color: this.style.primaryColor
+        });
+      }
 
       // School
-      this.drawText(edu.school || 'Institution', this.margin, {
-        font: this.fonts.regular,
-        size: 10,
-        color: this.style.accentColor
-      });
+      if (edu.school) {
+        this.drawText(edu.school, this.margin, {
+          font: this.fonts.regular,
+          size: 11,
+          color: this.style.accentColor
+        });
+      }
 
       // Location and date
-      const locationDate = [edu.location, this.formatDate(edu.graduationDate)].filter(Boolean).join(' | ');
-      if (locationDate) {
-        this.drawText(locationDate, this.margin, {
+      const eduDetails = [];
+      if (edu.location) eduDetails.push(edu.location);
+      if (edu.graduationDate) eduDetails.push(this.formatDate(edu.graduationDate));
+      
+      if (eduDetails.length > 0) {
+        this.drawText(eduDetails.join(' | '), this.margin, {
           font: this.fonts.italic,
-          size: 9,
+          size: 10,
           color: this.style.secondaryColor
         });
       }
@@ -593,9 +595,9 @@ export class PDFGenerator {
       // GPA
       if (edu.gpa) {
         this.drawText(`GPA: ${edu.gpa}`, this.margin, {
-          size: 9,
+          size: 10,
           color: this.style.textColor,
-          indent: 10
+          indent: 15
         });
       }
 
@@ -610,22 +612,27 @@ export class PDFGenerator {
 
     for (let i = 0; i < certifications.length; i++) {
       const cert = certifications[i];
-      this.checkPageSpace(40);
+      this.checkPageSpace(50);
 
-      // Certification name and issuer
-      const certLine = `${cert.name || 'Certification'} - ${cert.issuer || 'Issuer'}`;
-      this.drawText(certLine, this.margin, {
-        font: this.fonts.bold,
-        size: 10,
-        color: this.style.primaryColor
-      });
+      // Certification name
+      if (cert.name) {
+        this.drawText(cert.name, this.margin, {
+          font: this.fonts.bold,
+          size: 11,
+          color: this.style.primaryColor
+        });
+      }
 
-      // Date
-      if (cert.date) {
-        this.drawText(`Issued: ${this.formatDate(cert.date)}`, this.margin, {
-          size: 9,
+      // Issuer and date
+      const certDetails = [];
+      if (cert.issuer) certDetails.push(`Issued by: ${cert.issuer}`);
+      if (cert.date) certDetails.push(`Date: ${this.formatDate(cert.date)}`);
+      
+      if (certDetails.length > 0) {
+        this.drawText(certDetails.join(' | '), this.margin, {
+          size: 10,
           color: this.style.secondaryColor,
-          indent: 10
+          indent: 15
         });
       }
 
@@ -640,22 +647,30 @@ export class PDFGenerator {
 
     for (let i = 0; i < languages.length; i++) {
       const lang = languages[i];
-      this.checkPageSpace(30);
+      this.checkPageSpace(40);
 
       // Language name
-      this.drawText(lang.name || 'Language', this.margin, {
-        font: this.fonts.bold,
-        size: 11,
-        color: this.style.primaryColor
-      });
+      if (lang.name) {
+        this.drawText(lang.name, this.margin, {
+          font: this.fonts.bold,
+          size: 11,
+          color: this.style.primaryColor
+        });
+      }
 
       // Proficiency levels
-      const proficiencyText = `Overall: ${lang.proficiency || 'Intermediate'} | Written: ${lang.written || 'Intermediate'} | Spoken: ${lang.spoken || 'Intermediate'}`;
-      this.drawText(proficiencyText, this.margin, {
-        size: 9,
-        color: this.style.secondaryColor,
-        indent: 10
-      });
+      const proficiencyParts = [];
+      if (lang.proficiency) proficiencyParts.push(`Overall: ${lang.proficiency}`);
+      if (lang.written) proficiencyParts.push(`Written: ${lang.written}`);
+      if (lang.spoken) proficiencyParts.push(`Spoken: ${lang.spoken}`);
+      
+      if (proficiencyParts.length > 0) {
+        this.drawText(proficiencyParts.join(' | '), this.margin, {
+          size: 10,
+          color: this.style.secondaryColor,
+          indent: 15
+        });
+      }
 
       if (i < languages.length - 1) {
         this.moveDown(this.itemSpacing);
@@ -666,8 +681,13 @@ export class PDFGenerator {
 
 // Main function to generate PDF
 export async function generateCVPDF(cvData: CVData, templateId: string = 'classic-ats'): Promise<Uint8Array> {
-  const generator = new PDFGenerator();
-  return await generator.generatePDF(cvData, templateId);
+  try {
+    const generator = new PDFGenerator();
+    return await generator.generatePDF(cvData, templateId);
+  } catch (error) {
+    console.error('PDF Generation failed:', error);
+    throw new Error('Failed to generate PDF. Please try again.');
+  }
 }
 
 // Function to trigger PDF download
