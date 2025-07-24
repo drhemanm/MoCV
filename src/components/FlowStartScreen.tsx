@@ -31,70 +31,70 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
-      <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="container mx-auto px-4 py-16">
         {/* Header */}
-        <div className="text-center mb-12 flex-shrink-0">
+        <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium mb-6">
             <Sparkles className="h-4 w-4" />
             AI-Powered CV Assistant for Mauritius & Africa
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight text-center">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
             Welcome to
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> MoCV.mu</span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed text-center">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
             Get ATS-optimized CVs, AI-powered content, and beat international recruitment systems.
           </p>
           
           {/* Demo Reset Button - Remove in production */}
-          <div className="mb-6">
+          <div className="mb-8">
             <button
               onClick={handleResetData}
-              className="text-xs text-gray-500 hover:text-red-600 transition-colors border border-gray-300 px-3 py-1.5 rounded-lg hover:border-red-300"
+              className="text-sm text-gray-500 hover:text-red-600 transition-colors border border-gray-300 px-4 py-2 rounded-lg hover:border-red-300"
             >
               🔄 Reset Demo Data (Clear All)
             </button>
           </div>
           
           {/* Key Benefits */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto mb-8">
+          <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
                 <Target className="h-5 w-5 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-sm mb-1 text-center">ATS Optimized</h3>
-              <p className="text-xs text-gray-600 text-center">Beat applicant tracking systems</p>
+              <h3 className="font-semibold text-sm mb-1">ATS Optimized</h3>
+              <p className="text-xs text-gray-600">Beat applicant tracking systems</p>
             </div>
             
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
                 <Zap className="h-5 w-5 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-sm mb-1 text-center">AI-Powered</h3>
-              <p className="text-xs text-gray-600 text-center">Smart content generation</p>
+              <h3 className="font-semibold text-sm mb-1">AI-Powered</h3>
+              <p className="text-xs text-gray-600">Smart content generation</p>
             </div>
             
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
                 <Globe className="h-5 w-5 text-green-600" />
               </div>
-              <h3 className="font-semibold text-sm mb-1 text-center">Global Ready</h3>
-              <p className="text-xs text-gray-600 text-center">Compete internationally</p>
+              <h3 className="font-semibold text-sm mb-1">Global Ready</h3>
+              <p className="text-xs text-gray-600">Compete internationally</p>
             </div>
             
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
                 <Award className="h-5 w-5 text-orange-600" />
               </div>
-              <h3 className="font-semibold text-sm mb-1 text-center">Gamified</h3>
-              <p className="text-xs text-gray-600 text-center">Earn XP and badges</p>
+              <h3 className="font-semibold text-sm mb-1">Gamified</h3>
+              <p className="text-xs text-gray-600">Earn XP and badges</p>
             </div>
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto flex-1 flex flex-col justify-center">
+        <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Actions */}
             <div className="lg:col-span-2 space-y-6">
@@ -124,19 +124,17 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                         Quick Access
                       </span>
                     </div>
-                    <div className="flex justify-center">
-                      <button
-                        onClick={onMyCVs}
-                        className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-orange-700 hover:to-red-700 transition-all duration-200 transform hover:scale-105"
-                      >
-                        View My CVs
-                      </button>
-                    </div>
+                    <button
+                      onClick={onMyCVs}
+                      className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-orange-700 hover:to-red-700 transition-all duration-200 transform hover:scale-105"
+                    >
+                      View My CVs
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Choose Your Path</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Your Path</h2>
               
               {/* Improve Existing CV */}
               <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
@@ -164,14 +162,12 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                         +50 XP
                       </span>
                     </div>
-                    <div className="flex justify-center">
-                      <button
-                        onClick={onImproveCV}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105"
-                      >
-                        Analyze My CV
-                      </button>
-                    </div>
+                    <button
+                      onClick={onImproveCV}
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105"
+                    >
+                      Analyze My CV
+                    </button>
                   </div>
                 </div>
               </div>
@@ -202,15 +198,13 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                         +100 XP
                       </span>
                     </div>
-                    <div className="flex justify-center">
-                      <button
-                        onClick={onCreateNew}
-                        className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
-                      >
-                        <FileText className="h-5 w-5" />
-                        Choose Template & Create CV
-                      </button>
-                    </div>
+                    <button
+                      onClick={onCreateNew}
+                      className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+                    >
+                      <FileText className="h-5 w-5" />
+                      Choose Template & Create CV
+                    </button>
                   </div>
                 </div>
               </div>
@@ -241,14 +235,12 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                         +75 XP
                       </span>
                     </div>
-                    <div className="flex justify-center">
-                      <button
-                        onClick={onAnalyzeVsJob}
-                        className="bg-gradient-to-r from-green-600 to-yellow-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-yellow-700 transition-all duration-200 transform hover:scale-105"
-                      >
-                        Compare with Job
-                      </button>
-                    </div>
+                    <button
+                      onClick={onAnalyzeVsJob}
+                      className="bg-gradient-to-r from-green-600 to-yellow-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-yellow-700 transition-all duration-200 transform hover:scale-105"
+                    >
+                      Compare with Job
+                    </button>
                   </div>
                 </div>
               </div>
@@ -279,14 +271,12 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                         +100 XP
                       </span>
                     </div>
-                    <div className="flex justify-center">
-                      <button
-                        onClick={onInterviewPrep}
-                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
-                      >
-                        Start Interview Practice
-                      </button>
-                    </div>
+                    <button
+                      onClick={onInterviewPrep}
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+                    >
+                      Start Interview Practice
+                    </button>
                   </div>
                 </div>
               </div>
@@ -322,7 +312,7 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
         </div>
 
         {/* Success Stories */}
-        <div className="max-w-4xl mx-auto mt-12 flex-shrink-0">
+        <div className="max-w-4xl mx-auto mt-16">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Success Stories from Mauritius & Africa</h2>
             <p className="text-gray-600">Real people who landed international jobs using MoCV.mu</p>
