@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Target, TrendingUp, AlertCircle, CheckCircle, Zap, ArrowRight, Download, Eye, Lightbulb, ArrowLeft } from 'lucide-react';
+import { Upload, FileText, Target, TrendingUp, AlertCircle, CheckCircle, Zap, ArrowRight, Download, Eye, Lightbulb, ArrowLeft, X } from 'lucide-react';
 import { CVAnalysis } from '../types';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
