@@ -1089,7 +1089,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
           {/* Sidebar Navigation */}
-          <div className="w-64 flex-shrink-0">
+          <div className="w-80 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
               <h3 className="font-semibold text-gray-900 mb-4">CV Sections</h3>
               <nav className="space-y-2">
@@ -1127,7 +1127,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 max-w-2xl">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -1145,6 +1145,175 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               </div>
 
               {renderActiveSection()}
+            </div>
+          </div>
+
+          {/* Live Preview Panel */}
+          <div className="w-96 flex-shrink-0">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-24">
+              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  Live Preview
+                </h3>
+                <p className="text-xs text-blue-100 mt-1">See your CV as you build it</p>
+              </div>
+              
+              <div className="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+                <div className="bg-gray-50 rounded-lg p-4 min-h-96">
+                  <div className="bg-white rounded border p-6 shadow-sm text-sm">
+                    {/* CV Preview Content */}
+                    <div className="space-y-4">
+                      {/* Header */}
+                      <div className="text-center border-b pb-4">
+                        <h1 className="text-xl font-bold text-gray-900 mb-1">
+                          {cvData.personalInfo?.fullName || 'Your Name'}
+                        </h1>
+                        <p className="text-base text-gray-600 mb-2">
+                          {cvData.personalInfo?.title || 'Your Professional Title'}
+                        </p>
+                        <div className="text-xs text-gray-500 space-x-2">
+                          {cvData.personalInfo?.email && (
+                            <span>{cvData.personalInfo.email}</span>
+                          )}
+                          {cvData.personalInfo?.phone && (
+                            <span>• {cvData.personalInfo.phone}</span>
+                          )}
+                          {cvData.personalInfo?.location && (
+                            <span>• {cvData.personalInfo.location}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Summary */}
+                      {cvData.summary && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Professional Summary</h3>
+                          <p className="text-xs text-gray-700 leading-relaxed">{cvData.summary}</p>
+                        </div>
+                      )}
+
+                      {/* Experience */}
+                      {cvData.experience && cvData.experience.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Professional Experience</h3>
+                          <div className="space-y-3">
+                            {cvData.experience.slice(0, 2).map((exp: any, index: number) => (
+                              <div key={index} className="border-l-2 border-blue-200 pl-3">
+                                <h4 className="text-xs font-semibold text-gray-900">{exp.title || 'Job Title'}</h4>
+                                <p className="text-xs text-blue-600 font-medium">{exp.company || 'Company Name'}</p>
+                                <p className="text-xs text-gray-500 mb-1">
+                                  {exp.startDate || 'Start'} - {exp.current ? 'Present' : exp.endDate || 'End'}
+                                  {exp.location && ` • ${exp.location}`}
+                                </p>
+                                {exp.description && (
+                                  <div className="text-xs text-gray-700 leading-relaxed">
+                                    {exp.description.split('\n').slice(0, 2).map((line: string, i: number) => (
+                                      <div key={i}>{line}</div>
+                                    ))}
+                                    {exp.description.split('\n').length > 2 && (
+                                      <div className="text-gray-500 italic">...</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            {cvData.experience.length > 2 && (
+                              <div className="text-xs text-gray-500 italic text-center">
+                                +{cvData.experience.length - 2} more experience{cvData.experience.length > 3 ? 's' : ''}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Skills */}
+                      {cvData.skills && cvData.skills.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Skills</h3>
+                          <div className="flex flex-wrap gap-1">
+                            {cvData.skills.slice(0, 8).map((skill: any, index: number) => (
+                              <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                {skill.name}
+                              </span>
+                            ))}
+                            {cvData.skills.length > 8 && (
+                              <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                                +{cvData.skills.length - 8} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Education */}
+                      {cvData.education && cvData.education.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Education</h3>
+                          <div className="space-y-2">
+                            {cvData.education.slice(0, 2).map((edu: any, index: number) => (
+                              <div key={index}>
+                                <h4 className="text-xs font-semibold text-gray-900">{edu.degree || 'Degree'}</h4>
+                                <p className="text-xs text-blue-600">{edu.school || 'School Name'}</p>
+                                <p className="text-xs text-gray-500">
+                                  {edu.graduationDate || 'Graduation Date'} {edu.location && `• ${edu.location}`}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Projects */}
+                      {cvData.projects && cvData.projects.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Projects</h3>
+                          <div className="space-y-2">
+                            {cvData.projects.slice(0, 2).map((project: any, index: number) => (
+                              <div key={index}>
+                                <h4 className="text-xs font-semibold text-gray-900">{project.name || 'Project Name'}</h4>
+                                <p className="text-xs text-gray-700 leading-relaxed">
+                                  {project.description ? project.description.substring(0, 100) + '...' : 'Project description'}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Certifications */}
+                      {cvData.certifications && cvData.certifications.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Certifications</h3>
+                          <div className="space-y-1">
+                            {cvData.certifications.slice(0, 3).map((cert: any, index: number) => (
+                              <div key={index} className="text-xs">
+                                <span className="font-medium text-gray-900">{cert.name || 'Certification'}</span>
+                                {cert.issuer && <span className="text-gray-600"> - {cert.issuer}</span>}
+                                {cert.date && <span className="text-gray-500"> ({cert.date})</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Empty state */}
+                      {!cvData.personalInfo?.fullName && !cvData.summary && cvData.experience.length === 0 && (
+                        <div className="text-center py-8 text-gray-400">
+                          <FileText className="h-12 w-12 mx-auto mb-2" />
+                          <p className="text-sm">Start filling out your CV to see the preview</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-500">
+                    Preview updates as you type
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
