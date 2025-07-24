@@ -38,6 +38,19 @@ import { ParsedCVData } from '../services/cvParsingService';
 import { getTemplateContentByType } from '../services/templateService';
 import gamificationService from '../services/gamificationService';
 
+interface CVTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  icon: React.ReactElement;
+  markdownUrl: string;
+  tags: string[];
+  difficulty: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface CVBuilderProps {
   targetMarket: TargetMarket | null;
   selectedTemplate?: CVTemplate | null;
@@ -107,6 +120,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
   const [showAITips, setShowAITips] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [templateContent, setTemplateContent] = useState<string>('');
+  const [currentTemplate, setCurrentTemplate] = useState<CVTemplate | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   
@@ -131,6 +146,47 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
 
   // Load existing CV data if editing
   useEffect(() => {
+    // Load template information
+    const loadTemplate = () => {
+      try {
+        // First try to get from props
+        if (selectedTemplate) {
+          setCurrentTemplate(selectedTemplate);
+          console.log('Template loaded from props:', selectedTemplate.name);
+          return;
+        }
+
+        // Then try localStorage
+        const savedTemplateData = localStorage.getItem('mocv_selected_template_data');
+        if (savedTemplateData) {
+          const template = JSON.parse(savedTemplateData);
+          setCurrentTemplate(template);
+          console.log('Template loaded from localStorage:', template.name);
+          return;
+        }
+
+        // Fallback to classic template
+        const fallbackTemplate: CVTemplate = {
+          id: 'classic-ats',
+          name: 'Classic ATS',
+          description: 'Professional and ATS-optimized template',
+          category: 'Universal',
+          icon: React.createElement(FileText, { className: "h-6 w-6" }),
+          markdownUrl: 'fallback-classic',
+          tags: ['professional', 'universal', 'ats-safe'],
+          difficulty: 'Beginner',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        setCurrentTemplate(fallbackTemplate);
+        console.log('Using fallback template');
+      } catch (error) {
+        console.error('Error loading template:', error);
+      }
+    };
+
+    loadTemplate();
+
     const editingData = localStorage.getItem('mocv_editing_cv');
     if (editingData) {
       try {
@@ -147,7 +203,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
         console.error('Error loading editing data:', error);
       }
     }
-  }, []);
+  }, [selectedTemplate]);
 
   // Auto-save functionality
   useEffect(() => {
