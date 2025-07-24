@@ -397,6 +397,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
       ...prev,
       projects: prev.projects.map(project => 
         project.id === id ? { ...project, [field]: value } : project
+      )
     }));
   };
 
