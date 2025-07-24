@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Download, Eye, EyeOff, Monitor, Tablet, Smartphone, User, Mail, Phone, MapPin, Globe, FileText, Plus, X, Trash2, Calendar, Award, Code, GraduationCap, Languages, Briefcase, Target, Lightbulb, Upload, Wand2, Palette, Sparkles, Crown, BookOpen, RefreshCw, Brain } from 'lucide-react';
 import {
-  Award, 
   Code, 
   Globe, 
   Plus, 
