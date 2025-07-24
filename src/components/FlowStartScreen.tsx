@@ -42,10 +42,8 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
             </div>
           </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-6 text-center mx-auto w-full">
-            <div className="flex flex-col items-center justify-center w-full">
-              <div className="text-center w-full">Welcome to</div>
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center w-full">MoCV.mu</div>
-            </div>
+            <div className="text-center">Welcome to</div>
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">MoCV.mu</div>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
@@ -53,10 +51,10 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
           </p>
           
           {/* Demo Reset Button - Remove in production */}
-          <div className="mb-8 w-full text-center">
+          <div className="mb-8 text-center">
             <button
               onClick={handleResetData}
-              className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md border border-gray-200 hover:border-red-200 mx-auto"
+              className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md border border-gray-200 hover:border-red-200"
             >
               <span className="relative z-10 flex items-center gap-2">
                 <span className="text-lg group-hover:animate-spin transition-transform duration-500">🔄</span>
