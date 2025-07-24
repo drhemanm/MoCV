@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lightbulb, X, TrendingUp, AlertTriangle, CheckCircle, Zap } from 'lucide-react';
+import { getServiceStatus } from '../services/openaiService';
 
 interface CVData {
   personalInfo: {
@@ -36,9 +37,11 @@ interface AISuggestionsPanelProps {
 
 const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({ cvData, isVisible, onClose }) => {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+  const [serviceStatus, setServiceStatus] = useState(getServiceStatus());
 
   useEffect(() => {
     if (isVisible) {
+      setServiceStatus(getServiceStatus());
       generateSuggestions();
     }
   }, [cvData, isVisible]);
@@ -205,6 +208,17 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({ cvData, isVisib
       description: 'Include relevant keywords from job descriptions to improve ATS compatibility',
       priority: 'medium'
     });
+    // Add AI service status suggestion if not configured
+    if (!serviceStatus.openaiAvailable) {
+      newSuggestions.push({
+        id: 'ai-service-config',
+        type: 'tip',
+        category: 'AI Features',
+        title: 'Enable Advanced AI Features',
+        description: 'Configure OpenAI API key to unlock AI-powered content enhancement and suggestions',
+        priority: 'low'
+      });
+    }
 
     setSuggestions(newSuggestions);
   };
@@ -273,7 +287,14 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({ cvData, isVisib
           <div className="p-6 text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <h4 className="font-semibold text-gray-900 mb-2">Great job!</h4>
-            <p className="text-gray-600 text-sm">Your CV looks good. Keep adding content for more suggestions.</p>
+            <p className="text-gray-600 text-sm">
+              Your CV looks good. Keep adding content for more suggestions.
+              {!serviceStatus.openaiAvailable && (
+                <span className="block mt-2 text-yellow-600">
+                  💡 Configure OpenAI API key for advanced AI suggestions
+                </span>
+              )}
+            </p>
           </div>
         ) : (
           <div className="p-4 space-y-4">
@@ -313,6 +334,11 @@ const AISuggestionsPanel: React.FC<AISuggestionsPanelProps> = ({ cvData, isVisib
       <div className="p-4 border-t border-gray-200 bg-gray-50">
         <div className="text-xs text-gray-600 text-center">
           <p>💡 Suggestions update as you edit your CV</p>
+          {!serviceStatus.openaiAvailable && (
+            <p className="text-yellow-600 mt-1">
+              ⚠️ Basic mode - Configure OpenAI API key for advanced AI features
+            </p>
+          )}
         </div>
       </div>
     </div>

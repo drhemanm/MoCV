@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Wand2, Loader2, CheckCircle, X, RotateCcw, Copy } from 'lucide-react';
 import { enhanceText, getEnhancementSuggestions, EnhancementRequest, EnhancementResponse } from '../services/aiEnhancementService';
+import { getServiceStatus } from '../services/openaiService';
 
 interface AIEnhanceButtonProps {
   text: string;
@@ -32,6 +33,13 @@ const AIEnhanceButton: React.FC<AIEnhanceButtonProps> = ({
       return;
     }
 
+    // Check if AI service is available
+    const serviceStatus = getServiceStatus();
+    if (!serviceStatus.openaiAvailable) {
+      // Show fallback suggestions instead of trying to enhance
+      setShowSuggestions(true);
+      return;
+    }
     setIsEnhancing(true);
     
     try {
