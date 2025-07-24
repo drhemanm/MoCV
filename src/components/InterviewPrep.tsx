@@ -147,21 +147,6 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
         warningMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
         warningMessage.innerHTML = `
           <div>CV uploaded but text extraction limited.</div>
-          <div class="text-xs mt-1">Please paste your CV text manually for best results.</div>
-        `;
-        document.body.appendChild(warningMessage);
-        
-        // Set empty text to encourage manual input
-        setCvText('');
-        
-        // Remove warning message after 5 seconds
-        setTimeout(() => {
-          if (document.body.contains(warningMessage)) {
-            document.body.removeChild(warningMessage);
-          }
-        }, 5000);
-      }
-      
     } catch (error) {
       console.error('File parsing error:', error);
       
