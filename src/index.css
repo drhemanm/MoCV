@@ -2,54 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CRITICAL: Fix for text direction issues - Force LTR everywhere with maximum specificity */
-html, body, * {
-  direction: ltr !important;
-}
-
-input, 
-textarea, 
-[contenteditable],
-.rich-text-editor,
-.rich-text-editor *,
-div[contenteditable="true"],
-div[contenteditable] {
+/* CRITICAL: Universal LTR enforcement with maximum specificity */
+html, body, *, *::before, *::after {
   direction: ltr !important;
   text-align: left !important;
   unicode-bidi: embed !important;
   writing-mode: horizontal-tb !important;
 }
 
-/* Additional specific targeting for text inputs */
+/* Specific targeting for all input elements */
+input, 
+textarea, 
+[contenteditable],
+[contenteditable="true"],
+div[contenteditable],
+.rich-text-editor,
+.rich-text-editor * {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+  writing-mode: horizontal-tb !important;
+}
+
+/* Input type specific overrides */
 input[type="text"],
 input[type="email"], 
 input[type="tel"],
 input[type="url"],
 input[type="password"],
 input[type="search"],
-textarea,
-[contenteditable="true"],
-[contenteditable] {
+input[type="month"],
+textarea {
   direction: ltr !important;
   text-align: left !important;
   unicode-bidi: embed !important;
   writing-mode: horizontal-tb !important;
 }
 
-/* React component specific overrides */
+/* React component class targeting */
 .w-full.p-3.border,
 textarea.w-full,
-input.w-full {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: embed !important;
-  writing-mode: horizontal-tb !important;
-}
-
-/* Tailwind CSS class overrides */
+input.w-full,
 .resize-none,
 .focus\:ring-2,
 .focus\:ring-blue-500 {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+  writing-mode: horizontal-tb !important;
+}
+
+/* Tailwind utility class overrides */
+.text-left {
+  text-align: left !important;
+  direction: ltr !important;
+}
+
+/* Form element safety net */
+form input,
+form textarea,
+form select {
   direction: ltr !important;
   text-align: left !important;
   unicode-bidi: embed !important;
