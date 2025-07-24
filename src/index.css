@@ -2,102 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CRITICAL: Universal LTR enforcement with maximum specificity */
-html, body, *, *::before, *::after {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: embed !important;
-  writing-mode: horizontal-tb !important;
-}
-
-/* Specific targeting for all input elements */
-input, 
-textarea, 
-[contenteditable],
-[contenteditable="true"],
-div[contenteditable],
-.rich-text-editor,
-.rich-text-editor * {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: embed !important;
-  writing-mode: horizontal-tb !important;
-}
-
-/* Input type specific overrides */
-input[type="text"],
-input[type="email"], 
-input[type="tel"],
-input[type="url"],
-input[type="password"],
-input[type="search"],
-input[type="month"],
-textarea {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: embed !important;
-  writing-mode: horizontal-tb !important;
-}
-
-/* React component class targeting */
-.w-full.p-3.border,
-textarea.w-full,
-input.w-full,
-.resize-none,
-.focus\:ring-2,
-.focus\:ring-blue-500 {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: embed !important;
-  writing-mode: horizontal-tb !important;
-}
-
-/* Tailwind utility class overrides */
-.text-left {
-  text-align: left !important;
-  direction: ltr !important;
-}
-
-/* Form element safety net */
-form input,
-form textarea,
-form select {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: embed !important;
-  writing-mode: horizontal-tb !important;
-}
-/* CV Builder specific overrides with maximum specificity */
-.cv-builder input,
-.cv-builder textarea,
-.cv-builder select,
-.cv-builder [contenteditable],
-input[type="text"],
-input[type="email"],
-input[type="tel"],
-input[type="url"],
-input[type="date"],
-input[type="month"],
-textarea,
-select {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: embed !important;
-  writing-mode: horizontal-tb !important;
-  text-orientation: mixed !important;
-}
-
-/* Specific targeting for React components */
-[class*="w-full"][class*="p-3"],
-[class*="border"][class*="rounded"],
-[class*="focus:ring"] {
-  direction: ltr !important;
-  text-align: left !important;
-  unicode-bidi: embed !important;
-}
-
-/* Override any inherited RTL */
+/* Simple, clean LTR enforcement */
 * {
   direction: ltr !important;
   text-align: left !important;
+  unicode-bidi: normal !important;
+}
+
+/* Specific input targeting */
+input, textarea, select {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: normal !important;
+  writing-mode: horizontal-tb !important;
+}
+
+/* CV Builder specific */
+.cv-builder * {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: normal !important;
 }
