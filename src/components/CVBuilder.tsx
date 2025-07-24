@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, User, Briefcase, GraduationCap, Award, Globe, Plus, Trash2, Calendar, MapPin, Mail, Phone, Link, X, Wand2, Upload, Languages } from 'lucide-react';
+import { User, Briefcase, GraduationCap, Award, Code, Globe, Save, Download, Eye, ArrowLeft, Plus, X, Trash2, Star, Lightbulb, Languages, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
 import { SavedCV } from '../types';
 import { TargetMarket } from '../types';
@@ -94,6 +94,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
 
   const [activeSection, setActiveSection] = useState('personal');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
