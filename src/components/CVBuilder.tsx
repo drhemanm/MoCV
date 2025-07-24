@@ -1288,7 +1288,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 cv-builder" style={{ direction: 'ltr', unicodeBidi: 'bidi-override' }}>
+    <div className="min-h-screen bg-gray-50 cv-builder" dir="ltr" style={{ direction: 'ltr', textAlign: 'left' }}>
       <style>{`
         .cv-builder * {
           direction: ltr !important;
