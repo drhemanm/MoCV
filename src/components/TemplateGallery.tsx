@@ -38,6 +38,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     // Store selected template for PDF generation
     localStorage.setItem('mocv_selected_template', template.id);
     localStorage.setItem('mocv_selected_template_data', JSON.stringify(template));
+    console.log('Template selected in gallery:', template.name, template);
     onTemplateSelect(template);
   };
 

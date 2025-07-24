@@ -1495,12 +1495,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
             </div>
             
             <div className="flex items-center gap-3">
-              {currentTemplate && (
-                <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
-                  {currentTemplate.icon}
-                  <span>{currentTemplate.name}</span>
-                </div>
-              )}
               <button
                 onClick={() => setShowImport(true)}
                 className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
