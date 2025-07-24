@@ -35,11 +35,13 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium mb-6">
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium">
             <Sparkles className="h-4 w-4" />
             AI-Powered CV Assistant for Mauritius & Africa
+            </div>
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6 text-center">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6 text-center mx-auto">
             Welcome to
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> MoCV.mu</span>
           </h1>
