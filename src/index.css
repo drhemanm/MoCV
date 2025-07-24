@@ -35,7 +35,6 @@ textarea,
   unicode-bidi: embed !important;
   writing-mode: horizontal-tb !important;
 }
-}
 
 /* React component specific overrides */
 .w-full.p-3.border,
