@@ -35,26 +35,28 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="flex justify-center mb-6 w-full">
+          <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium">
-            <Sparkles className="h-4 w-4" />
-            AI-Powered CV Assistant for Mauritius & Africa
+              <Sparkles className="h-4 w-4" />
+              AI-Powered CV Assistant for Mauritius & Africa
             </div>
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6 text-center mx-auto w-full">
-            <div className="text-center">Welcome to</div>
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">MoCV.mu</div>
-          </h1>
+          <div className="text-center mb-6">
+            <h1 className="text-5xl font-bold text-gray-900">
+              <div>Welcome to</div>
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">MoCV.mu</div>
+            </h1>
+          </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
             Get ATS-optimized CVs, AI-powered content, and beat international recruitment systems.
           </p>
           
           {/* Demo Reset Button - Remove in production */}
-          <div className="mb-8 text-center">
+          <div className="mb-8 text-center flex justify-center">
             <button
               onClick={handleResetData}
-              className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md border border-gray-200 hover:border-red-200"
+              className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md border border-gray-200 hover:border-red-200 mx-auto"
             >
               <span className="relative z-10 flex items-center gap-2">
                 <span className="text-lg group-hover:animate-spin transition-transform duration-500">🔄</span>
