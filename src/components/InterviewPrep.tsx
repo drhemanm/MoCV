@@ -235,7 +235,7 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
     const initialMessage: ChatMessage = {
       id: 'init',
       type: 'ai',
-      content: \`Great! I've analyzed your CV and the job description. I've prepared 5 customized interview questions that are likely to come up based on your background and the role requirements. Let's start with the first question. Take your time to think through your answer.`,
+      content: `Great! I've analyzed your CV and the job description. I've prepared 5 customized interview questions that are likely to come up based on your background and the role requirements. Let's start with the first question. Take your time to think through your answer.`,
       timestamp: new Date()
     };
 
