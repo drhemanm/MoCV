@@ -1301,11 +1301,17 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar Navigation */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
-              <h3 className="font-semibold text-gray-900 mb-4">CV Sections</h3>
+        <div className="flex-1 lg:flex lg:gap-8">
+          {/* Left Sidebar - Navigation */}
+          <div className="lg:w-80 mb-8 lg:mb-0 lg:flex-shrink-0">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">CV Sections</h3>
+                <div className="text-sm text-gray-500">
+                  {calculateCompletionScore()}% Complete
+                </div>
+              </div>
+              
               <nav className="space-y-2">
                 {sections.map((section) => {
                   const isCompleted = getSectionCompletionStatus(section.id);
@@ -1315,18 +1321,18 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     <button
                       key={section.id}
                       onClick={() => setActiveSection(section.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >
-                      <div className={isActive ? 'text-blue-600' : 'text-gray-400'}>
+                      <div className={`${isActive ? 'text-blue-600' : 'text-gray-400'} transition-colors`}>
                         {section.icon}
                       </div>
-                      <span className="text-sm flex-1">{section.name}</span>
+                      <span className="text-sm font-medium flex-1">{section.name}</span>
                       {section.required && (
-                        <span className="text-xs text-red-500">*</span>
+                        <span className="text-xs text-red-500 font-medium">*</span>
                       )}
                       {isCompleted && (
                         <CheckCircle className="h-4 w-4 text-green-600" />
@@ -1336,44 +1342,235 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                 })}
               </nav>
               
-              {/* Completion Progress */}
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Completion</span>
-                  <span className="text-sm text-gray-600">{calculateCompletionScore()}%</span>
+              {/* Progress Bar */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+                  <span className="text-sm font-semibold text-blue-600">{calculateCompletionScore()}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-3">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${calculateCompletionScore()}%` }}
                   ></div>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  {calculateCompletionScore() < 50 && "Keep going! Add more sections to improve your CV."}
+                  {calculateCompletionScore() >= 50 && calculateCompletionScore() < 80 && "Great progress! Your CV is taking shape."}
+                  {calculateCompletionScore() >= 80 && "Excellent! Your CV is nearly complete."}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    {sections.find(s => s.id === activeSection)?.name}
-                  </h2>
-                  <p className="text-gray-600">
-                    {activeSection === 'personal' && 'Enter your contact information and basic details'}
-                    {activeSection === 'summary' && 'Write a compelling professional summary'}
-                    {activeSection === 'experience' && 'Add your work experience and achievements'}
-                    {activeSection === 'education' && 'Include your educational background'}
-                    {activeSection === 'skills' && 'List your technical and soft skills'}
-                    {activeSection === 'projects' && 'Showcase your key projects and work'}
-                    {activeSection === 'certifications' && 'Add professional certifications and credentials'}
-                    {activeSection === 'languages' && 'Include languages you speak and proficiency levels'}
-                  </p>
+          {/* Main Content Area */}
+          <div className="flex-1 lg:flex lg:gap-8">
+            {/* Form Section */}
+            <div className="lg:w-1/2">
+              {renderCurrentSection()}
+            </div>
+
+            {/* Live Preview Section */}
+            <div className="lg:w-1/2 mt-8 lg:mt-0">
+              <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-blue-600" />
+                    Live Preview
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDownloadPDF}
+                      disabled={isGeneratingPDF}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+                    >
+                      {isGeneratingPDF ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4" />
+                          PDF
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* CV Preview */}
+                <div className="bg-gray-50 rounded-lg p-4 max-h-[600px] overflow-y-auto">
+                  <div className="bg-white rounded border p-6 shadow-sm text-sm">
+                    {/* Header */}
+                    <div className="text-center border-b pb-4 mb-6">
+                      <h1 className="text-xl font-bold text-gray-900 mb-2">
+                        {cvData.personalInfo.fullName || 'Your Name'}
+                      </h1>
+                      <p className="text-lg text-gray-600 mb-2">
+                        {cvData.personalInfo.title || 'Your Professional Title'}
+                      </p>
+                      <div className="text-sm text-gray-500 space-x-2">
+                        {cvData.personalInfo.email && <span>{cvData.personalInfo.email}</span>}
+                        {cvData.personalInfo.phone && <span>• {cvData.personalInfo.phone}</span>}
+                        {cvData.personalInfo.location && <span>• {cvData.personalInfo.location}</span>}
+                      </div>
+                      {cvData.personalInfo.linkedin && (
+                        <div className="text-sm text-blue-600 mt-1">{cvData.personalInfo.linkedin}</div>
+                      )}
+                    </div>
+
+                    {/* Summary */}
+                    {cvData.summary && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                          Professional Summary
+                        </h3>
+                        <p className="text-gray-700 leading-relaxed">{cvData.summary}</p>
+                      </div>
+                    )}
+
+                    {/* Experience */}
+                    {cvData.experience.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                          Professional Experience
+                        </h3>
+                        <div className="space-y-4">
+                          {cvData.experience.map((exp, index) => (
+                            <div key={index} className="border-l-2 border-blue-200 pl-4">
+                              <h4 className="font-semibold text-gray-900">{exp.title}</h4>
+                              <p className="text-blue-600 font-medium">{exp.company}</p>
+                              <p className="text-sm text-gray-500 mb-2">
+                                {exp.startDate} - {exp.current ? 'Present' : exp.endDate}
+                                {exp.location && ` • ${exp.location}`}
+                              </p>
+                              {exp.description && (
+                                <div className="text-gray-700 text-sm whitespace-pre-line">
+                                  {exp.description}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Skills */}
+                    {cvData.skills.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                          Skills
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {cvData.skills.map((skill, index) => (
+                            <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                              {skill.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Projects */}
+                    {cvData.projects.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                          Projects
+                        </h3>
+                        <div className="space-y-3">
+                          {cvData.projects.map((project, index) => (
+                            <div key={index}>
+                              <h4 className="font-semibold text-gray-900">{project.name}</h4>
+                              <p className="text-gray-700 text-sm mb-1">{project.description}</p>
+                              {project.technologies.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {project.technologies.map((tech, techIndex) => (
+                                    <span key={techIndex} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                                      {tech}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {project.link && (
+                                <p className="text-blue-600 text-sm mt-1">{project.link}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Education */}
+                    {cvData.education.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                          Education
+                        </h3>
+                        <div className="space-y-3">
+                          {cvData.education.map((edu, index) => (
+                            <div key={index}>
+                              <h4 className="font-semibold text-gray-900">{edu.degree}</h4>
+                              <p className="text-blue-600">{edu.school}</p>
+                              <p className="text-sm text-gray-500">
+                                {edu.graduationDate} {edu.location && `• ${edu.location}`}
+                              </p>
+                              {edu.gpa && (
+                                <p className="text-sm text-gray-600">GPA: {edu.gpa}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Certifications */}
+                    {cvData.certifications.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                          Certifications
+                        </h3>
+                        <div className="space-y-2">
+                          {cvData.certifications.map((cert, index) => (
+                            <div key={index}>
+                              <h4 className="font-semibold text-gray-900">{cert.name}</h4>
+                              <p className="text-gray-600 text-sm">
+                                {cert.issuer} • {cert.date}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Languages */}
+                    {cvData.languages && cvData.languages.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-1">
+                          Languages
+                        </h3>
+                        <div className="space-y-2">
+                          {cvData.languages.map((lang, index) => (
+                            <div key={index} className="flex justify-between items-center">
+                              <span className="font-medium text-gray-900">{lang.name}</span>
+                              <span className="text-sm text-gray-600">{lang.proficiency}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Empty State */}
+                    {!cvData.personalInfo.fullName && !cvData.summary && cvData.experience.length === 0 && (
+                      <div className="text-center py-12 text-gray-500">
+                        <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                        <p className="text-lg mb-2">Start building your CV</p>
+                        <p className="text-sm">Fill in the sections to see your CV preview</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {renderCurrentSection()}
             </div>
           </div>
         </div>
