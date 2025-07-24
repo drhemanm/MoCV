@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Bold, Italic, List, Type, Undo, Redo } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -15,6 +15,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   className = ""
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // Convert plain text to HTML with basic formatting
   const textToHtml = (text: string): string => {
@@ -42,8 +43,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    const htmlContent = e.currentTarget.innerHTML;
-    const textContent = htmlToText(htmlContent);
+    const textContent = e.currentTarget.textContent || '';
     onChange(textContent);
   };
 
@@ -85,6 +85,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       }
     }
   };
+
+  // Update editor content when value changes
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.textContent !== value) {
+      editorRef.current.textContent = value;
+    }
+  }, [value]);
 
   return (
     <div className={`border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent ${className}`}>
@@ -139,25 +146,36 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       </div>
 
       {/* Editor */}
-      <div
-        contentEditable
-        onInput={handleInput}
-        onKeyDown={handleKeyDown}
-        onFocus={() => setIsEditing(true)}
-        onBlur={() => setIsEditing(false)}
-        className="p-3 min-h-24 focus:outline-none text-left"
-        dir="ltr"
-        style={{ whiteSpace: 'pre-wrap' }}
-        dangerouslySetInnerHTML={{ __html: textToHtml(value) }}
-        data-placeholder={placeholder}
-      />
-
-      {/* Placeholder */}
-      {!value && !isEditing && (
-        <div className="absolute inset-0 p-3 pt-14 text-gray-400 pointer-events-none">
-          {placeholder}
+      <div className="relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setIsEditing(true)}
+          onBlur={() => setIsEditing(false)}
+          className="p-3 min-h-24 focus:outline-none"
+          style={{ 
+            direction: 'ltr',
+            textAlign: 'left',
+            unicodeBidi: 'embed',
+            whiteSpace: 'pre-wrap'
+          }}
+          suppressContentEditableWarning={true}
+        >
+          {value}
         </div>
-      )}
+
+        {/* Placeholder */}
+        {!value && !isEditing && (
+          <div 
+            className="absolute top-3 left-3 text-gray-400 pointer-events-none"
+            style={{ direction: 'ltr', textAlign: 'left' }}
+          >
+            {placeholder}
+          </div>
+        )}
+      </div>
 
       {/* Help text */}
       <div className="px-3 pb-2 text-xs text-gray-500">
