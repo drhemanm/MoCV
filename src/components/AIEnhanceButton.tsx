@@ -29,6 +29,7 @@ const AIEnhanceButton: React.FC<AIEnhanceButtonProps> = ({
 
   const handleEnhance = async () => {
     if (!text.trim()) {
+      // Show suggestions instead of trying to enhance empty text
       setShowSuggestions(true);
       return;
     }
@@ -36,10 +37,11 @@ const AIEnhanceButton: React.FC<AIEnhanceButtonProps> = ({
     // Check if AI service is available
     const serviceStatus = getServiceStatus();
     if (!serviceStatus.openaiAvailable) {
-      // Show fallback suggestions instead of trying to enhance
+      // Show suggestions when AI is not available
       setShowSuggestions(true);
       return;
     }
+    
     setIsEnhancing(true);
     
     try {
@@ -55,7 +57,8 @@ const AIEnhanceButton: React.FC<AIEnhanceButtonProps> = ({
       setShowModal(true);
     } catch (error) {
       console.error('Enhancement error:', error);
-      // Show error state or fallback
+      // Show suggestions on error
+      setShowSuggestions(true);
     } finally {
       setIsEnhancing(false);
     }
