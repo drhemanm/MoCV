@@ -434,6 +434,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
               personalInfo: { ...prev.personalInfo, fullName: e.target.value }
             }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
             placeholder="John Smith"
           />
         </div>
@@ -450,6 +451,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
               personalInfo: { ...prev.personalInfo, title: e.target.value }
             }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
             placeholder="Senior Software Engineer"
           />
         </div>
@@ -468,6 +470,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
               personalInfo: { ...prev.personalInfo, email: e.target.value }
             }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
             placeholder="john.smith@email.com"
           />
         </div>
@@ -484,6 +487,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
               personalInfo: { ...prev.personalInfo, phone: e.target.value }
             }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
             placeholder="+230 5123 4567"
           />
         </div>
@@ -502,6 +506,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
               personalInfo: { ...prev.personalInfo, location: e.target.value }
             }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
             placeholder="Port Louis, Mauritius"
           />
         </div>
@@ -518,6 +523,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
               personalInfo: { ...prev.personalInfo, linkedin: e.target.value }
             }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
             placeholder="linkedin.com/in/johnsmith"
           />
         </div>
@@ -535,6 +541,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
             personalInfo: { ...prev.personalInfo, website: e.target.value }
           }))}
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
           placeholder="https://johnsmith.dev"
         />
       </div>
@@ -561,6 +568,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
         onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
         placeholder="Write a compelling 2-3 sentence summary highlighting your experience, key skills, and career objectives..."
         className="min-h-32"
+        style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
       />
       <div className="text-xs text-gray-500">
         Tip: Include your years of experience, key skills, and what you're looking for in your next role.
@@ -614,6 +622,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={exp.title}
                     onChange={(e) => updateExperience(exp.id, 'title', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="Senior Software Engineer"
                   />
                 </div>
@@ -625,6 +634,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={exp.company}
                     onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="Tech Company Ltd"
                   />
                 </div>
@@ -638,6 +648,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={exp.location}
                     onChange={(e) => updateExperience(exp.id, 'location', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="Port Louis, Mauritius"
                   />
                 </div>
@@ -649,6 +660,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={exp.startDate}
                     onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                   />
                 </div>
                 
@@ -661,6 +673,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                       onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
                       disabled={exp.current}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                      style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     />
                     <label className="flex items-center gap-2">
                       <input
@@ -690,6 +703,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                   value={exp.description}
                   onChange={(value) => updateExperience(exp.id, 'description', value)}
                   placeholder="• Led development of key features resulting in 40% performance improvement&#10;• Managed team of 5 developers and coordinated project deliverables&#10;• Implemented best practices that reduced bugs by 60%"
+                  style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                 />
               </div>
             </div>
@@ -745,6 +759,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={edu.degree}
                     onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="Bachelor of Science in Computer Science"
                   />
                 </div>
@@ -756,6 +771,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={edu.school}
                     onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="University of Mauritius"
                   />
                 </div>
@@ -769,6 +785,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={edu.location}
                     onChange={(e) => updateEducation(edu.id, 'location', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="Reduit, Mauritius"
                   />
                 </div>
@@ -780,6 +797,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={edu.graduationDate}
                     onChange={(e) => updateEducation(edu.id, 'graduationDate', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                   />
                 </div>
                 
@@ -790,6 +808,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={edu.gpa}
                     onChange={(e) => updateEducation(edu.id, 'gpa', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="3.8/4.0"
                   />
                 </div>
@@ -845,6 +864,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                   value={skill.name}
                   onChange={(e) => updateSkill(skill.id, 'name', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                   placeholder="JavaScript"
                 />
                 
@@ -852,6 +872,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                   value={skill.category}
                   onChange={(e) => updateSkill(skill.id, 'category', e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                 >
                   <option value="Technical">Technical</option>
                   <option value="Soft Skills">Soft Skills</option>
@@ -928,6 +949,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={project.name}
                     onChange={(e) => updateProject(project.id, 'name', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="E-commerce Platform"
                   />
                 </div>
@@ -939,6 +961,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={project.link}
                     onChange={(e) => updateProject(project.id, 'link', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="https://github.com/username/project"
                   />
                 </div>
@@ -951,6 +974,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                   value={project.technologies.join(', ')}
                   onChange={(e) => updateProject(project.id, 'technologies', e.target.value.split(',').map(t => t.trim()))}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                   placeholder="React, Node.js, MongoDB, AWS"
                 />
               </div>
@@ -961,6 +985,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                   value={project.description}
                   onChange={(value) => updateProject(project.id, 'description', value)}
                   placeholder="Describe the project, your role, challenges overcome, and results achieved..."
+                  style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                 />
               </div>
             </div>
@@ -1016,6 +1041,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={cert.name}
                     onChange={(e) => updateCertification(cert.id, 'name', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="AWS Certified Developer"
                   />
                 </div>
@@ -1027,6 +1053,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={cert.issuer}
                     onChange={(e) => updateCertification(cert.id, 'issuer', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="Amazon Web Services"
                   />
                 </div>
@@ -1040,6 +1067,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={cert.date}
                     onChange={(e) => updateCertification(cert.id, 'date', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                   />
                 </div>
                 
@@ -1107,6 +1135,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={lang.name}
                     onChange={(e) => updateLanguage(lang.id, 'name', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="English"
                   />
                 </div>
@@ -1117,6 +1146,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={lang.proficiency}
                     onChange={(e) => updateLanguage(lang.id, 'proficiency', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                   >
                     <option value="Basic">Basic</option>
                     <option value="Intermediate">Intermediate</option>
@@ -1134,6 +1164,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={lang.written}
                     onChange={(e) => updateLanguage(lang.id, 'written', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                   >
                     <option value="Basic">Basic</option>
                     <option value="Intermediate">Intermediate</option>
@@ -1149,6 +1180,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                     value={lang.spoken}
                     onChange={(e) => updateLanguage(lang.id, 'spoken', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                   >
                     <option value="Basic">Basic</option>
                     <option value="Intermediate">Intermediate</option>
