@@ -672,14 +672,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
                       value={exp.endDate}
                       onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
                       disabled={exp.current}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      style={{
-                        direction: 'ltr',
-                        textAlign: 'left',
-                        unicodeBidi: 'bidi-override',
-                        writingMode: 'horizontal-tb'
-                      }}
-                      dir="ltr"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
                       style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     />
                     <label className="flex items-center gap-2">
