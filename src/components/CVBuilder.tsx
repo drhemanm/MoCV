@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, User, Briefcase, GraduationCap, Award, Globe, Plus, Trash2, Calendar, MapPin, Mail, Phone, Link, X, Wand2, Upload } from 'lucide-react';
+import { Save, Download, Eye, User, Briefcase, GraduationCap, Award, Globe, Plus, Trash2, Calendar, MapPin, Mail, Phone, Link, X, Wand2, Upload, Languages } from 'lucide-react';
 import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
 import { SavedCV } from '../types';
 import { TargetMarket } from '../types';
@@ -58,6 +58,13 @@ interface CVData {
     issuer: string;
     date: string;
   }>;
+  languages: Array<{
+    id: string;
+    name: string;
+    proficiency: string;
+    written: string;
+    spoken: string;
+  }>;
 }
 
 interface CVBuilderProps {
@@ -81,7 +88,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     education: [],
     skills: [],
     projects: [],
-    certifications: []
+    certifications: [],
+    languages: []
   });
 
   const [activeSection, setActiveSection] = useState('personal');
@@ -274,6 +282,36 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }));
   };
 
+  const addLanguage = () => {
+    const newLanguage = {
+      id: Date.now().toString(),
+      name: '',
+      proficiency: 'Intermediate',
+      written: 'Intermediate',
+      spoken: 'Intermediate'
+    };
+    setCvData(prev => ({
+      ...prev,
+      languages: [...prev.languages, newLanguage]
+    }));
+  };
+
+  const updateLanguage = (id: string, field: string, value: string) => {
+    setCvData(prev => ({
+      ...prev,
+      languages: prev.languages.map(lang =>
+        lang.id === id ? { ...lang, [field]: value } : lang
+      )
+    }));
+  };
+
+  const removeLanguage = (id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      languages: prev.languages.filter(lang => lang.id !== id)
+    }));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     
@@ -414,7 +452,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     { id: 'education', name: 'Education', icon: GraduationCap },
     { id: 'skills', name: 'Skills', icon: Award },
     { id: 'projects', name: 'Projects', icon: Globe },
-    { id: 'certifications', name: 'Certifications', icon: Award }
+    { id: 'certifications', name: 'Certifications', icon: Award },
+    { id: 'languages', name: 'Languages', icon: Languages }
   ];
 
   const renderPersonalInfo = () => (
@@ -1106,6 +1145,126 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     </div>
   );
 
+  const renderLanguages = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Languages</h3>
+        <button
+          onClick={addLanguage}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Language
+        </button>
+      </div>
+
+      {cvData.languages.map((language) => (
+        <div key={language.id} className="bg-gray-50 rounded-lg p-6 relative">
+          <button
+            onClick={() => removeLanguage(language.id)}
+            className="absolute top-4 right-4 text-red-600 hover:text-red-800 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+
+          <div className="grid md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Language *
+              </label>
+              <input
+                type="text"
+                value={language.name}
+                onChange={(e) => updateLanguage(language.id, 'name', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="English"
+                dir="ltr"
+                style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Overall Proficiency
+              </label>
+              <select
+                value={language.proficiency}
+                onChange={(e) => updateLanguage(language.id, 'proficiency', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="Native">Native</option>
+                <option value="Fluent">Fluent</option>
+                <option value="Advanced">Advanced</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Basic">Basic</option>
+                <option value="Beginner">Beginner</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Written Level
+              </label>
+              <select
+                value={language.written}
+                onChange={(e) => updateLanguage(language.id, 'written', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="Native">Native</option>
+                <option value="Fluent">Fluent</option>
+                <option value="Advanced">Advanced</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Basic">Basic</option>
+                <option value="Beginner">Beginner</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Spoken Level
+              </label>
+              <select
+                value={language.spoken}
+                onChange={(e) => updateLanguage(language.id, 'spoken', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="Native">Native</option>
+                <option value="Fluent">Fluent</option>
+                <option value="Advanced">Advanced</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Basic">Basic</option>
+                <option value="Beginner">Beginner</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <p className="text-blue-800 text-sm">
+              <strong>Tip:</strong> Be honest about your language levels. Many employers will test language skills during interviews.
+            </p>
+          </div>
+        </div>
+      ))}
+
+      {cvData.languages.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <Languages className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <p>No languages added yet</p>
+          <p className="text-sm">Click "Add Language" to showcase your multilingual abilities</p>
+          <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200 text-left">
+            <h4 className="font-semibold text-yellow-900 mb-2">💡 Why Add Languages?</h4>
+            <ul className="text-yellow-800 text-sm space-y-1">
+              <li>• Increases your competitiveness in global markets</li>
+              <li>• Essential for Mauritius and African professionals</li>
+              <li>• Many international roles require multilingual skills</li>
+              <li>• Shows cultural adaptability and communication skills</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1217,6 +1376,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               {activeSection === 'skills' && renderSkills()}
               {activeSection === 'projects' && renderProjects()}
               {activeSection === 'certifications' && renderCertifications()}
+              {activeSection === 'languages' && renderLanguages()}
             </div>
           </div>
         </div>

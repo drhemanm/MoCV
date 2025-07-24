@@ -53,6 +53,8 @@ export interface CVData {
     id: string;
     name: string;
     proficiency: string;
+    written: string;
+    spoken: string;
   }>;
 }
 
@@ -636,14 +638,29 @@ export class PDFGenerator {
   private drawLanguages(languages: any[]) {
     this.drawSectionHeader('Languages');
 
-    const languageTexts = languages.map(lang => 
-      `${lang.name} (${lang.proficiency})`
-    ).join(' • ');
-    
-    this.drawText(languageTexts, this.margin, {
-      size: 10,
-      color: this.style.textColor
-    });
+    for (let i = 0; i < languages.length; i++) {
+      const lang = languages[i];
+      this.checkPageSpace(30);
+
+      // Language name
+      this.drawText(lang.name || 'Language', this.margin, {
+        font: this.fonts.bold,
+        size: 11,
+        color: this.style.primaryColor
+      });
+
+      // Proficiency levels
+      const proficiencyText = `Overall: ${lang.proficiency || 'Intermediate'} | Written: ${lang.written || 'Intermediate'} | Spoken: ${lang.spoken || 'Intermediate'}`;
+      this.drawText(proficiencyText, this.margin, {
+        size: 9,
+        color: this.style.secondaryColor,
+        indent: 10
+      });
+
+      if (i < languages.length - 1) {
+        this.moveDown(this.itemSpacing);
+      }
+    }
   }
 }
 
