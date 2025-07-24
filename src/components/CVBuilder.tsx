@@ -1244,7 +1244,29 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 cv-builder" style={{ direction: 'ltr', textAlign: 'left' }}>
+    <div className="min-h-screen bg-gray-50 cv-builder" style={{ direction: 'ltr', unicodeBidi: 'bidi-override' }}>
+      <style>{`
+        .cv-builder * {
+          direction: ltr !important;
+          text-align: left !important;
+          unicode-bidi: bidi-override !important;
+          writing-mode: horizontal-tb !important;
+        }
+        .cv-builder input,
+        .cv-builder textarea,
+        .cv-builder select {
+          direction: ltr !important;
+          text-align: left !important;
+          unicode-bidi: bidi-override !important;
+          writing-mode: horizontal-tb !important;
+        }
+        .cv-builder [contenteditable] {
+          direction: ltr !important;
+          text-align: left !important;
+          unicode-bidi: bidi-override !important;
+          writing-mode: horizontal-tb !important;
+        }
+      `}</style>
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
