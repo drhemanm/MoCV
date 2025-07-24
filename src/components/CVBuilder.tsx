@@ -567,7 +567,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
         value={cvData.summary}
         onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
         placeholder="Write a compelling 2-3 sentence summary highlighting your experience, key skills, and career objectives..."
-        className="min-h-32"
+        className="min-h-32 cv-summary-textarea"
         style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
       />
       <div className="text-xs text-gray-500">
@@ -1265,6 +1265,21 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
           text-align: left !important;
           unicode-bidi: bidi-override !important;
           writing-mode: horizontal-tb !important;
+        }
+        
+        /* Specific fix for summary textarea */
+        .cv-summary-textarea {
+          direction: ltr !important;
+          text-align: left !important;
+          unicode-bidi: bidi-override !important;
+          writing-mode: horizontal-tb !important;
+          text-orientation: mixed !important;
+        }
+        
+        .cv-summary-textarea:focus {
+          direction: ltr !important;
+          text-align: left !important;
+          unicode-bidi: bidi-override !important;
         }
       `}</style>
       {/* Header */}
