@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Save, Download, Eye, Plus, Trash2, Edit3, User, FileText, Briefcase, GraduationCap, Award, Globe, Languages, Lightbulb, ArrowLeft, CheckCircle, Upload, X } from 'lucide-react';
 import { TargetMarket, SavedCV } from '../types';
 import BackButton from './BackButton';
-import RichTextEditor from './RichTextEditor';
 import AIEnhanceButton from './AIEnhanceButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
 import CVImportSection from './CVImportSection';
@@ -610,15 +609,34 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           jobTitle={cvData.personalInfo.title}
         />
       </div>
-      <RichTextEditor
-        value={cvData.summary}
-        onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
-        placeholder="Write a compelling professional summary that highlights your key achievements, skills, and career objectives..."
-        className="min-h-32"
-      />
-      <p className="text-xs text-gray-500">
-        Tip: Include 2-3 sentences highlighting your experience, key skills, and what you're looking for in your next role.
-      </p>
+      <div className="relative">
+        <textarea
+          value={cvData.summary}
+          onChange={(e) => setCvData(prev => ({ ...prev, summary: e.target.value }))}
+          rows={6}
+          className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          placeholder="Write a compelling professional summary that highlights your key achievements, skills, and career objectives..."
+          dir="ltr"
+          style={{
+            direction: 'ltr',
+            textAlign: 'left',
+            unicodeBidi: 'embed',
+            writingMode: 'horizontal-tb'
+          }}
+        />
+        <div className="absolute top-2 right-2">
+          <AIEnhanceButton
+            text={cvData.summary}
+            sectionType="summary"
+            onTextUpdate={(newText) => setCvData(prev => ({ ...prev, summary: newText }))}
+            targetMarket={targetMarket?.name}
+            size="sm"
+          />
+        </div>
+      </div>
+      <div className="text-xs text-gray-500">
+        <strong>Tip:</strong> Include 2-3 sentences highlighting your experience, key skills, and career goals. Use specific numbers and achievements where possible.
+      </div>
     </div>
   );
 
@@ -753,9 +771,11 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     jobTitle={exp.title}
                   />
                 </div>
-                <RichTextEditor
+                <textarea
                   value={exp.description}
-                  onChange={(value) => updateExperience(exp.id, 'description', value)}
+                  onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                  rows={4}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                   placeholder="• Describe your key responsibilities and achievements&#10;• Use bullet points and action verbs&#10;• Include specific metrics and results where possible"
                 />
               </div>
@@ -1055,11 +1075,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Project Description
                 </label>
-                <RichTextEditor
+                <textarea
                   value={project.description}
-                  onChange={(value) => updateProject(project.id, 'description', value)}
+                  onChange={(e) => updateProject(project.id, 'description', e.target.value)}
+                  rows={4}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                   placeholder="• Describe the project scope and your role&#10;• Highlight key technologies and methodologies used&#10;• Include measurable outcomes or impact"
-                  className="w-full"
                   style={{ direction: 'ltr', textAlign: 'left' }}
                 />
               </div>
