@@ -39,11 +39,11 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
             <Sparkles className="h-4 w-4" />
             AI-Powered CV Assistant for Mauritius & Africa
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight text-center">
             Welcome to
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> MoCV.mu</span>
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed text-center">
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
             Get ATS-optimized CVs, AI-powered content, and beat international recruitment systems.
           </p>
