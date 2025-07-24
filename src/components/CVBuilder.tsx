@@ -1352,6 +1352,22 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
 
     return (
       <div className="bg-white rounded border shadow-sm p-8 max-w-none">
+        {/* Template Header */}
+        {currentTemplate && (
+          <div className="mb-6 pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="text-blue-600">
+                {getTemplateIcon(currentTemplate.id)}
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900">{currentTemplate.name}</h4>
+                <p className="text-sm text-gray-600">{currentTemplate.category} Template</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600">{currentTemplate.description}</p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center border-b pb-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">

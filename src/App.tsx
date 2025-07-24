@@ -152,11 +152,19 @@ const App: React.FC = () => {
     // Navigate directly to CV builder with selected template
     localStorage.setItem('mocv_selected_template', template.id);
     localStorage.setItem('mocv_selected_template_data', JSON.stringify(template));
-    localStorage.setItem('mocv_selected_template_content', JSON.stringify({
+    
+    // Store complete template information
+    const templateInfo = {
       templateId: template.id,
       templateName: template.name,
-      markdownUrl: template.markdownUrl
-    }));
+      templateDescription: template.description,
+      templateCategory: template.category,
+      markdownUrl: template.markdownUrl,
+      templateData: template
+    };
+    localStorage.setItem('mocv_selected_template_content', JSON.stringify(templateInfo));
+    
+    console.log('Template data stored:', templateInfo);
     setCurrentStep('cv-builder');
   };
 
