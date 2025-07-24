@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, User, Briefcase, GraduationCap, Award, Globe, Plus, Trash2, Calendar, MapPin, Mail, Phone, Link, X, Wand2 } from 'lucide-react';
+import { Save, Download, Eye, User, Briefcase, GraduationCap, Award, Globe, Plus, Trash2, Calendar, MapPin, Mail, Phone, Link, X, Wand2, Upload } from 'lucide-react';
 import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
 import { SavedCV } from '../types';
 import { TargetMarket } from '../types';
