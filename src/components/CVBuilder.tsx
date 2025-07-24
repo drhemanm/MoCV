@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, Plus, Trash2, User, Briefcase, GraduationCap, Award, Globe, FileText, Zap, Lightbulb, Upload, Palette, X } from 'lucide-react';
-import { TargetMarket } from '../types';
+import { Save, Download, Eye, Plus, Trash2, Edit3, User, FileText, Briefcase, GraduationCap, Award, Globe, Languages, Lightbulb, ArrowLeft, CheckCircle, Upload, X } from 'lucide-react';
+import { TargetMarket, SavedCV } from '../types';
 import BackButton from './BackButton';
-import CVImportSection from './CVImportSection';
+import RichTextEditor from './RichTextEditor';
 import AIEnhanceButton from './AIEnhanceButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
+import CVImportSection from './CVImportSection';
 import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
-import { parseCV, ParsedCVData } from '../services/cvParsingService';
-import CVTemplatePreview from './CVTemplatePreview';
+import { ParsedCVData } from '../services/cvParsingService';
+import gamificationService from '../services/gamificationService';
 
 interface CVBuilderProps {
   targetMarket: TargetMarket | null;
@@ -43,6 +44,7 @@ interface CVData {
     location: string;
     graduationDate: string;
     gpa?: string;
+    description?: string;
   }>;
   skills: Array<{
     id: string;
@@ -56,6 +58,8 @@ interface CVData {
     description: string;
     technologies: string[];
     link?: string;
+    startDate?: string;
+    endDate?: string;
   }>;
   certifications: Array<{
     id: string;
@@ -63,11 +67,12 @@ interface CVData {
     issuer: string;
     date: string;
     verificationLink?: string;
+    description?: string;
   }>;
   languages: Array<{
     id: string;
     name: string;
-    proficiency: 'Basic' | 'Intermediate' | 'Fluent';
+    proficiency: 'Basic' | 'Intermediate' | 'Advanced' | 'Fluent' | 'Native';
   }>;
 }
 
@@ -93,37 +98,26 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   });
 
   const [activeSection, setActiveSection] = useState('personal');
-  const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [cvId, setCvId] = useState<string>('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState('classic-professional');
-  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-
-  // Available templates
-  const availableTemplates = [
-    { id: 'classic-professional', name: 'Classic Professional', description: 'Traditional and ATS-friendly' },
-    { id: 'modern-minimal', name: 'Modern Minimal', description: 'Clean and contemporary design' },
-    { id: 'creative-designer', name: 'Creative Designer', description: 'Colorful and artistic layout' },
-    { id: 'tech-developer', name: 'Tech Developer', description: 'Terminal-inspired for developers' },
-    { id: 'executive-leader', name: 'Executive Leader', description: 'Professional for senior roles' },
-    { id: 'academic-researcher', name: 'Academic Researcher', description: 'Formal academic format' },
-    { id: 'startup-entrepreneur', name: 'Startup Entrepreneur', description: 'Dynamic and innovative' },
-    { id: 'consulting-analyst', name: 'Consulting Analyst', description: 'Business-focused layout' },
-    { id: 'healthcare-professional', name: 'Healthcare Professional', description: 'Medical and clinical focus' },
-    { id: 'marketing-creative', name: 'Marketing Creative', description: 'Vibrant and engaging design' }
-  ];
 
   // Load existing CV data if editing
   useEffect(() => {
     const editingData = localStorage.getItem('mocv_editing_cv');
     if (editingData) {
       try {
-        const { cvData: existingData } = JSON.parse(editingData);
-        if (existingData) {
-          setCvData(existingData);
+        const parsed = JSON.parse(editingData);
+        if (parsed.cvData) {
+          setCvData(parsed.cvData);
+          setIsEditing(parsed.isEditing || false);
+          setCvId(parsed.cvId || '');
         }
+        // Clear the editing flag
+        localStorage.removeItem('mocv_editing_cv');
       } catch (error) {
         console.error('Error loading editing data:', error);
       }
@@ -133,111 +127,104 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   // Auto-save functionality
   useEffect(() => {
     const autoSave = setTimeout(() => {
-      if (cvData.personalInfo.fullName || cvData.summary) {
-        handleSave(true); // Silent save
+      if (cvData.personalInfo.fullName || cvData.summary || cvData.experience.length > 0) {
+        handleSave(false); // Silent save
       }
-    }, 5000);
+    }, 5000); // Auto-save every 5 seconds
 
     return () => clearTimeout(autoSave);
   }, [cvData]);
 
-  const handleSave = async (silent = false) => {
-    if (!silent) setIsSaving(true);
+  const sections = [
+    { id: 'personal', name: 'Personal Info', icon: User, color: 'text-blue-600' },
+    { id: 'summary', name: 'Summary', icon: FileText, color: 'text-purple-600' },
+    { id: 'experience', name: 'Experience', icon: Briefcase, color: 'text-green-600' },
+    { id: 'education', name: 'Education', icon: GraduationCap, color: 'text-indigo-600' },
+    { id: 'skills', name: 'Skills', icon: Award, color: 'text-orange-600' },
+    { id: 'projects', name: 'Projects', icon: Globe, color: 'text-teal-600' },
+    { id: 'certifications', name: 'Certifications', icon: Award, color: 'text-red-600' },
+    { id: 'languages', name: 'Languages', icon: Languages, color: 'text-pink-600' }
+  ];
 
+  const handleSave = (showNotification = true) => {
     try {
-      // Get existing CVs
-      const existingCVs = JSON.parse(localStorage.getItem('mocv_saved_cvs') || '[]');
+      const savedCVs = JSON.parse(localStorage.getItem('mocv_saved_cvs') || '[]');
+      const now = new Date();
       
-      // Check if we're editing an existing CV
-      const editingData = localStorage.getItem('mocv_editing_cv');
-      let cvId = Date.now().toString();
-      let isEditing = false;
-
-      if (editingData) {
-        try {
-          const { cvId: existingId, isEditing: editing } = JSON.parse(editingData);
-          if (existingId && editing) {
-            cvId = existingId;
-            isEditing = true;
-          }
-        } catch (error) {
-          console.error('Error parsing editing data:', error);
-        }
-      }
-
-      const cvTitle = cvData.personalInfo.fullName || 'Untitled CV';
-      const templateId = localStorage.getItem('mocv_selected_template') || 'classic-ats';
-      const templateName = getTemplateName(templateId);
-
-      const savedCV = {
-        id: cvId,
-        title: cvTitle,
-        templateName,
-        templateId,
-        dateCreated: isEditing ? 
-          (existingCVs.find((cv: any) => cv.id === cvId)?.dateCreated || new Date()) : 
-          new Date(),
-        dateModified: new Date(),
-        atsScore: calculateATSScore(cvData),
-        status: 'draft' as const,
-        cvData,
-        targetMarket: targetMarket?.id || 'global'
-      };
-
       let updatedCVs;
-      if (isEditing) {
+      if (isEditing && cvId) {
         // Update existing CV
-        updatedCVs = existingCVs.map((cv: any) => cv.id === cvId ? savedCV : cv);
+        updatedCVs = savedCVs.map((cv: SavedCV) => 
+          cv.id === cvId 
+            ? { 
+                ...cv, 
+                cvData, 
+                dateModified: now,
+                status: 'completed' as const
+              }
+            : cv
+        );
       } else {
-        // Add new CV
-        updatedCVs = [savedCV, ...existingCVs];
+        // Create new CV
+        const newCV: SavedCV = {
+          id: Date.now().toString(),
+          title: cvData.personalInfo.fullName || 'Untitled CV',
+          templateName: 'Custom CV',
+          templateId: 'custom',
+          dateCreated: now,
+          dateModified: now,
+          atsScore: Math.floor(Math.random() * 30) + 70, // Mock ATS score
+          status: 'completed',
+          cvData,
+          targetMarket: targetMarket?.name
+        };
+        updatedCVs = [newCV, ...savedCVs];
+        setCvId(newCV.id);
+        setIsEditing(true);
       }
 
       localStorage.setItem('mocv_saved_cvs', JSON.stringify(updatedCVs));
-      setLastSaved(new Date());
+      setLastSaved(now);
 
-      if (!silent) {
-        // Award XP for saving
-        const gameData = JSON.parse(localStorage.getItem('mocv_game_data') || '{}');
-        const updatedGameData = {
-          ...gameData,
-          totalXP: (gameData.totalXP || 0) + 25,
-          currentLevel: Math.floor(((gameData.totalXP || 0) + 25) / 100)
-        };
-        localStorage.setItem('mocv_game_data', JSON.stringify(updatedGameData));
+      if (showNotification) {
+        // Award XP for CV creation/update
+        const result = gamificationService.trackCVCreation();
+        
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        notification.textContent = 'CV saved successfully!';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 3000);
       }
     } catch (error) {
       console.error('Error saving CV:', error);
-      alert('Failed to save CV. Please try again.');
-    } finally {
-      if (!silent) setIsSaving(false);
+      
+      // Show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.textContent = 'Failed to save CV. Please try again.';
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
     }
   };
 
-  const handleGeneratePDF = async () => {
-    if (!cvData.personalInfo.fullName) {
-      alert('Please enter your full name before generating PDF');
-      return;
-    }
-
+  const handleDownloadPDF = async () => {
     setIsGeneratingPDF(true);
-
     try {
-      const templateId = localStorage.getItem('mocv_selected_template') || 'classic-ats';
-      const pdfBytes = await generateCVPDF(cvData, templateId);
-      
-      const fileName = `MoCV_${cvData.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
-      downloadPDF(pdfBytes, fileName);
-
-      // Award XP for PDF generation
-      const gameData = JSON.parse(localStorage.getItem('mocv_game_data') || '{}');
-      const updatedGameData = {
-        ...gameData,
-        totalXP: (gameData.totalXP || 0) + 50,
-        currentLevel: Math.floor(((gameData.totalXP || 0) + 50) / 100)
-      };
-      localStorage.setItem('mocv_game_data', JSON.stringify(updatedGameData));
-
+      const pdfBytes = await generateCVPDF(cvData, 'classic-ats');
+      const filename = `${cvData.personalInfo.fullName || 'CV'}.pdf`.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      downloadPDF(pdfBytes, filename);
     } catch (error) {
       console.error('PDF generation error:', error);
       alert('Failed to generate PDF. Please try again.');
@@ -246,62 +233,53 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }
   };
 
-  const calculateATSScore = (data: CVData): number => {
-    let score = 0;
-    
-    // Personal info completeness (20 points)
-    const personalFields = Object.values(data.personalInfo).filter(Boolean);
-    score += Math.min(20, (personalFields.length / 7) * 20);
-    
-    // Summary (15 points)
-    if (data.summary && data.summary.length > 50) score += 15;
-    else if (data.summary) score += 8;
-    
-    // Experience (25 points)
-    score += Math.min(25, data.experience.length * 8);
-    
-    // Education (15 points)
-    score += Math.min(15, data.education.length * 7);
-    
-    // Skills (15 points)
-    score += Math.min(15, data.skills.length * 2);
-    
-    // Additional sections (10 points)
-    if (data.projects.length > 0) score += 5;
-    if (data.certifications.length > 0) score += 3;
-    if (data.languages.length > 0) score += 2;
-    
-    return Math.min(100, Math.round(score));
-  };
-
-  const getTemplateName = (templateId: string): string => {
-    const templateNames: { [key: string]: string } = {
-      'classic-ats': 'Classic ATS',
-      'modern-minimal': 'Modern Minimal',
-      'tech-focus': 'Tech Focus',
-      'leadership': 'Leadership'
-    };
-    return templateNames[templateId] || 'Classic ATS';
-  };
-
-  const handleImportComplete = (importedData: ParsedCVData) => {
-    setCvData(prev => ({
-      ...prev,
+  const handleImportComplete = (data: ParsedCVData) => {
+    setCvData({
       personalInfo: {
-        ...prev.personalInfo,
-        fullName: importedData.personalInfo.fullName || prev.personalInfo.fullName,
-        email: importedData.personalInfo.email || prev.personalInfo.email,
-        phone: importedData.personalInfo.phone || prev.personalInfo.phone,
-        linkedin: importedData.personalInfo.linkedin || prev.personalInfo.linkedin,
-        website: importedData.personalInfo.website || prev.personalInfo.website
+        fullName: data.personalInfo.fullName || '',
+        title: '',
+        email: data.personalInfo.email || '',
+        phone: data.personalInfo.phone || '',
+        location: data.personalInfo.address || '',
+        linkedin: data.personalInfo.linkedin || '',
+        website: data.personalInfo.website || '',
+        photo: data.personalInfo.photo || ''
       },
-      summary: importedData.summary || prev.summary,
-      experience: importedData.experience.length > 0 ? importedData.experience : prev.experience,
-      education: importedData.education.length > 0 ? importedData.education : prev.education,
-      skills: importedData.skills.length > 0 ? importedData.skills : prev.skills,
-      languages: importedData.languages.length > 0 ? importedData.languages : prev.languages
-    }));
-    setShowImportModal(false);
+      summary: data.summary || '',
+      experience: data.experience.map(exp => ({
+        id: exp.id,
+        title: exp.role,
+        company: exp.company,
+        location: '',
+        startDate: exp.startDate,
+        endDate: exp.endDate,
+        current: exp.current,
+        description: exp.description
+      })),
+      education: data.education.map(edu => ({
+        id: edu.id,
+        degree: edu.degree,
+        school: edu.institution,
+        location: '',
+        graduationDate: edu.year,
+        gpa: edu.gpa,
+        description: ''
+      })),
+      skills: data.skills.map(skill => ({
+        id: skill.id,
+        name: skill.name,
+        level: skill.level,
+        category: 'Technical'
+      })),
+      projects: [],
+      certifications: [],
+      languages: data.languages.map(lang => ({
+        id: lang.id,
+        name: lang.name,
+        proficiency: lang.proficiency as any
+      }))
+    });
+    setShowImport(false);
   };
 
   const addExperience = () => {
@@ -344,7 +322,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
       school: '',
       location: '',
       graduationDate: '',
-      gpa: ''
+      gpa: '',
+      description: ''
     };
     setCvData(prev => ({
       ...prev,
@@ -352,7 +331,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }));
   };
 
-  const updateEducation = (id: string, field: string, value: string) => {
+  const updateEducation = (id: string, field: string, value: any) => {
     setCvData(prev => ({
       ...prev,
       education: prev.education.map(edu => 
@@ -397,14 +376,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }));
   };
 
-  // Projects functions
   const addProject = () => {
     const newProject = {
       id: Date.now().toString(),
       name: '',
       description: '',
       technologies: [],
-      link: ''
+      link: '',
+      startDate: '',
+      endDate: ''
     };
     setCvData(prev => ({
       ...prev,
@@ -417,7 +397,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
       ...prev,
       projects: prev.projects.map(project => 
         project.id === id ? { ...project, [field]: value } : project
-      )
     }));
   };
 
@@ -428,14 +407,14 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }));
   };
 
-  // Certifications functions
   const addCertification = () => {
     const newCert = {
       id: Date.now().toString(),
       name: '',
       issuer: '',
       date: '',
-      verificationLink: ''
+      verificationLink: '',
+      description: ''
     };
     setCvData(prev => ({
       ...prev,
@@ -443,7 +422,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }));
   };
 
-  const updateCertification = (id: string, field: string, value: string) => {
+  const updateCertification = (id: string, field: string, value: any) => {
     setCvData(prev => ({
       ...prev,
       certifications: prev.certifications.map(cert => 
@@ -459,7 +438,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }));
   };
 
-  // Languages functions
   const addLanguage = () => {
     const newLang = {
       id: Date.now().toString(),
@@ -488,27 +466,11 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }));
   };
 
-  const sections = [
-    { id: 'personal', name: 'Personal Info', icon: User },
-    { id: 'summary', name: 'Summary', icon: FileText },
-    { id: 'experience', name: 'Experience', icon: Briefcase },
-    { id: 'education', name: 'Education', icon: GraduationCap },
-    { id: 'skills', name: 'Skills', icon: Award },
-    { id: 'projects', name: 'Projects', icon: Globe },
-    { id: 'certifications', name: 'Certifications', icon: Award },
-    { id: 'languages', name: 'Languages', icon: Globe }
-  ];
-
   const renderPersonalInfo = () => (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-        <User className="h-5 w-5 text-blue-600" />
-        Personal Information
-      </h3>
-      
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Full Name *
           </label>
           <input
@@ -524,8 +486,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Professional Title
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Professional Title *
           </label>
           <input
             type="text"
@@ -538,9 +500,11 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
             placeholder="Software Engineer"
           />
         </div>
-        
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Email Address *
           </label>
           <input
@@ -551,12 +515,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               personalInfo: { ...prev.personalInfo, email: e.target.value }
             }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="john@example.com"
+            placeholder="john.doe@email.com"
           />
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Phone Number
           </label>
           <input
@@ -570,9 +534,11 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
             placeholder="+1 (555) 123-4567"
           />
         </div>
-        
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Location
           </label>
           <input
@@ -583,12 +549,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               personalInfo: { ...prev.personalInfo, location: e.target.value }
             }))}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="New York, NY"
+            placeholder="City, Country"
           />
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             LinkedIn Profile
           </label>
           <input
@@ -603,93 +569,61 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           />
         </div>
       </div>
-      
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setCvData(prev => ({
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Website/Portfolio
+        </label>
+        <input
+          type="url"
+          value={cvData.personalInfo.website}
+          onChange={(e) => setCvData(prev => ({
             ...prev,
-            personalInfo: {
-              fullName: '',
-              title: '',
-              email: '',
-              phone: '',
-              location: '',
-              linkedin: '',
-              website: ''
-            }
+            personalInfo: { ...prev.personalInfo, website: e.target.value }
           }))}
-          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
-        >
-          <X className="h-4 w-4" />
-          Clear Personal Info
-        </button>
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="https://johndoe.com"
+        />
       </div>
     </div>
   );
 
   const renderSummary = () => (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
+        <label className="block text-sm font-medium text-gray-700">
           Professional Summary
-        </h3>
+        </label>
         <AIEnhanceButton
           text={cvData.summary}
           sectionType="summary"
           onTextUpdate={(newText) => setCvData(prev => ({ ...prev, summary: newText }))}
           targetMarket={targetMarket?.name}
-          size="md"
+          jobTitle={cvData.personalInfo.title}
         />
       </div>
-      
-      <div>
-        <textarea
-          value={cvData.summary}
-          onChange={(e) => setCvData(prev => ({ ...prev, summary: e.target.value }))}
-          rows={6}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-          placeholder="Write a compelling professional summary that highlights your key achievements, skills, and career objectives..."
-        />
-        <div className="text-xs text-gray-500 mt-1">
-          {cvData.summary.length}/500 characters
-        </div>
-      </div>
-      
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setCvData(prev => ({ ...prev, summary: '' }))}
-          className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
-        >
-          <X className="h-4 w-4" />
-          Clear Summary
-        </button>
-      </div>
+      <RichTextEditor
+        value={cvData.summary}
+        onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
+        placeholder="Write a compelling professional summary that highlights your key achievements, skills, and career objectives..."
+        className="min-h-32"
+      />
+      <p className="text-xs text-gray-500">
+        Tip: Include 2-3 sentences highlighting your experience, key skills, and what you're looking for in your next role.
+      </p>
     </div>
   );
 
   const renderExperience = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Briefcase className="h-5 w-5 text-blue-600" />
-          Work Experience
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Work Experience</h3>
         <button
           onClick={addExperience}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Add Experience
-        </button>
-        <button
-          onClick={() => setCvData(prev => ({ ...prev, experience: [] }))}
-          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
-        >
-          <X className="h-4 w-4" />
-          Clear All Experience
         </button>
       </div>
 
@@ -702,79 +636,82 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
       ) : (
         <div className="space-y-6">
           {cvData.experience.map((exp, index) => (
-            <div key={exp.id} className="bg-gray-50 rounded-lg p-6 relative">
-              <button
-                onClick={() => removeExperience(exp.id)}
-                className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+            <div key={exp.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-gray-900">Experience #{index + 1}</h4>
+                <button
+                  onClick={() => removeExperience(exp.id)}
+                  className="text-red-600 hover:text-red-800 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
 
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Job Title *
                   </label>
                   <input
                     type="text"
                     value={exp.title}
                     onChange={(e) => updateExperience(exp.id, 'title', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Software Engineer"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Company *
                   </label>
                   <input
                     type="text"
                     value={exp.company}
                     onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Tech Company Inc."
                   />
                 </div>
-                
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Location
                   </label>
                   <input
                     type="text"
                     value={exp.location}
                     onChange={(e) => updateExperience(exp.id, 'location', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="New York, NY"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="City, Country"
                   />
                 </div>
                 
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Start Date
-                    </label>
-                    <input
-                      type="month"
-                      value={exp.startDate}
-                      onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      End Date
-                    </label>
-                    <input
-                      type="month"
-                      value={exp.endDate}
-                      onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
-                      disabled={exp.current}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="month"
+                    value={exp.startDate}
+                    onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <input
+                    type="month"
+                    value={exp.endDate}
+                    onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
+                    disabled={exp.current}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
+                  />
                 </div>
               </div>
 
@@ -784,7 +721,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="checkbox"
                     checked={exp.current}
                     onChange={(e) => updateExperience(exp.id, 'current', e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                   />
                   <span className="text-sm text-gray-700">I currently work here</span>
                 </label>
@@ -803,12 +740,10 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     jobTitle={exp.title}
                   />
                 </div>
-                <textarea
+                <RichTextEditor
                   value={exp.description}
-                  onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
-                  rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="• Describe your key responsibilities and achievements&#10;• Use bullet points for better readability&#10;• Include quantifiable results where possible"
+                  onChange={(value) => updateExperience(exp.id, 'description', value)}
+                  placeholder="• Describe your key responsibilities and achievements&#10;• Use bullet points and action verbs&#10;• Include specific metrics and results where possible"
                 />
               </div>
             </div>
@@ -821,23 +756,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const renderEducation = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <GraduationCap className="h-5 w-5 text-blue-600" />
-          Education
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Education</h3>
         <button
           onClick={addEducation}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Add Education
-        </button>
-        <button
-          onClick={() => setCvData(prev => ({ ...prev, education: [] }))}
-          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
-        >
-          <X className="h-4 w-4" />
-          Clear All Education
         </button>
       </div>
 
@@ -849,79 +774,97 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          {cvData.education.map((edu) => (
-            <div key={edu.id} className="bg-gray-50 rounded-lg p-6 relative">
-              <button
-                onClick={() => removeEducation(edu.id)}
-                className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+          {cvData.education.map((edu, index) => (
+            <div key={edu.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-gray-900">Education #{index + 1}</h4>
+                <button
+                  onClick={() => removeEducation(edu.id)}
+                  className="text-red-600 hover:text-red-800 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Degree *
                   </label>
                   <input
                     type="text"
                     value={edu.degree}
                     onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder="Bachelor of Science in Computer Science"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     School/University *
                   </label>
                   <input
                     type="text"
                     value={edu.school}
                     onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder="University of Technology"
                   />
                 </div>
-                
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Location
                   </label>
                   <input
                     type="text"
                     value={edu.location}
                     onChange={(e) => updateEducation(edu.id, 'location', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="New York, NY"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="City, Country"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Graduation Date
                   </label>
                   <input
                     type="month"
                     value={edu.graduationDate}
                     onChange={(e) => updateEducation(edu.id, 'graduationDate', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     GPA (Optional)
                   </label>
                   <input
                     type="text"
                     value={edu.gpa || ''}
                     onChange={(e) => updateEducation(edu.id, 'gpa', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     placeholder="3.8/4.0"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Details (Optional)
+                </label>
+                <textarea
+                  value={edu.description || ''}
+                  onChange={(e) => updateEducation(edu.id, 'description', e.target.value)}
+                  rows={3}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                  placeholder="Relevant coursework, honors, activities, etc."
+                />
               </div>
             </div>
           ))}
@@ -933,23 +876,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const renderSkills = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Award className="h-5 w-5 text-blue-600" />
-          Skills
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Skills</h3>
         <button
           onClick={addSkill}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Add Skill
-        </button>
-        <button
-          onClick={() => setCvData(prev => ({ ...prev, skills: [] }))}
-          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
-        >
-          <X className="h-4 w-4" />
-          Clear All Skills
         </button>
       </div>
 
@@ -961,47 +894,45 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
-          {cvData.skills.map((skill) => (
-            <div key={skill.id} className="bg-gray-50 rounded-lg p-4 relative">
-              <button
-                onClick={() => removeSkill(skill.id)}
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+          {cvData.skills.map((skill, index) => (
+            <div key={skill.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">Skill #{index + 1}</span>
+                <button
+                  onClick={() => removeSkill(skill.id)}
+                  className="text-red-600 hover:text-red-800 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Skill Name
-                  </label>
                   <input
                     type="text"
                     value={skill.name}
                     onChange={(e) => updateSkill(skill.id, 'name', e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="JavaScript"
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Skill name (e.g., JavaScript, Project Management)"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
                   <select
                     value={skill.category}
                     onChange={(e) => updateSkill(skill.id, 'category', e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   >
                     <option value="Technical">Technical</option>
                     <option value="Soft Skills">Soft Skills</option>
                     <option value="Languages">Languages</option>
                     <option value="Tools">Tools</option>
+                    <option value="Certifications">Certifications</option>
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs text-gray-600 mb-1">
                     Proficiency Level: {skill.level}/5
                   </label>
                   <input
@@ -1028,23 +959,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const renderProjects = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Globe className="h-5 w-5 text-blue-600" />
-          Projects
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Projects</h3>
         <button
           onClick={addProject}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Add Project
-        </button>
-        <button
-          onClick={() => setCvData(prev => ({ ...prev, projects: [] }))}
-          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
-        >
-          <X className="h-4 w-4" />
-          Clear All Projects
         </button>
       </div>
 
@@ -1056,67 +977,68 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          {cvData.projects.map((project) => (
-            <div key={project.id} className="bg-gray-50 rounded-lg p-6 relative">
-              <button
-                onClick={() => removeProject(project.id)}
-                className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+          {cvData.projects.map((project, index) => (
+            <div key={project.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-gray-900">Project #{index + 1}</h4>
+                <button
+                  onClick={() => removeProject(project.id)}
+                  className="text-red-600 hover:text-red-800 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
 
-              <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Project Name *
                   </label>
                   <input
                     type="text"
                     value={project.name}
                     onChange={(e) => updateProject(project.id, 'name', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="E-commerce Website"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="E-commerce Platform"
                   />
                 </div>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Project Description
-                  </label>
-                  <textarea
-                    value={project.description}
-                    onChange={(e) => updateProject(project.id, 'description', e.target.value)}
-                    rows={4}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Describe what the project does, your role, and key achievements..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Technologies Used
-                  </label>
-                  <input
-                    type="text"
-                    value={project.technologies.join(', ')}
-                    onChange={(e) => updateProject(project.id, 'technologies', e.target.value.split(',').map(tech => tech.trim()).filter(Boolean))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="React, Node.js, MongoDB, AWS (separate with commas)"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Project Link (Optional)
                   </label>
                   <input
                     type="url"
                     value={project.link || ''}
                     onChange={(e) => updateProject(project.id, 'link', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="https://github.com/username/project or https://project-demo.com"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="https://github.com/username/project"
                   />
                 </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Technologies Used
+                </label>
+                <input
+                  type="text"
+                  value={project.technologies.join(', ')}
+                  onChange={(e) => updateProject(project.id, 'technologies', e.target.value.split(',').map(t => t.trim()))}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  placeholder="React, Node.js, MongoDB, AWS"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Project Description
+                </label>
+                <RichTextEditor
+                  value={project.description}
+                  onChange={(value) => updateProject(project.id, 'description', value)}
+                  placeholder="Describe the project, your role, challenges overcome, and results achieved..."
+                />
               </div>
             </div>
           ))}
@@ -1128,23 +1050,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const renderCertifications = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Award className="h-5 w-5 text-blue-600" />
-          Certifications
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Certifications</h3>
         <button
           onClick={addCertification}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Add Certification
-        </button>
-        <button
-          onClick={() => setCvData(prev => ({ ...prev, certifications: [] }))}
-          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
-        >
-          <X className="h-4 w-4" />
-          Clear All Certifications
         </button>
       </div>
 
@@ -1156,66 +1068,84 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         </div>
       ) : (
         <div className="space-y-6">
-          {cvData.certifications.map((cert) => (
-            <div key={cert.id} className="bg-gray-50 rounded-lg p-6 relative">
-              <button
-                onClick={() => removeCertification(cert.id)}
-                className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+          {cvData.certifications.map((cert, index) => (
+            <div key={cert.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-gray-900">Certification #{index + 1}</h4>
+                <button
+                  onClick={() => removeCertification(cert.id)}
+                  className="text-red-600 hover:text-red-800 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Certification Name *
                   </label>
                   <input
                     type="text"
                     value={cert.name}
                     onChange={(e) => updateCertification(cert.id, 'name', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     placeholder="AWS Certified Solutions Architect"
                   />
                 </div>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Issuing Organization *
                   </label>
                   <input
                     type="text"
                     value={cert.issuer}
                     onChange={(e) => updateCertification(cert.id, 'issuer', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     placeholder="Amazon Web Services"
                   />
                 </div>
+              </div>
 
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date Obtained
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Issue Date
                   </label>
                   <input
                     type="month"
                     value={cert.date}
                     onChange={(e) => updateCertification(cert.id, 'date', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   />
                 </div>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Verification Link (Optional)
                   </label>
                   <input
                     type="url"
                     value={cert.verificationLink || ''}
                     onChange={(e) => updateCertification(cert.id, 'verificationLink', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     placeholder="https://verify.certification.com/12345"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={cert.description || ''}
+                  onChange={(e) => updateCertification(cert.id, 'description', e.target.value)}
+                  rows={3}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                  placeholder="Brief description of what this certification covers..."
+                />
               </div>
             </div>
           ))}
@@ -1227,69 +1157,58 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const renderLanguages = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Globe className="h-5 w-5 text-blue-600" />
-          Languages
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900">Languages</h3>
         <button
           onClick={addLanguage}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Add Language
-        </button>
-        <button
-          onClick={() => setCvData(prev => ({ ...prev, languages: [] }))}
-          className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
-        >
-          <X className="h-4 w-4" />
-          Clear All Languages
         </button>
       </div>
 
       {cvData.languages.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <Globe className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <Languages className="h-12 w-12 mx-auto mb-4 text-gray-300" />
           <p>No languages added yet</p>
           <p className="text-sm">Click "Add Language" to showcase your multilingual abilities</p>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
-          {cvData.languages.map((language) => (
-            <div key={language.id} className="bg-gray-50 rounded-lg p-4 relative">
-              <button
-                onClick={() => removeLanguage(language.id)}
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+          {cvData.languages.map((lang, index) => (
+            <div key={lang.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">Language #{index + 1}</span>
+                <button
+                  onClick={() => removeLanguage(lang.id)}
+                  className="text-red-600 hover:text-red-800 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Language *
-                  </label>
                   <input
                     type="text"
-                    value={language.name}
-                    onChange={(e) => updateLanguage(language.id, 'name', e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="English, French, Spanish..."
+                    value={lang.name}
+                    onChange={(e) => updateLanguage(lang.id, 'name', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    placeholder="Language name (e.g., English, French)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Proficiency Level
-                  </label>
                   <select
-                    value={language.proficiency}
-                    onChange={(e) => updateLanguage(language.id, 'proficiency', e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={lang.proficiency}
+                    onChange={(e) => updateLanguage(lang.id, 'proficiency', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
                     <option value="Basic">Basic</option>
                     <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
                     <option value="Fluent">Fluent</option>
+                    <option value="Native">Native</option>
                   </select>
                 </div>
               </div>
@@ -1297,116 +1216,50 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           ))}
         </div>
       )}
-
-      {targetMarket && (
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <h4 className="font-semibold text-blue-900 mb-2">💡 Language Tips for {targetMarket.name}:</h4>
-          <ul className="text-blue-800 text-sm space-y-1">
-            {targetMarket.name === 'Mauritius' && (
-              <>
-                <li>• English and French are highly valued</li>
-                <li>• Creole can be mentioned for local roles</li>
-                <li>• Hindi/Urdu useful for certain industries</li>
-              </>
-            )}
-            {targetMarket.name === 'Canada' && (
-              <>
-                <li>• English and French bilingualism is a major advantage</li>
-                <li>• Specify Canadian Language Benchmarks (CLB) levels if known</li>
-              </>
-            )}
-            {targetMarket.name === 'Germany' && (
-              <>
-                <li>• German proficiency is essential for most roles</li>
-                <li>• Use CEFR levels (A1-C2) to specify proficiency</li>
-                <li>• English is important for international companies</li>
-              </>
-            )}
-            {!['Mauritius', 'Canada', 'Germany'].includes(targetMarket.name) && (
-              <>
-                <li>• English proficiency is typically essential</li>
-                <li>• Local language skills can be a significant advantage</li>
-                <li>• Specify your proficiency level clearly</li>
-              </>
-            )}
-          </ul>
-        </div>
-      )}
     </div>
   );
 
-  const renderCurrentSection = () => {
+  const renderSectionContent = () => {
     switch (activeSection) {
-      case 'personal':
-        return renderPersonalInfo();
-      case 'summary':
-        return renderSummary();
-      case 'experience':
-        return renderExperience();
-      case 'education':
-        return renderEducation();
-      case 'skills':
-        return renderSkills();
-      case 'projects':
-        return renderProjects();
-      case 'certifications':
-        return renderCertifications();
-      case 'languages':
-        return renderLanguages();
-      default:
-        return renderPersonalInfo();
+      case 'personal': return renderPersonalInfo();
+      case 'summary': return renderSummary();
+      case 'experience': return renderExperience();
+      case 'education': return renderEducation();
+      case 'skills': return renderSkills();
+      case 'projects': return renderProjects();
+      case 'certifications': return renderCertifications();
+      case 'languages': return renderLanguages();
+      default: return renderPersonalInfo();
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <BackButton onClick={onBack} label="Back to Home" />
-            
-            <button
-              onClick={() => {
-                if (window.confirm('Are you sure you want to clear all CV data? This action cannot be undone.')) {
-                  setCvData({
-                    personalInfo: {
-                      fullName: '',
-                      title: '',
-                      email: '',
-                      phone: '',
-                      location: '',
-                      linkedin: '',
-                      website: ''
-                    },
-                    summary: '',
-                    experience: [],
-                    education: [],
-                    skills: [],
-                    projects: [],
-                    certifications: [],
-                    languages: []
-                  });
-                }
-              }}
-              className="text-red-600 hover:text-red-800 px-4 py-2 rounded-lg border border-red-300 hover:border-red-500 transition-colors flex items-center gap-2"
-            >
-              <X className="h-4 w-4" />
-              Clear All Data
-            </button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <BackButton onClick={onBack} label="Back" />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  {isEditing ? 'Edit CV' : 'Create New CV'}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {targetMarket ? `Optimized for ${targetMarket.flag} ${targetMarket.name}` : 'Professional CV Builder'}
+                  {lastSaved && (
+                    <span className="ml-2 text-green-600">
+                      • Last saved: {lastSaved.toLocaleTimeString()}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
             
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setShowTemplateSelector(!showTemplateSelector)}
-                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-              >
-                <Palette className="h-4 w-4" />
-                Templates
-              </button>
-              
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
+                onClick={() => setShowImport(true)}
+                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
               >
                 <Upload className="h-4 w-4" />
                 Import CV
@@ -1414,34 +1267,24 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               
               <button
                 onClick={() => setShowSuggestions(!showSuggestions)}
-                className="text-purple-600 hover:text-purple-700 transition-colors flex items-center gap-2"
+                className="border border-purple-300 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2"
               >
                 <Lightbulb className="h-4 w-4" />
                 AI Tips
               </button>
               
               <button
-                onClick={() => handleSave(false)}
-                disabled={isSaving}
-                className="border border-blue-600 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+                onClick={() => handleSave(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
               >
-                {isSaving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Save CV
-                  </>
-                )}
+                <Save className="h-4 w-4" />
+                Save CV
               </button>
               
               <button
-                onClick={handleGeneratePDF}
-                disabled={isGeneratingPDF || !cvData.personalInfo.fullName}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 {isGeneratingPDF ? (
                   <>
@@ -1451,111 +1294,85 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    Generate PDF
+                    Download PDF
                   </>
                 )}
               </button>
             </div>
           </div>
-
-          {/* Template Selector */}
-          {showTemplateSelector && (
-            <div className="mt-4 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Choose Template Style</h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {availableTemplates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => {
-                      setSelectedTemplateId(template.id);
-                      setShowTemplateSelector(false);
-                    }}
-                    className={`p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedTemplateId === template.id
-                        ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-200 hover:border-purple-300'
-                    }`}
-                  >
-                    <div className="font-medium text-sm text-gray-900">{template.name}</div>
-                    <div className="text-xs text-gray-600 mt-1">{template.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-5 gap-8">
+        <div className="flex gap-8">
           {/* Sidebar Navigation */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
+          <div className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24">
               <h3 className="font-semibold text-gray-900 mb-4">CV Sections</h3>
               <nav className="space-y-2">
                 {sections.map((section) => {
                   const Icon = section.icon;
+                  const isActive = activeSection === section.id;
+                  const hasContent = (() => {
+                    switch (section.id) {
+                      case 'personal': return cvData.personalInfo.fullName || cvData.personalInfo.email;
+                      case 'summary': return cvData.summary;
+                      case 'experience': return cvData.experience.length > 0;
+                      case 'education': return cvData.education.length > 0;
+                      case 'skills': return cvData.skills.length > 0;
+                      case 'projects': return cvData.projects.length > 0;
+                      case 'certifications': return cvData.certifications.length > 0;
+                      case 'languages': return cvData.languages.length > 0;
+                      default: return false;
+                    }
+                  })();
+
                   return (
                     <button
                       key={section.id}
                       onClick={() => setActiveSection(section.id)}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                        activeSection === section.id
+                        isActive
                           ? 'bg-blue-50 text-blue-700 border border-blue-200'
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      <Icon className="h-4 w-4" />
-                      <span className="text-sm">{section.name}</span>
+                      <Icon className={`h-4 w-4 ${isActive ? 'text-blue-600' : section.color}`} />
+                      <span className="text-sm font-medium">{section.name}</span>
+                      {hasContent && (
+                        <CheckCircle className="h-3 w-3 text-green-600 ml-auto" />
+                      )}
                     </button>
                   );
                 })}
               </nav>
-              
-              {/* ATS Score */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
-              </div>
             </div>
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-3 lg:sticky lg:top-24">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Eye className="h-5 w-5" />
-                    Live Preview - {availableTemplates.find(t => t.id === selectedTemplateId)?.name}
-                  </h3>
-                  <div className="text-sm text-gray-500">
-                    Updates automatically as you type
-                  </div>
-                </div>
+          <div className="flex-1">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  {sections.find(s => s.id === activeSection)?.name}
+                </h2>
+                <p className="text-gray-600">
+                  {activeSection === 'personal' && 'Add your contact information and basic details'}
+                  {activeSection === 'summary' && 'Write a compelling professional summary'}
+                  {activeSection === 'experience' && 'Add your work experience and achievements'}
+                  {activeSection === 'education' && 'Include your educational background'}
+                  {activeSection === 'skills' && 'List your technical and soft skills'}
+                  {activeSection === 'projects' && 'Showcase your key projects and work'}
+                  {activeSection === 'certifications' && 'Add your professional certifications'}
+                  {activeSection === 'languages' && 'Include your language proficiencies'}
+                </p>
               </div>
-              
-              <div className="h-96 lg:h-[600px] overflow-y-auto">
-                <CVTemplatePreview
-                  templateId={selectedTemplateId}
-                  cvData={cvData}
-                  className="h-full"
-                />
-              </div>
+
+              {renderSectionContent()}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Import Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-2xl w-full">
-            <CVImportSection
-              onImportComplete={handleImportComplete}
-              onClose={() => setShowImportModal(false)}
-            />
-          </div>
-        </div>
-      )}
 
       {/* AI Suggestions Panel */}
       <AISuggestionsPanel
@@ -1563,6 +1380,18 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         isVisible={showSuggestions}
         onClose={() => setShowSuggestions(false)}
       />
+
+      {/* Import Modal */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <CVImportSection
+              onImportComplete={handleImportComplete}
+              onClose={() => setShowImport(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
