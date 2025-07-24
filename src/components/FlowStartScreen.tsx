@@ -35,16 +35,16 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-6 w-full">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium">
             <Sparkles className="h-4 w-4" />
             AI-Powered CV Assistant for Mauritius & Africa
             </div>
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6 text-center mx-auto">
-            <div className="flex flex-col items-center">
-              <span>Welcome to</span>
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">MoCV.mu</span>
+          <h1 className="text-5xl font-bold text-gray-900 mb-6 text-center mx-auto w-full">
+            <div className="text-center w-full">
+              <div className="text-center">Welcome to</div>
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center">MoCV.mu</div>
             </div>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
@@ -53,7 +53,7 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
           </p>
           
           {/* Demo Reset Button - Remove in production */}
-          <div className="mb-8 flex justify-center">
+          <div className="mb-8 flex justify-center w-full">
             <button
               onClick={handleResetData}
               className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md border border-gray-200 hover:border-red-200"
