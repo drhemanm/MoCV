@@ -615,7 +615,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
         placeholder="Write a compelling professional summary that highlights your key achievements, skills, and career objectives..."
         className="min-h-32"
-        style={{ direction: 'ltr', textAlign: 'left' }}
       />
       <p className="text-xs text-gray-500">
         Tip: Include 2-3 sentences highlighting your experience, key skills, and what you're looking for in your next role.
@@ -1060,8 +1059,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                   value={project.description}
                   onChange={(value) => updateProject(project.id, 'description', value)}
                   placeholder="• Describe the project scope and your role&#10;• Highlight key technologies and methodologies used&#10;• Include measurable outcomes or impact"
-                  className="w-full text-left"
-                  dir="ltr"
+                  className="w-full"
+                  style={{ direction: 'ltr', textAlign: 'left' }}
                 />
               </div>
             </div>
