@@ -38,6 +38,7 @@ import gamificationService from '../services/gamificationService';
 
 interface CVBuilderProps {
   targetMarket: TargetMarket | null;
+  selectedTemplate?: CVTemplate | null;
   onBack: () => void;
 }
 
@@ -98,7 +99,7 @@ interface CVData {
   }>;
 }
 
-const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
+const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, onBack }) => {
   const [activeSection, setActiveSection] = useState('personal');
   const [showPreview, setShowPreview] = useState(true);
   const [showAITips, setShowAITips] = useState(false);

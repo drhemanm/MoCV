@@ -152,6 +152,11 @@ const App: React.FC = () => {
     // Navigate directly to CV builder with selected template
     localStorage.setItem('mocv_selected_template', template.id);
     localStorage.setItem('mocv_selected_template_data', JSON.stringify(template));
+    localStorage.setItem('mocv_selected_template_content', JSON.stringify({
+      templateId: template.id,
+      templateName: template.name,
+      markdownUrl: template.markdownUrl
+    }));
     setCurrentStep('cv-builder');
   };
 
@@ -378,6 +383,7 @@ const App: React.FC = () => {
         {currentStep === 'cv-builder' && (
           <CVBuilder
             targetMarket={selectedMarket}
+            selectedTemplate={selectedTemplate}
             onBack={() => setCurrentStep('start')}
           />
         )}
