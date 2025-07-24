@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Download, Eye, EyeOff, Monitor, Tablet, Smartphone, User, Mail, Phone, MapPin, Globe, FileText, Plus, X, Trash2, Calendar, Award, Code, GraduationCap, Languages, Briefcase, Target, Lightbulb, Upload, Wand2, Palette, Sparkles, Crown, BookOpen, RefreshCw, Brain } from 'lucide-react';
-import { 
+import {
   User, 
   Briefcase, 
   GraduationCap, 
@@ -1493,6 +1493,31 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
       case 'certifications': return renderCertificationsSection();
       case 'languages': return renderLanguagesSection();
       default: return renderPersonalInfoSection();
+    }
+  };
+
+  const getTemplateIcon = (category: string) => {
+    const icons: { [key: string]: string } = {
+      'Universal': '📄',
+      'Modern': '✨',
+      'Technology': '💻',
+      'Consulting': '🎯',
+      'Academic': '📚',
+      'Entry Level': '🌱',
+      'Transition': '🔄',
+      'Executive': '👑',
+      'Creative': '🎨',
+      'AI-Optimized': '🤖'
+    };
+    return icons[category] || '📄';
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Beginner': return 'text-green-600 bg-green-100';
+      case 'Intermediate': return 'text-yellow-600 bg-yellow-100';
+      case 'Advanced': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
     }
   };
 
