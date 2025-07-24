@@ -1,6 +1,9 @@
 // CV Parsing Service for extracting structured data from uploaded files
 import mammoth from 'mammoth';
-import { PDFDocument } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 export interface ParsedCVData {
   personalInfo: {
@@ -41,136 +44,48 @@ export interface ParsedCVData {
   }>;
 }
 
-// Extract text from PDF using a simple approach (in production, use proper PDF parsing)
+// Extract text from PDF using PDF.js library
 const extractTextFromPDF = async (file: File): Promise<string> => {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const text = await extractPDFText(arrayBuffer);
-    return text;
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Load the PDF document
+    const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+    const pdf = await loadingTask.promise;
+    
+    let fullText = '';
+    
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      
+      // Combine all text items from the page
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ');
+      
+      fullText += pageText + '\n';
+    }
+    
+    // Clean up the extracted text
+    fullText = fullText
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Validate the extracted text
+    if (fullText.length < 20) {
+      throw new Error('Could not extract sufficient text from PDF');
+    }
+    
+    return fullText;
   } catch (error) {
     console.error('PDF parsing error:', error);
     throw new Error('Failed to extract text from PDF file');
   }
 };
 
-// Enhanced PDF text extraction
-const extractPDFText = async (arrayBuffer: ArrayBuffer): Promise<string> => {
-  const uint8Array = new Uint8Array(arrayBuffer);
-  const decoder = new TextDecoder('utf-8', { fatal: false });
-  const pdfData = decoder.decode(uint8Array);
-  
-  // Method 1: Extract text from PDF text objects
-  let extractedText = '';
-  
-  // Look for text between BT (Begin Text) and ET (End Text) operators
-  const textBlocks = pdfData.match(/BT\s+.*?ET/gs) || [];
-  
-  for (const block of textBlocks) {
-    // Extract text from Tj and TJ operators
-    const tjMatches = block.match(/\((.*?)\)\s*Tj/g) || [];
-    const tjArrayMatches = block.match(/\[(.*?)\]\s*TJ/g) || [];
-    
-    // Process Tj matches
-    tjMatches.forEach(match => {
-      const text = match.match(/\((.*?)\)/)?.[1];
-      if (text) {
-        extractedText += decodeTextString(text) + ' ';
-      }
-    });
-    
-    // Process TJ array matches
-    tjArrayMatches.forEach(match => {
-      const arrayContent = match.match(/\[(.*?)\]/)?.[1];
-      if (arrayContent) {
-        const textParts = arrayContent.match(/\((.*?)\)/g) || [];
-        textParts.forEach(part => {
-          const text = part.replace(/[()]/g, '');
-          extractedText += decodeTextString(text) + ' ';
-        });
-      }
-    });
-  }
-  
-  // Method 2: If Method 1 didn't work, try extracting from parentheses
-  if (extractedText.trim().length < 50) {
-    const parenthesesMatches = pdfData.match(/\(([^)]+)\)/g) || [];
-    let fallbackText = '';
-    
-    parenthesesMatches.forEach(match => {
-      const text = match.replace(/[()]/g, '').trim();
-      // Filter out PDF commands and keep only readable text
-      if (text.length > 2 && 
-          !text.match(/^[0-9\s.]+$/) && // Skip pure numbers
-          !text.includes('endobj') &&
-          !text.includes('stream') &&
-          !text.includes('FlateDecode') &&
-          /[a-zA-Z]/.test(text)) { // Must contain letters
-        fallbackText += text + ' ';
-      }
-    });
-    
-    if (fallbackText.trim().length > extractedText.trim().length) {
-      extractedText = fallbackText;
-    }
-  }
-  
-  // Method 3: Try to extract from stream objects
-  if (extractedText.trim().length < 50) {
-    const streamMatches = pdfData.match(/stream\s+(.*?)\s+endstream/gs) || [];
-    let streamText = '';
-    
-    streamMatches.forEach(match => {
-      const content = match.replace(/stream\s+|\s+endstream/g, '');
-      // Try to find readable text in streams
-      const readableText = content.match(/[a-zA-Z][a-zA-Z0-9\s@.,\-_]{3,}/g) || [];
-      readableText.forEach(text => {
-        if (text.length > 3 && !text.includes('obj') && !text.includes('endobj')) {
-          streamText += text + ' ';
-        }
-      });
-    });
-    
-    if (streamText.trim().length > extractedText.trim().length) {
-      extractedText = streamText;
-    }
-  }
-  
-  // Clean up the extracted text
-  extractedText = extractedText
-    .replace(/\s+/g, ' ')
-    .replace(/[^\x20-\x7E\n\r\t]/g, ' ') // Remove non-printable characters
-    .trim();
-  
-  // Validate the extracted text
-  if (extractedText.length < 20) {
-    throw new Error('Could not extract sufficient text from PDF');
-  }
-  
-  // Check if it looks like meaningful content
-  const hasEmail = /\S+@\S+\.\S+/.test(extractedText);
-  const hasWords = extractedText.split(' ').filter(word => word.length > 2).length > 5;
-  const hasPersonalInfo = /\b(experience|education|skills|work|job|company)\b/i.test(extractedText);
-  
-  if (!hasWords && !hasEmail && !hasPersonalInfo) {
-    throw new Error('Extracted text does not appear to be CV content');
-  }
-  
-  return extractedText;
-};
-
-// Decode PDF text strings (handle escape sequences)
-const decodeTextString = (text: string): string => {
-  return text
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\b/g, '\b')
-    .replace(/\\f/g, '\f')
-    .replace(/\\\(/g, '(')
-    .replace(/\\\)/g, ')')
-    .replace(/\\\\/g, '\\')
-    .replace(/\\([0-7]{3})/g, (match, octal) => String.fromCharCode(parseInt(octal, 8)));
-};
 // Extract text from DOCX files
 const extractTextFromDOCX = async (file: File): Promise<string> => {
   try {
