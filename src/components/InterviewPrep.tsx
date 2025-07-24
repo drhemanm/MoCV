@@ -72,7 +72,57 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
       loadingMessage.textContent = 'Processing your CV...';
       document.body.appendChild(loadingMessage);
       
+      // Show loading state
+      const loadingMessage = document.createElement('div');
+      loadingMessage.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      loadingMessage.textContent = 'Processing your CV...';
+      document.body.appendChild(loadingMessage);
+      
       const extractedText = await extractTextFromFile(file);
+      
+      // Remove loading message
+      if (document.body.contains(loadingMessage)) {
+        document.body.removeChild(loadingMessage);
+      }
+      
+      // Check if we got actual content or fallback
+      if (extractedText && extractedText.trim() && 
+          !extractedText.includes('John Doe') && 
+          !extractedText.includes('john.doe@email.com')) {
+        setCvText(extractedText);
+        
+        // Show success message
+        const successMessage = document.createElement('div');
+        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        successMessage.textContent = 'CV uploaded and processed successfully!';
+        document.body.appendChild(successMessage);
+        
+        // Remove success message after 3 seconds
+        setTimeout(() => {
+          if (document.body.contains(successMessage)) {
+            document.body.removeChild(successMessage);
+          }
+        }, 3000);
+      } else {
+        // Show warning for fallback content
+        const warningMessage = document.createElement('div');
+        warningMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+        warningMessage.innerHTML = `
+          <div>CV uploaded but text extraction limited.</div>
+          <div class="text-xs mt-1">Please paste your CV text manually for best results.</div>
+        `;
+        document.body.appendChild(warningMessage);
+        
+        // Set empty text to encourage manual input
+        setCvText('');
+        
+        // Remove warning message after 5 seconds
+        setTimeout(() => {
+          if (document.body.contains(warningMessage)) {
+            document.body.removeChild(warningMessage);
+          }
+        }, 5000);
+      }
       
       // Remove loading message
       if (document.body.contains(loadingMessage)) {
@@ -121,6 +171,21 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
     } catch (error) {
       console.error('File parsing error:', error);
       
+      // Show error message
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      errorMessage.innerHTML = `
+        <div>Failed to parse CV file.</div>
+        <div class="text-xs mt-1">Please try pasting your CV text directly below.</div>
+      `;
+      document.body.appendChild(errorMessage);
+      
+      // Remove error message after 5 seconds
+      setTimeout(() => {
+        if (document.body.contains(errorMessage)) {
+          document.body.removeChild(errorMessage);
+        }
+      }, 5000);
       // Show error message
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
