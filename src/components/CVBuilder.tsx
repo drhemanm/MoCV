@@ -106,6 +106,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   
   const [cvData, setCvData] = useState<CVData>({
     personalInfo: {
@@ -128,6 +129,18 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
 
   // Load existing CV data if editing
   useEffect(() => {
+    // Load selected template
+    const savedTemplate = localStorage.getItem('mocv_selected_template_data');
+    if (savedTemplate) {
+      try {
+        const template = JSON.parse(savedTemplate);
+        setSelectedTemplate(template);
+        console.log('Loaded template:', template.name);
+      } catch (error) {
+        console.error('Error loading template:', error);
+      }
+    }
+    
     const editingData = localStorage.getItem('mocv_editing_cv');
     if (editingData) {
       try {
@@ -1487,7 +1500,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               <div>
                 <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
                 <p className="text-sm text-gray-600">
-                  Create your professional CV
+                  {selectedTemplate ? `Building with ${selectedTemplate.name} template` : 'Create your professional CV optimized for global markets'}
                   {targetMarket && ` • Optimized for ${targetMarket.flag} ${targetMarket.name}`}
                 </p>
               </div>
