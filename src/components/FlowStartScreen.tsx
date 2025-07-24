@@ -42,8 +42,10 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
             </div>
           </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-6 text-center mx-auto">
-            Welcome to
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block text-center"> MoCV.mu</span>
+            <div className="flex flex-col items-center">
+              <span>Welcome to</span>
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">MoCV.mu</span>
+            </div>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
