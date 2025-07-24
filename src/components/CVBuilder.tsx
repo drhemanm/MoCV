@@ -1559,6 +1559,14 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                 PDF
               </button>
             </div>
+            
+            <button
+              onClick={() => setShowTemplateSelector(true)}
+              className="p-2 rounded-lg transition-colors text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+              title="Change Template"
+            >
+              <Palette className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </div>
