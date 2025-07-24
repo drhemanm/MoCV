@@ -34,25 +34,31 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
       <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
         {/* Header */}
-        <div className="text-center mb-12 flex-shrink-0">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium mb-6">
+        <div className="mb-12 flex-shrink-0">
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium">
             <Sparkles className="h-4 w-4" />
             AI-Powered CV Assistant for Mauritius & Africa
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight text-center">
+          <div className="text-center mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
             Welcome to
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> MoCV.mu</span>
-          </h1>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed text-center">
+            </h1>
+          </div>
+          <div className="text-center mb-8">
+            <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
             Get ATS-optimized CVs, AI-powered content, and beat international recruitment systems.
-          </p>
+            </p>
+          </div>
           
           {/* Demo Reset Button - Remove in production */}
-          <div className="mb-6">
+          <div className="text-center mb-6">
             <button
               onClick={handleResetData}
-              className="text-xs text-gray-500 hover:text-red-600 transition-colors border border-gray-300 px-3 py-1.5 rounded-lg hover:border-red-300"
+              className="text-xs text-gray-500 hover:text-red-600 transition-colors border border-gray-300 px-4 py-2 rounded-lg hover:border-red-300 hover:bg-red-50"
             >
               🔄 Reset Demo Data (Clear All)
             </button>
