@@ -481,7 +481,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               ...prev,
               personalInfo: { ...prev.personalInfo, fullName: e.target.value }
             }))}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left"
+            dir="ltr"
             placeholder="John Doe"
           />
         </div>
@@ -497,7 +498,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               ...prev,
               personalInfo: { ...prev.personalInfo, title: e.target.value }
             }))}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left"
+            dir="ltr"
             placeholder="Software Engineer"
           />
         </div>
@@ -515,7 +517,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               ...prev,
               personalInfo: { ...prev.personalInfo, email: e.target.value }
             }))}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left"
+            dir="ltr"
             placeholder="john.doe@email.com"
           />
         </div>
@@ -531,7 +534,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               ...prev,
               personalInfo: { ...prev.personalInfo, phone: e.target.value }
             }))}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left"
+            dir="ltr"
             placeholder="+1 (555) 123-4567"
           />
         </div>
@@ -549,7 +553,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               ...prev,
               personalInfo: { ...prev.personalInfo, location: e.target.value }
             }))}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left"
+            dir="ltr"
             placeholder="City, Country"
           />
         </div>
@@ -565,7 +570,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               ...prev,
               personalInfo: { ...prev.personalInfo, linkedin: e.target.value }
             }))}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left"
+            dir="ltr"
             placeholder="https://linkedin.com/in/johndoe"
           />
         </div>
@@ -582,7 +588,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
             ...prev,
             personalInfo: { ...prev.personalInfo, website: e.target.value }
           }))}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left"
+          dir="ltr"
           placeholder="https://johndoe.com"
         />
       </div>
@@ -657,7 +664,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={exp.title}
                     onChange={(e) => updateExperience(exp.id, 'title', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="Software Engineer"
                   />
                 </div>
@@ -670,7 +678,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={exp.company}
                     onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="Tech Company Inc."
                   />
                 </div>
@@ -685,7 +694,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={exp.location}
                     onChange={(e) => updateExperience(exp.id, 'location', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="City, Country"
                   />
                 </div>
@@ -698,7 +708,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="month"
                     value={exp.startDate}
                     onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-left"
+                    dir="ltr"
                   />
                 </div>
                 
@@ -711,7 +722,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     value={exp.endDate}
                     onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
                     disabled={exp.current}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 text-left"
+                    dir="ltr"
                   />
                 </div>
               </div>
@@ -796,7 +808,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={edu.degree}
                     onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="Bachelor of Science in Computer Science"
                   />
                 </div>
@@ -809,7 +822,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={edu.school}
                     onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="University of Technology"
                   />
                 </div>
@@ -824,7 +838,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={edu.location}
                     onChange={(e) => updateEducation(edu.id, 'location', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="City, Country"
                   />
                 </div>
@@ -837,7 +852,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="month"
                     value={edu.graduationDate}
                     onChange={(e) => updateEducation(edu.id, 'graduationDate', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-left"
+                    dir="ltr"
                   />
                 </div>
                 
@@ -849,7 +865,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={edu.gpa || ''}
                     onChange={(e) => updateEducation(edu.id, 'gpa', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="3.8/4.0"
                   />
                 </div>
@@ -999,7 +1016,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={project.name}
                     onChange={(e) => updateProject(project.id, 'name', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="E-commerce Platform"
                   />
                 </div>
@@ -1012,7 +1030,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="url"
                     value={project.link || ''}
                     onChange={(e) => updateProject(project.id, 'link', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="https://github.com/username/project"
                   />
                 </div>
@@ -1026,7 +1045,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                   type="text"
                   value={project.technologies.join(', ')}
                   onChange={(e) => updateProject(project.id, 'technologies', e.target.value.split(',').map(t => t.trim()))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-left"
+                  dir="ltr"
                   placeholder="React, Node.js, MongoDB, AWS"
                 />
               </div>
@@ -1090,7 +1110,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={cert.name}
                     onChange={(e) => updateCertification(cert.id, 'name', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="AWS Certified Solutions Architect"
                   />
                 </div>
@@ -1103,7 +1124,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="text"
                     value={cert.issuer}
                     onChange={(e) => updateCertification(cert.id, 'issuer', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-left"
+                    dir="ltr"
                     placeholder="Amazon Web Services"
                   />
                 </div>
@@ -1118,7 +1140,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     type="month"
                     value={cert.date}
                     onChange={(e) => updateCertification(cert.id, 'date', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-left"
+                    dir="ltr"
                   />
                 </div>
                 
