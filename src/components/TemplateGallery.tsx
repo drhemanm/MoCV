@@ -37,6 +37,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const handleTemplateSelect = (template: CVTemplate) => {
     // Store selected template for PDF generation
     localStorage.setItem('mocv_selected_template', template.id);
+    localStorage.setItem('mocv_selected_template_data', JSON.stringify(template));
     onTemplateSelect(template);
   };
 
@@ -494,7 +495,10 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                         Preview
                       </button>
                       <button
-                        onClick={() => handleTemplateSelect(template)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTemplateSelect(template);
+                        }}
                         className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75"
                       >
                         <Zap className="h-4 w-4" />
@@ -550,7 +554,11 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                       Preview
                     </button>
                     <button
-                      onClick={() => handleTemplateSelect(template)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Template selected:', template.name);
+                        handleTemplateSelect(template);
+                      }}
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2"
                     >
                       <Zap className="h-4 w-4" />

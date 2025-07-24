@@ -146,8 +146,13 @@ const App: React.FC = () => {
       });
     }
     
+    console.log('Template selected in App:', template.name);
     setSelectedTemplate(template);
-    setCurrentStep('fill-method');
+    
+    // Navigate directly to CV builder with selected template
+    localStorage.setItem('mocv_selected_template', template.id);
+    localStorage.setItem('mocv_selected_template_data', JSON.stringify(template));
+    setCurrentStep('cv-builder');
   };
 
   const handleFillMethodSelect = (method: 'manual' | 'ai') => {
