@@ -1268,9 +1268,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 w-full">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1283,7 +1283,18 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPreview(!showPreview)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  showPreview 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Eye className="h-4 w-4" />
+                {showPreview ? 'Hide Preview' : 'Show Preview'}
+              </button>
               <button
                 onClick={() => setShowImport(true)}
                 className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2"
@@ -1340,8 +1351,11 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+      <div className="flex-1 flex">
+        {/* Main Content Area */}
+        <div className={`transition-all duration-300 ${showPreview ? 'w-1/2' : 'w-full'}`}>
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex gap-8">
           {/* Sidebar Navigation */}
           <div className="w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
@@ -1382,6 +1396,17 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
             </div>
           </div>
         </div>
+          </div>
+        </div>
+
+        {/* Live Preview Panel */}
+        {showPreview && (
+          <div className="w-1/2 border-l border-gray-200 bg-gray-50 overflow-hidden">
+            <div className="h-full overflow-y-auto p-4">
+              {renderLivePreview()}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* AI Suggestions Panel */}
