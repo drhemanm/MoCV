@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, EyeOff, Monitor, Tablet, Smartphone, Plus, Trash2, Star, User, Briefcase, GraduationCap, Award, Globe, Languages, Upload, FileText, Wand2, Lightbulb, X, ArrowLeft, CheckCircle, Sparkles, Code, Target, BookOpen, RefreshCw, Crown, Palette, Brain } from 'lucide-react';
+import { Save, Download, Eye, EyeOff, Monitor, Tablet, Smartphone, Plus, Trash2, Star, User, Briefcase, GraduationCap, Award, Globe, Languages, Upload, FileText, Wand2, Lightbulb, X, ArrowLeft, CheckCircle, Sparkles, Code, Target, BookOpen, RefreshCw, Crown, Palette, Brain, Mail, Phone, MapPin, ExternalLink, Loader2 } from 'lucide-react';
 import { 
   User, 
   Briefcase, 
   GraduationCap, 
-  Award, 
+  Award 
+} from 'lucide-react';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
