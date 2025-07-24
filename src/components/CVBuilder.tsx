@@ -959,7 +959,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     max="5"
                     value={skill.level}
                     onChange={(e) => updateSkill(skill.id, 'level', parseInt(e.target.value))}
-                    className="w-full"
+                    className="w-full text-left"
+                    dir="ltr"
                   />
                   <div className="flex justify-between text-xs text-gray-500 mt-1">
                     <span>Beginner</span>

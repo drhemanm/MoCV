@@ -145,7 +145,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         onKeyDown={handleKeyDown}
         onFocus={() => setIsEditing(true)}
         onBlur={() => setIsEditing(false)}
-        className="p-3 min-h-24 focus:outline-none"
+        className="p-3 min-h-24 focus:outline-none text-left"
+        dir="ltr"
         style={{ whiteSpace: 'pre-wrap' }}
         dangerouslySetInnerHTML={{ __html: textToHtml(value) }}
         data-placeholder={placeholder}
