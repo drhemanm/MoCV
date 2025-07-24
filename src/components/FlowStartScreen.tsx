@@ -39,22 +39,26 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
             <Sparkles className="h-4 w-4" />
             AI-Powered CV Assistant for Mauritius & Africa
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6 text-center">
             Welcome to
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> MoCV.mu</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
             Get ATS-optimized CVs, AI-powered content, and beat international recruitment systems.
           </p>
           
           {/* Demo Reset Button - Remove in production */}
-          <div className="mb-8">
+          <div className="mb-8 flex justify-center">
             <button
               onClick={handleResetData}
-              className="text-sm text-gray-500 hover:text-red-600 transition-colors border border-gray-300 px-4 py-2 rounded-lg hover:border-red-300"
+              className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md border border-gray-200 hover:border-red-200"
             >
-              🔄 Reset Demo Data (Clear All)
+              <span className="relative z-10 flex items-center gap-2">
+                <span className="text-lg group-hover:animate-spin transition-transform duration-500">🔄</span>
+                Reset Demo Data
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
             </button>
           </div>
           
