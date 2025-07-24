@@ -579,10 +579,10 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                         console.log('Template selected:', template.name);
                         handleTemplateSelect(template);
                       }}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 transform hover:scale-105"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2"
                     >
                       <Zap className="h-4 w-4" />
-                      Use Template
+                      Select
                     </button>
                   </div>
                 </div>
