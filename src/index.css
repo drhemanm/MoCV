@@ -2,20 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fix for text direction issues */
-* {
-  direction: ltr !important;
-  text-align: left !important;
-}
-
-input, textarea, [contenteditable] {
+/* CRITICAL: Fix for text direction issues - Force LTR everywhere */
+input, 
+textarea, 
+[contenteditable],
+.rich-text-editor,
+.rich-text-editor *,
+div[contenteditable="true"],
+div[contenteditable] {
   direction: ltr !important;
   text-align: left !important;
   unicode-bidi: embed !important;
+  writing-mode: horizontal-tb !important;
 }
 
-/* Ensure proper text flow */
-.rich-text-editor [contenteditable] {
+/* Force text input direction globally */
+* {
+  direction: ltr !important;
+}
+
+/* Specific overrides for any remaining issues */
+input[type="text"],
+input[type="email"], 
+input[type="tel"],
+input[type="url"],
+textarea {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+  writing-mode: horizontal-tb !important;
+}
+
+/* ContentEditable specific fixes */
+[contenteditable="true"] {
   direction: ltr !important;
   text-align: left !important;
   unicode-bidi: embed !important;

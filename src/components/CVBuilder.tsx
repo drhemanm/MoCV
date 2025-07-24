@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, Download, Eye, Plus, Trash2, Edit3, User, FileText, Briefcase, GraduationCap, Award, Globe, Languages, Lightbulb, ArrowLeft, CheckCircle, Upload, X } from 'lucide-react';
 import { TargetMarket, SavedCV } from '../types';
 import BackButton from './BackButton';
+import RichTextEditor from './RichTextEditor';
 import AIEnhanceButton from './AIEnhanceButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
 import CVImportSection from './CVImportSection';
@@ -609,34 +610,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
           jobTitle={cvData.personalInfo.title}
         />
       </div>
-      <div className="relative">
-        <textarea
-          value={cvData.summary}
-          onChange={(e) => setCvData(prev => ({ ...prev, summary: e.target.value }))}
-          rows={6}
-          className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-          placeholder="Write a compelling professional summary that highlights your key achievements, skills, and career objectives..."
-          dir="ltr"
-          style={{
-            direction: 'ltr',
-            textAlign: 'left',
-            unicodeBidi: 'embed',
-            writingMode: 'horizontal-tb'
-          }}
-        />
-        <div className="absolute top-2 right-2">
-          <AIEnhanceButton
-            text={cvData.summary}
-            sectionType="summary"
-            onTextUpdate={(newText) => setCvData(prev => ({ ...prev, summary: newText }))}
-            targetMarket={targetMarket?.name}
-            size="sm"
-          />
-        </div>
-      </div>
-      <div className="text-xs text-gray-500">
-        <strong>Tip:</strong> Include 2-3 sentences highlighting your experience, key skills, and career goals. Use specific numbers and achievements where possible.
-      </div>
+      <RichTextEditor
+        value={cvData.summary}
+        onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
+        placeholder="Write a compelling professional summary that highlights your key achievements, skills, and career objectives..."
+        className="min-h-32"
+      />
+      <p className="text-xs text-gray-500">
+        Tip: Include 2-3 sentences highlighting your experience, key skills, and what you're looking for in your next role.
+      </p>
     </div>
   );
 
@@ -698,6 +680,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-left"
                     dir="ltr"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
                     placeholder="Tech Company Inc."
                   />
                 </div>
@@ -771,18 +754,82 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     jobTitle={exp.title}
                   />
                 </div>
-                <textarea
-                  value={exp.description}
-                  onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
-                  rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                  placeholder="• Describe your key responsibilities and achievements&#10;• Use bullet points and action verbs&#10;• Include specific metrics and results where possible"
-                />
+                <div className="relative">
+                  <textarea
+                    value={exp.description}
+                    onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                    rows={4}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    placeholder="• Describe your key responsibilities and achievements&#10;• Use bullet points for better readability&#10;• Include specific metrics and results where possible"
+                    dir="ltr"
+                    style={{
+                      direction: 'ltr',
+                      textAlign: 'left',
+                      unicodeBidi: 'embed',
+                      writingMode: 'horizontal-tb'
+                    }}
+                  />
+                  <div className="absolute top-2 right-2">
+                    <AIEnhanceButton
+                      text={exp.description}
+                      sectionType="experience"
+                      onTextUpdate={(newText) => updateExperience(exp.id, 'description', newText)}
+                      targetMarket={targetMarket?.name}
+                      size="sm"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Education Section */}
+      <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Education</h2>
+          <button
+            onClick={addEducation}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Education
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {cvData.education.map((edu, index) => (
+            <div key={edu.id} className="border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Education {index + 1}</h3>
+                <button
+                  onClick={() => removeEducation(edu.id)}
+                  className="text-red-600 hover:text-red-800 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Degree/Qualification *</label>
+                  <input
+                    type="text"
+                    value={edu.degree}
+                    onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Bachelor of Science in Computer Science"
+                    required
+                    dir="ltr"
+                    style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -1075,12 +1122,11 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Project Description
                 </label>
-                <textarea
+                <RichTextEditor
                   value={project.description}
-                  onChange={(e) => updateProject(project.id, 'description', e.target.value)}
-                  rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                  onChange={(value) => updateProject(project.id, 'description', value)}
                   placeholder="• Describe the project scope and your role&#10;• Highlight key technologies and methodologies used&#10;• Include measurable outcomes or impact"
+                  className="w-full"
                   style={{ direction: 'ltr', textAlign: 'left' }}
                 />
               </div>
