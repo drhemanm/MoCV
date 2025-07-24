@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Download, Eye, EyeOff, Monitor, Tablet, Smartphone, Plus, Trash2, Star, User, Briefcase, GraduationCap, Award, Globe, Languages, Upload, FileText, Wand2, Lightbulb, X, ArrowLeft, CheckCircle, Sparkles, RefreshCw, Mail, Phone, MapPin, ExternalLink, Loader2 } from 'lucide-react';
+import LTRInput from './LTRInput';
 import { CVTemplate, TargetMarket } from '../types';
 import BackButton from './BackButton';
 import AIEnhanceButton from './AIEnhanceButton';
@@ -607,12 +608,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
           size="md"
         />
       </div>
-      <RichTextEditor
+      <LTRInput
         value={cvData.summary}
         onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
         placeholder="Write a compelling 2-3 sentence summary highlighting your experience, key skills, and career objectives..."
-        className="min-h-32 cv-summary-textarea"
-        style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
+        rows={4}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+        type="textarea"
       />
       <div className="text-xs text-gray-500">
         Tip: Include your years of experience, key skills, and what you're looking for in your next role.
