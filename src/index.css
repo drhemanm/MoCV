@@ -67,3 +67,37 @@ form select {
   unicode-bidi: embed !important;
   writing-mode: horizontal-tb !important;
 }
+/* CV Builder specific overrides with maximum specificity */
+.cv-builder input,
+.cv-builder textarea,
+.cv-builder select,
+.cv-builder [contenteditable],
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="date"],
+input[type="month"],
+textarea,
+select {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+}
+
+/* Specific targeting for React components */
+[class*="w-full"][class*="p-3"],
+[class*="border"][class*="rounded"],
+[class*="focus:ring"] {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: embed !important;
+}
+
+/* Override any inherited RTL */
+* {
+  direction: ltr !important;
+  text-align: left !important;
+}
