@@ -756,7 +756,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                 <RichTextEditor
                   value={exp.description}
                   onChange={(value) => updateExperience(exp.id, 'description', value)}
-                  placeholder="• Describe your key responsibilities and achievements&#10;• Use bullet points and action verbs&#10;• Include specific metrics and results where possible"
+                  placeholder="• Describe your key responsibilities and achievements&#10;• Use bullet points and action verbs&#10;• Include quantifiable results where possible"
+                  className="w-full text-left"
+                  dir="ltr"
                 />
               </div>
             </div>
@@ -959,8 +961,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                     max="5"
                     value={skill.level}
                     onChange={(e) => updateSkill(skill.id, 'level', parseInt(e.target.value))}
-                    className="w-full text-left"
-                    dir="ltr"
+                    className="w-full"
                   />
                   <div className="flex justify-between text-xs text-gray-500 mt-1">
                     <span>Beginner</span>
