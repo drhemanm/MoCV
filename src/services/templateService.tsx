@@ -1,6 +1,7 @@
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CVTemplate } from '../types';
+import React from 'react';
 import { FileText, Sparkles, Code, Target, BookOpen, GraduationCap, RefreshCw, Crown, Palette, Brain } from 'lucide-react';
 
 export const fetchCVTemplates = async (): Promise<CVTemplate[]> => {
@@ -77,9 +78,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'classic-ats',
     name: 'Classic ATS',
-    description: 'Balanced, works for all jobs - perfect for traditional industries',
+    description: 'Professional and ATS-optimized template perfect for traditional industries and corporate roles. Clean layout ensures maximum compatibility.',
     category: 'Universal',
-    icon: <FileText className="h-6 w-6" />,
+    icon: React.createElement(FileText, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-classic',
     tags: ['professional', 'universal', 'ats-safe', 'traditional'],
     difficulty: 'Beginner',
@@ -89,9 +90,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'modern-minimal',
     name: 'Modern Minimal',
-    description: 'Clean and sleek design perfect for startups and creative roles',
+    description: 'Contemporary design with clean lines and modern aesthetics. Ideal for startups, tech companies, and creative professionals.',
     category: 'Modern',
-    icon: <Sparkles className="h-6 w-6" />,
+    icon: React.createElement(Sparkles, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-modern',
     tags: ['modern', 'minimal', 'startup', 'creative'],
     difficulty: 'Intermediate',
@@ -101,9 +102,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'tech-focus',
     name: 'Tech Focus',
-    description: 'Highlight projects, skills, and technical stack for developers',
+    description: 'Developer-focused template highlighting technical skills, projects, and programming expertise. Perfect for software engineers and IT professionals.',
     category: 'Technology',
-    icon: <Code className="h-6 w-6" />,
+    icon: React.createElement(Code, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-tech',
     tags: ['technical', 'developer', 'projects', 'programming'],
     difficulty: 'Intermediate',
@@ -113,9 +114,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'project-based',
     name: 'Project-Based',
-    description: 'Best for consultants, freelancers, and project managers',
+    description: 'Project-centric layout showcasing deliverables and client work. Ideal for consultants, freelancers, and project managers.',
     category: 'Consulting',
-    icon: <Target className="h-6 w-6" />,
+    icon: React.createElement(Target, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-project',
     tags: ['consulting', 'freelance', 'projects', 'management'],
     difficulty: 'Advanced',
@@ -125,9 +126,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'academic',
     name: 'Academic',
-    description: 'Perfect for researchers with publications and citations',
+    description: 'Comprehensive academic template for researchers, professors, and PhD candidates. Includes sections for publications and research.',
     category: 'Academic',
-    icon: <BookOpen className="h-6 w-6" />,
+    icon: React.createElement(BookOpen, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-academic',
     tags: ['academic', 'research', 'publications', 'education'],
     difficulty: 'Advanced',
@@ -137,9 +138,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'fresh-graduate',
     name: 'Fresh Graduate',
-    description: 'No experience? No problem. Focus on potential and skills',
+    description: 'Entry-level template emphasizing education, projects, and potential. Perfect for recent graduates and career starters.',
     category: 'Entry Level',
-    icon: <GraduationCap className="h-6 w-6" />,
+    icon: React.createElement(GraduationCap, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-graduate',
     tags: ['entry-level', 'graduate', 'internship', 'potential'],
     difficulty: 'Beginner',
@@ -149,9 +150,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'career-change',
     name: 'Career Change',
-    description: 'Focused on transferable skills for career transitions',
+    description: 'Transition-focused template highlighting transferable skills and relevant experience for career changers.',
     category: 'Transition',
-    icon: <RefreshCw className="h-6 w-6" />,
+    icon: React.createElement(RefreshCw, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-career-change',
     tags: ['career-change', 'transferable', 'transition', 'skills'],
     difficulty: 'Intermediate',
@@ -161,9 +162,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'leadership',
     name: 'Leadership',
-    description: 'Executive-style layout for senior management roles',
+    description: 'Executive template for senior leaders and C-level professionals. Emphasizes strategic achievements and leadership impact.',
     category: 'Executive',
-    icon: <Crown className="h-6 w-6" />,
+    icon: React.createElement(Crown, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-leadership',
     tags: ['executive', 'leadership', 'management', 'senior'],
     difficulty: 'Advanced',
@@ -173,9 +174,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'design-lite',
     name: 'Design Lite',
-    description: 'Stylish but ATS-friendly for creative professionals',
+    description: 'Creative template balancing visual appeal with ATS compatibility. Perfect for designers and creative professionals.',
     category: 'Creative',
-    icon: <Palette className="h-6 w-6" />,
+    icon: React.createElement(Palette, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-design',
     tags: ['creative', 'design', 'stylish', 'ats-friendly'],
     difficulty: 'Intermediate',
@@ -185,9 +186,9 @@ const getFallbackTemplates = (): CVTemplate[] => [
   {
     id: 'ai-aided',
     name: 'AI-Aided',
-    description: 'Designed using AI for maximum real-world impact',
+    description: 'Next-generation template optimized with AI insights for maximum impact and modern appeal. Future-ready design.',
     category: 'AI-Optimized',
-    icon: <Brain className="h-6 w-6" />,
+    icon: React.createElement(Brain, { className: "h-6 w-6" }),
     markdownUrl: 'fallback-ai',
     tags: ['ai-optimized', 'modern', 'impact', 'results'],
     difficulty: 'Advanced',
