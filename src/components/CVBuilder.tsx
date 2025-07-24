@@ -1494,7 +1494,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               <div>
                 <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
                 <p className="text-sm text-gray-600">
-                  Create your professional CV
+                  Create your professional CV with AI assistance • Template: {selectedTemplate?.name || 'Loading...'}
                   {targetMarket && ` • Optimized for ${targetMarket.flag} ${targetMarket.name}`}
                 </p>
               </div>
@@ -1559,14 +1559,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
                 PDF
               </button>
             </div>
-            
-            <button
-              onClick={() => setShowTemplateSelector(true)}
-              className="p-2 rounded-lg transition-colors text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-              title="Change Template"
-            >
-              <Palette className="h-5 w-5" />
-            </button>
           </div>
         </div>
       </div>
