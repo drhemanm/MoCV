@@ -1483,6 +1483,31 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
     }
   };
 
+  const getTemplateIcon = (category: string) => {
+    const icons: { [key: string]: string } = {
+      'Universal': '📄',
+      'Modern': '✨',
+      'Technology': '💻',
+      'Consulting': '🎯',
+      'Academic': '📚',
+      'Entry Level': '🌱',
+      'Transition': '🔄',
+      'Executive': '👑',
+      'Creative': '🎨',
+      'AI-Optimized': '🤖'
+    };
+    return icons[category] || '📄';
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Beginner': return 'text-green-600 bg-green-100';
+      case 'Intermediate': return 'text-yellow-600 bg-yellow-100';
+      case 'Advanced': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1494,7 +1519,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
               <div>
                 <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
                 <p className="text-sm text-gray-600">
-                  Create your professional CV with AI assistance • Template: {selectedTemplate?.name || 'Loading...'}
+                  Create your professional CV
                   {targetMarket && ` • Optimized for ${targetMarket.flag} ${targetMarket.name}`}
                 </p>
               </div>
