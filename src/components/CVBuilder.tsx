@@ -5,29 +5,6 @@ import {
   Briefcase, 
   GraduationCap, 
   Award, 
-  Code, 
-  Globe, 
-  Plus, 
-  Trash2, 
-  Save, 
-  Download, 
-  Eye, 
-  EyeOff, 
-  Upload, 
-  FileText, 
-  Sparkles, 
-  CheckCircle, 
-  X, 
-  Loader2,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
-  Building,
-  Star,
-  ExternalLink,
-  Languages
-} from 'lucide-react';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
