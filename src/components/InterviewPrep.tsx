@@ -72,12 +72,6 @@ const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
       loadingMessage.textContent = 'Processing your CV...';
       document.body.appendChild(loadingMessage);
       
-      // Show loading state
-      const loadingMessage = document.createElement('div');
-      loadingMessage.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      loadingMessage.textContent = 'Processing your CV...';
-      document.body.appendChild(loadingMessage);
-      
       const extractedText = await extractTextFromFile(file);
       
       // Remove loading message
