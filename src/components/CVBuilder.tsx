@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import { Save, Download, Eye, EyeOff, Monitor, Tablet, Smartphone, User, Mail, Phone, MapPin, Globe, FileText, Plus, X, Trash2, Calendar, Award, Code, GraduationCap, Languages, Briefcase, Target, Lightbulb, Upload, Wand2, Palette, Sparkles, Crown, BookOpen, RefreshCw, Brain } from 'lucide-react';
   User, 
   Briefcase, 
   GraduationCap, 
@@ -28,6 +28,8 @@ import {
   Languages
 } from 'lucide-react';
 import { TargetMarket } from '../types';
+import { CVTemplate } from '../types';
+import { fetchCVTemplates } from '../services/templateService';
 import BackButton from './BackButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
 import AIEnhanceButton from './AIEnhanceButton';
@@ -104,6 +106,10 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
   const [showAITips, setShowAITips] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [availableTemplates, setAvailableTemplates] = useState<CVTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate | null>(null);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   
@@ -144,6 +150,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, onBack }) => {
         console.error('Error loading editing data:', error);
       }
     }
+    loadTemplates();
   }, []);
 
   // Auto-save functionality
