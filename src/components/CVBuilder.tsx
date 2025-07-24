@@ -9,6 +9,17 @@ import RichTextEditor from './RichTextEditor';
 import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
 import gamificationService from '../services/gamificationService';
 
+// Force LTR text direction function
+const forceTextDirection = (element: HTMLElement) => {
+  if (element) {
+    element.style.setProperty('direction', 'ltr', 'important');
+    element.style.setProperty('text-align', 'left', 'important');
+    element.style.setProperty('unicode-bidi', 'bidi-override', 'important');
+    element.style.setProperty('writing-mode', 'horizontal-tb', 'important');
+    element.setAttribute('dir', 'ltr');
+  }
+};
+
 interface CVBuilderProps {
   selectedTemplate: CVTemplate | null;
   targetMarket: TargetMarket | null;
@@ -100,6 +111,39 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ selectedTemplate, targetMarket, o
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // Force text direction on all inputs when component mounts
+  useEffect(() => {
+    const forceAllInputsLTR = () => {
+      // Get all input elements in the CV builder
+      const inputs = document.querySelectorAll('.cv-builder input, .cv-builder textarea, .cv-builder select');
+      inputs.forEach((input) => {
+        forceTextDirection(input as HTMLElement);
+        
+        // Add event listeners to maintain direction
+        input.addEventListener('focus', () => forceTextDirection(input as HTMLElement));
+        input.addEventListener('input', () => forceTextDirection(input as HTMLElement));
+        input.addEventListener('keydown', () => {
+          setTimeout(() => forceTextDirection(input as HTMLElement), 0);
+        });
+      });
+    };
+
+    // Run immediately and on any DOM changes
+    forceAllInputsLTR();
+    
+    // Set up mutation observer to catch dynamically added elements
+    const observer = new MutationObserver(() => {
+      forceAllInputsLTR();
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // Load existing CV data if editing
