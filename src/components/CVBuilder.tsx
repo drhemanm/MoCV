@@ -1017,16 +1017,16 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="ltr">
+    <div className="min-h-screen bg-gray-50 overflow-hidden" dir="ltr">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-20 h-14">
+        <div className="container mx-auto px-3 py-2 h-full">
+          <div className="flex items-center justify-between h-full">
             <div className="flex items-center gap-4">
               <BackButton onClick={onBack} label="Back" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
-                <p className="text-sm text-gray-600">
+                <h1 className="text-lg font-bold text-gray-900">CV Builder</h1>
+                <p className="text-xs text-gray-600">
                   {selectedTemplate?.name} • {targetMarket?.name || 'Global'}
                   {lastSaved && (
                     <span className="ml-2 text-green-600">
@@ -1037,7 +1037,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowSuggestions(!showSuggestions)}
                 className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
@@ -1049,16 +1049,16 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               <button
                 onClick={() => handleSave(false)}
                 disabled={isSaving}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1 text-sm"
               >
                 {isSaving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4" />
+                    <Save className="h-3 w-3" />
                     Save CV
                   </>
                 )}
@@ -1067,16 +1067,16 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               <button
                 onClick={handleDownloadPDF}
                 disabled={isGeneratingPDF}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1 text-sm"
               >
                 {isGeneratingPDF ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                     Generating...
                   </>
                 ) : (
                   <>
-                    <Download className="h-4 w-4" />
+                    <Download className="h-3 w-3" />
                     Download PDF
                   </>
                 )}
@@ -1086,8 +1086,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+      <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
+        <div className="grid lg:grid-cols-5 gap-3 h-full max-w-full mx-auto px-2">
           {/* Sidebar Navigation */}
           <div className="w-80 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
@@ -1127,7 +1127,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-2xl">
+          <div className="lg:col-span-3 overflow-y-auto h-full pr-2 space-y-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -1149,8 +1149,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
           </div>
 
           {/* Live Preview Panel */}
-          <div className="w-96 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-24">
+          <div className="lg:col-span-2 overflow-y-auto h-full pl-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full sticky top-0">
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
                 <h3 className="font-semibold flex items-center gap-2">
                   <Eye className="h-5 w-5" />
