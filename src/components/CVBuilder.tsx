@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, ArrowLeft, Plus, Trash2, Star, Zap, User, Briefcase, GraduationCap, Award, Globe, FileText, Target, Lightbulb } from 'lucide-react';
+import { Save, Download, Eye, ArrowLeft, Plus, Trash2, Star, Zap, User, Briefcase, GraduationCap, Award, Globe, FileText, Target, Lightbulb, Upload } from 'lucide-react';
 import { CVTemplate } from '../types';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
@@ -25,6 +25,7 @@ interface CVData {
     location: string;
     linkedin: string;
     website: string;
+    photo: string;
   };
   summary: string;
   experience: Array<{
@@ -75,7 +76,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
       phone: '',
       location: '',
       linkedin: '',
-      website: ''
+      website: '',
+      photo: ''
     },
     summary: '',
     experience: [],
@@ -90,6 +92,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [photoError, setPhotoError] = useState<string>('');
 
   // Load existing CV data if editing
   useEffect(() => {
@@ -198,6 +201,43 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
     }
   };
 
+  const updatePersonalInfo = (field: string, value: string) => {
+    setCvData(prev => ({
+      ...prev,
+      personalInfo: {
+        ...prev.personalInfo,
+        [field]: value
+      }
+    }));
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Please select an image file (JPG, PNG, or GIF)');
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      setPhotoError('Image size must be less than 2MB');
+      return;
+    }
+
+    setPhotoError('');
+
+    // Convert to base64 for preview and storage
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      updatePersonalInfo('photo', result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const addExperience = () => {
     const newExp = {
       id: Date.now().toString(),
@@ -303,6 +343,63 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
 
   const renderPersonalInfo = () => (
     <div className="space-y-6">
+      {/* Profile Picture Upload */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-4">
+          <div className="flex-shrink-0">
+            {cvData.personalInfo.photo ? (
+              <div className="relative">
+                <img
+                  src={cvData.personalInfo.photo}
+                  alt="Profile"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                />
+                <button
+                  onClick={() => updatePersonalInfo('photo', '')}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                  title="Remove photo"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                <User className="h-8 w-8 text-gray-400" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1">
+            <h3 className="font-medium text-gray-900 mb-2">Profile Picture (Optional)</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Add a professional headshot. Recommended for some markets like Germany, UAE, and Singapore.
+            </p>
+            <div className="flex gap-2">
+              <label className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-sm flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+              </label>
+              {cvData.personalInfo.photo && (
+                <button
+                  onClick={() => updatePersonalInfo('photo', '')}
+                  className="text-red-600 hover:text-red-800 px-3 py-1.5 text-sm transition-colors"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              JPG, PNG, or GIF. Max 2MB. Square photos work best.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1017,16 +1114,16 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="ltr">
+    <div className="min-h-screen bg-gray-50 overflow-hidden" dir="ltr">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-20 h-14">
+        <div className="container mx-auto px-3 py-2 h-full">
+          <div className="flex items-center justify-between h-full">
             <div className="flex items-center gap-4">
               <BackButton onClick={onBack} label="Back" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
-                <p className="text-sm text-gray-600">
+                <h1 className="text-lg font-bold text-gray-900">CV Builder</h1>
+                <p className="text-xs text-gray-600">
                   {selectedTemplate?.name} • {targetMarket?.name || 'Global'}
                   {lastSaved && (
                     <span className="ml-2 text-green-600">
@@ -1037,7 +1134,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowSuggestions(!showSuggestions)}
                 className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
@@ -1049,16 +1146,16 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               <button
                 onClick={() => handleSave(false)}
                 disabled={isSaving}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1 text-sm"
               >
                 {isSaving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4" />
+                    <Save className="h-3 w-3" />
                     Save CV
                   </>
                 )}
@@ -1067,16 +1164,16 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               <button
                 onClick={handleDownloadPDF}
                 disabled={isGeneratingPDF}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1 text-sm"
               >
                 {isGeneratingPDF ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                     Generating...
                   </>
                 ) : (
                   <>
-                    <Download className="h-4 w-4" />
+                    <Download className="h-3 w-3" />
                     Download PDF
                   </>
                 )}
@@ -1086,8 +1183,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+      <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
+        <div className="grid lg:grid-cols-5 gap-3 h-full max-w-full mx-auto px-2">
           {/* Sidebar Navigation */}
           <div className="w-80 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-24">
@@ -1127,7 +1224,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 max-w-2xl">
+          <div className="lg:col-span-3 overflow-y-auto h-full pr-2 space-y-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -1149,8 +1246,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
           </div>
 
           {/* Live Preview Panel */}
-          <div className="w-96 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-24">
+          <div className="lg:col-span-2 overflow-y-auto h-full pl-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full sticky top-0">
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
                 <h3 className="font-semibold flex items-center gap-2">
                   <Eye className="h-5 w-5" />
@@ -1166,21 +1263,40 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
                     <div className="space-y-4">
                       {/* Header */}
                       <div className="text-center border-b pb-4">
-                        <h1 className="text-xl font-bold text-gray-900 mb-1">
-                          {cvData.personalInfo?.fullName || 'Your Name'}
-                        </h1>
-                        <p className="text-base text-gray-600 mb-2">
-                          {cvData.personalInfo?.title || 'Your Professional Title'}
-                        </p>
-                        <div className="text-xs text-gray-500 space-x-2">
-                          {cvData.personalInfo?.email && (
+                        <div className="flex items-center justify-center gap-6 mb-4">
+                          <div className="text-left flex-1">
+                            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                              {cvData.personalInfo.fullName || 'Your Name'}
+                            </h1>
+                            <p className="text-lg text-gray-600 mb-2">
+                              {cvData.personalInfo.title || 'Your Title'}
+                            </p>
+                          </div>
+                          {cvData.personalInfo.photo && (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={cvData.personalInfo.photo}
+                                alt="Profile"
+                                className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500 space-x-2 text-center">
+                          {cvData.personalInfo.email && (
                             <span>{cvData.personalInfo.email}</span>
                           )}
-                          {cvData.personalInfo?.phone && (
+                          {cvData.personalInfo.phone && (
                             <span>• {cvData.personalInfo.phone}</span>
                           )}
-                          {cvData.personalInfo?.location && (
+                          {cvData.personalInfo.location && (
                             <span>• {cvData.personalInfo.location}</span>
+                          )}
+                          {cvData.personalInfo.linkedin && (
+                            <span>• LinkedIn</span>
+                          )}
+                          {cvData.personalInfo.website && (
+                            <span>• Portfolio</span>
                           )}
                         </div>
                       </div>
