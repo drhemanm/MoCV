@@ -25,7 +25,6 @@ interface CVData {
     location: string;
     linkedin: string;
     website: string;
-    photo?: string;
   };
   summary: string;
   experience: Array<{
@@ -1291,7 +1290,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
                               <div key={index} className="text-xs">
                                 <span className="font-medium text-gray-900">{cert.name || 'Certification'}</span>
                                 {cert.issuer && <span className="text-gray-600"> - {cert.issuer}</span>}
+                                }
                                 {cert.date && <span className="text-gray-500"> ({cert.date})</span>}
+                                }
                               </div>
                             ))}
                           </div>
