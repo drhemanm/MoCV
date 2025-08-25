@@ -15,7 +15,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
   const xpNeeded = nextLevelXP - gameData.totalXP;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Trophy className="h-5 w-5 text-yellow-600" />
@@ -29,7 +29,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
 
       {/* Current Badge */}
       <div className="text-center mb-6">
-        <div className={`inline-flex items-center gap-3 px-4 py-3 rounded-xl ${currentBadge.color} cursor-pointer transition-all hover:scale-105`}
+        <div className={`inline-flex items-center gap-3 px-4 py-3 rounded-xl ${currentBadge.color} cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-lg animate-float`}
              onClick={() => onBadgeClick?.(currentBadge)}>
           <span className="text-2xl">{currentBadge.icon}</span>
           <div>
@@ -41,7 +41,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
 
       {/* Recent XP Gain */}
       {gameData.lastXPGain && (
-        <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+        <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 animate-pulse">
           <div className="flex items-center gap-2 mb-1">
             <Star className="h-4 w-4 text-blue-600" />
             <span className="text-sm font-semibold text-blue-900">Recent XP</span>
@@ -60,7 +60,7 @@ const GameProgress: React.FC<GameProgressProps> = ({ gameData, onBadgeClick }) =
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3">
           <div 
-            className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
+            className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-1000 animate-gradient"
             style={{ width: `${xpProgress}%` }}
           ></div>
         </div>

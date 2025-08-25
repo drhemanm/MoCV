@@ -1116,13 +1116,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
   return (
     <div className="min-h-screen bg-gray-50 overflow-hidden" dir="ltr">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-20 h-14">
+      <div className="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-0 z-10 h-14 shadow-sm">
         <div className="container mx-auto px-3 py-2 h-full">
           <div className="flex items-center justify-between h-full">
             <div className="flex items-center gap-4">
               <BackButton onClick={onBack} label="Back" />
               <div>
-                <h1 className="text-lg font-bold text-gray-900">CV Builder</h1>
+                <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CV Builder</h1>
                 <p className="text-xs text-gray-600">
                   {selectedTemplate?.name} • {targetMarket?.name || 'Global'}
                   {lastSaved && (
@@ -1146,7 +1146,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               <button
                 onClick={() => handleSave(false)}
                 disabled={isSaving}
-                className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1 text-sm"
+                className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-all duration-300 disabled:opacity-50 flex items-center gap-1 text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 {isSaving ? (
                   <>
@@ -1164,7 +1164,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               <button
                 onClick={handleDownloadPDF}
                 disabled={isGeneratingPDF}
-                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1 text-sm"
+                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 flex items-center gap-1 text-sm shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 {isGeneratingPDF ? (
                   <>

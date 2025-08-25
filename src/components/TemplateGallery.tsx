@@ -491,7 +491,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             {filteredTemplates.map((template) => (
               <div
                 key={template.id}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group border border-gray-100"
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-[1.02] group border border-gray-100 backdrop-blur-sm"
               >
                 {/* Realistic Thumbnail */}
                 <div className="relative">
@@ -505,11 +505,11 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                   </div>
                   
                   {/* Overlay buttons */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-500 flex items-center justify-center opacity-0 group-hover:opacity-100">
                     <div className="flex gap-3">
                       <button
                         onClick={() => onTemplatePreview(template)}
-                        className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300"
+                        className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-all duration-300 flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 shadow-lg hover:shadow-xl"
                       >
                         <Eye className="h-4 w-4" />
                         Preview
@@ -519,7 +519,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                           e.stopPropagation();
                           handleTemplateSelect(template);
                         }}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-all duration-300 flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 delay-75 shadow-lg hover:shadow-xl"
                       >
                         <Zap className="h-4 w-4" />
                         Use Template
@@ -568,7 +568,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                   <div className="flex gap-2">
                     <button
                       onClick={() => onTemplatePreview(template)}
-                      className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                      className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-all duration-300 text-sm font-medium flex items-center justify-center gap-2 hover:shadow-md"
                     >
                       <Eye className="h-4 w-4" />
                       Preview
@@ -579,7 +579,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                         console.log('Template selected:', template.name);
                         handleTemplateSelect(template);
                       }}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 text-sm font-medium flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
                     >
                       <Zap className="h-4 w-4" />
                       Select

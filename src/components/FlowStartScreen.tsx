@@ -36,18 +36,18 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
         {/* Header */}
         <div className="text-center mb-16">
           <div className="text-center mb-6 flex justify-center">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium shadow-lg animate-pulse">
               <Sparkles className="h-4 w-4" />
               AI-Powered CV Assistant for Mauritius & Africa
             </div>
           </div>
           <div className="text-center mb-6 w-full flex justify-center">
-            <h1 className="text-5xl font-bold text-gray-900">
+            <h1 className="text-5xl font-bold text-gray-900 animate-fade-in">
               <div className="text-center">Welcome to</div>
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center">MoCV.mu</div>
             </h1>
           </div>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center animate-slide-up">
             Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
             Get ATS-optimized CVs, AI-powered content, and beat international recruitment systems.
           </p>
@@ -56,18 +56,18 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
           <div className="mb-8 w-full flex justify-center">
             <button
               onClick={handleResetData}
-              className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-sm hover:shadow-md border border-gray-200 hover:border-red-200"
+              className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl border border-gray-200 hover:border-red-200 backdrop-blur-sm"
             >
               <span className="relative z-10 flex items-center gap-2">
                 <span className="text-lg group-hover:animate-spin transition-transform duration-500">🔄</span>
                 Reset Demo Data
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
             </button>
           </div>
           
           {/* Key Benefits */}
-          <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12">
+          <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12 animate-stagger-in">
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
                 <Target className="h-5 w-5 text-blue-600" />
@@ -107,9 +107,9 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
             {/* Main Actions */}
             <div className="lg:col-span-2 space-y-6">
               {/* My CVs Dashboard */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
                 <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <FolderOpen className="h-8 w-8 text-orange-600" />
                   </div>
                   <div className="flex-1">
@@ -134,7 +134,7 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                     </div>
                     <button
                       onClick={onMyCVs}
-                      className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-orange-700 hover:to-red-700 transition-all duration-200 transform hover:scale-105"
+                      className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-orange-700 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                     >
                       View My CVs
                     </button>
@@ -145,9 +145,9 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Your Path</h2>
               
               {/* Improve Existing CV */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
                 <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <Eye className="h-8 w-8 text-purple-600" />
                   </div>
                   <div className="flex-1">
@@ -172,7 +172,7 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                     </div>
                     <button
                       onClick={onImproveCV}
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105"
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                     >
                       Analyze My CV
                     </button>
@@ -181,9 +181,9 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
               </div>
 
               {/* Create New CV */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
                 <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-green-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-green-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <Plus className="h-8 w-8 text-blue-600" />
                   </div>
                   <div className="flex-1">
@@ -208,7 +208,7 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                     </div>
                     <button
                       onClick={onCreateNew}
-                      className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+                      className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-300 transform hover:scale-105 flex items-center gap-2 shadow-lg hover:shadow-xl"
                     >
                       <FileText className="h-5 w-5" />
                       Choose Template & Create CV
@@ -218,9 +218,9 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
               </div>
 
               {/* Analyze vs Job Description */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
                 <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-yellow-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-yellow-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <Target className="h-8 w-8 text-green-600" />
                   </div>
                   <div className="flex-1">
@@ -245,7 +245,7 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                     </div>
                     <button
                       onClick={onAnalyzeVsJob}
-                      className="bg-gradient-to-r from-green-600 to-yellow-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-yellow-700 transition-all duration-200 transform hover:scale-105"
+                      className="bg-gradient-to-r from-green-600 to-yellow-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-yellow-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                     >
                       Compare with Job
                     </button>
@@ -254,9 +254,9 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
               </div>
 
               {/* Interview Preparation */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-xl transition-all duration-300 group">
+              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
                 <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                     <MessageCircle className="h-8 w-8 text-indigo-600" />
                   </div>
                   <div className="flex-1">
@@ -281,7 +281,7 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
                     </div>
                     <button
                       onClick={onInterviewPrep}
-                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                     >
                       Start Interview Practice
                     </button>
