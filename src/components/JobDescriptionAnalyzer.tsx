@@ -1,9 +1,15 @@
+// src/components/JobDescriptionAnalyzer.tsx
 import React, { useState } from 'react';
-import { Target, Upload, FileText, TrendingUp, CheckCircle, AlertCircle, Zap, Award, X } from 'lucide-react';
-import { CVAnalysis } from '../types';
-import { TargetMarket } from '../types';
-import BackButton from './BackButton';
-import { extractTextFromFile } from '../services/cvParsingService';
+import { 
+  Target, Upload, FileText, Zap, BarChart3, CheckCircle, 
+  AlertTriangle, TrendingUp, Users, Clock, DollarSign,
+  Star, Brain, Lightbulb, ArrowRight, Copy, Download
+} from 'lucide-react';
+import { TargetMarket, CVAnalysis } from '../types';
+import { BackButton } from './BackButton';
+import { Card } from './UI/Card';
+import { Button } from './UI/Button';
+import { ButtonSpinner } from './LoadingSpinner';
 
 interface JobDescriptionAnalyzerProps {
   targetMarket: TargetMarket | null;
@@ -11,352 +17,533 @@ interface JobDescriptionAnalyzerProps {
   onBack: () => void;
 }
 
-const JobDescriptionAnalyzer: React.FC<JobDescriptionAnalyzerProps> = ({ targetMarket, onAnalysisComplete, onBack }) => {
-  const [cvText, setCvText] = useState('');
+interface JobAnalysis {
+  matchScore: number;
+  salaryRange: string;
+  experienceLevel: string;
+  companySize: string;
+  jobType: string;
+  remoteOptions: string;
+  requiredSkills: string[];
+  preferredSkills: string[];
+  responsibilities: string[];
+  qualifications: string[];
+  benefits: string[];
+  keyPhrases: string[];
+  industryFocus: string[];
+}
+
+const JobDescriptionAnalyzer: React.FC<JobDescriptionAnalyzerProps> = ({
+  targetMarket,
+  onAnalysisComplete,
+  onBack
+}) => {
   const [jobDescription, setJobDescription] = useState('');
+  const [cvText, setCvText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState<'input' | 'analysis' | 'results'>('input');
+  const [jobAnalysis, setJobAnalysis] = useState<JobAnalysis | null>(null);
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFile = async (file: File) => {
-    try {
-      // Show loading state
-      const loadingMessage = document.createElement('div');
-      loadingMessage.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      loadingMessage.textContent = 'Processing your CV...';
-      document.body.appendChild(loadingMessage);
-      
-      const extractedText = await extractTextFromFile(file);
-      
-      // Remove loading message
-      if (document.body.contains(loadingMessage)) {
-        document.body.removeChild(loadingMessage);
-      }
-      
-      // Check if we got actual content or fallback
-      if (extractedText && extractedText.trim() && 
-          !extractedText.includes('John Doe') && 
-          !extractedText.includes('john.doe@email.com')) {
-        setCvText(extractedText);
-        
-        // Show success message
-        const successMessage = document.createElement('div');
-        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        successMessage.textContent = 'CV uploaded and processed successfully!';
-        document.body.appendChild(successMessage);
-        
-        // Remove success message after 3 seconds
-        setTimeout(() => {
-          if (document.body.contains(successMessage)) {
-            document.body.removeChild(successMessage);
-          }
-        }, 3000);
-      } else {
-        // Show warning for fallback content
-        const warningMessage = document.createElement('div');
-        warningMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        warningMessage.innerHTML = `
-          <div>CV uploaded but text extraction limited.</div>
-          <div class="text-xs mt-1">Please paste your CV text manually for best results.</div>
-        `;
-        document.body.appendChild(warningMessage);
-        
-        // Set empty text to encourage manual input
-        setCvText('');
-        
-        // Remove warning message after 5 seconds
-        setTimeout(() => {
-          if (document.body.contains(warningMessage)) {
-            document.body.removeChild(warningMessage);
-          }
-        }, 5000);
-      }
-      
-    } catch (error) {
-      console.error('File parsing error:', error);
-      
-      // Show error message
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      errorMessage.innerHTML = `
-        <div>Failed to parse CV file.</div>
-        <div class="text-xs mt-1">Please try pasting your CV text directly below.</div>
-      `;
-      document.body.appendChild(errorMessage);
-      
-      // Remove error message after 5 seconds
-      setTimeout(() => {
-        if (document.body.contains(errorMessage)) {
-          document.body.removeChild(errorMessage);
-        }
-      }, 5000);
-    }
-  };
-
-  const analyzeMatch = async () => {
-    if (!cvText.trim() || !jobDescription.trim()) {
-      alert('Please provide both your CV and the job description');
-      return;
-    }
+  const analyzeJobDescription = async () => {
+    if (!jobDescription.trim() || !cvText.trim()) return;
 
     setIsAnalyzing(true);
-    
-    // Simulate AI analysis with job description matching
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Enhanced mock analysis with job-specific matching
-    const mockAnalysis: CVAnalysis = {
-      score: 85,
-      matchedKeywords: ['JavaScript', 'React', 'Node.js', 'Software Engineer', 'AWS', 'Team Lead', 'Agile'],
-      missingKeywords: ['TypeScript', 'Kubernetes', 'CI/CD', 'Microservices', 'GraphQL'],
-      readabilityScore: 'Good',
-      suggestions: [
-        'Add TypeScript experience - mentioned 3 times in job description',
-        'Include Kubernetes and container orchestration skills',
-        'Highlight CI/CD pipeline experience with specific tools',
-        'Mention microservices architecture experience',
-        'Add GraphQL API development to your skills',
-        'Quantify your team leadership experience with specific numbers',
-        'Include agile methodology certifications if you have them'
+    setCurrentStep('analysis');
+    setAnalysisProgress(0);
+
+    // Simulate analysis steps
+    const steps = [
+      { message: 'Parsing job description...', duration: 1000 },
+      { message: 'Extracting key requirements...', duration: 1200 },
+      { message: 'Analyzing your CV...', duration: 1500 },
+      { message: 'Comparing skills and experience...', duration: 1000 },
+      { message: 'Calculating match score...', duration: 800 },
+      { message: 'Generating recommendations...', duration: 500 }
+    ];
+
+    let progress = 0;
+    for (const step of steps) {
+      await new Promise(resolve => setTimeout(resolve, step.duration));
+      progress += 100 / steps.length;
+      setAnalysisProgress(Math.min(progress, 100));
+    }
+
+    // Generate mock analysis
+    const mockJobAnalysis: JobAnalysis = {
+      matchScore: 78 + Math.floor(Math.random() * 15),
+      salaryRange: '$75,000 - $95,000',
+      experienceLevel: 'Mid-level (3-5 years)',
+      companySize: 'Medium (100-500 employees)',
+      jobType: 'Full-time',
+      remoteOptions: 'Hybrid (2-3 days remote)',
+      requiredSkills: [
+        'JavaScript', 'React', 'Node.js', 'SQL', 'Git',
+        'Problem Solving', 'Team Collaboration'
       ],
-      sections: ['Contact Info', 'Professional Summary', 'Experience', 'Skills', 'Education']
+      preferredSkills: [
+        'TypeScript', 'AWS', 'Docker', 'Agile/Scrum',
+        'Test-Driven Development', 'CI/CD'
+      ],
+      responsibilities: [
+        'Develop and maintain web applications using React and Node.js',
+        'Collaborate with cross-functional teams to deliver high-quality software',
+        'Participate in code reviews and maintain coding standards',
+        'Debug and resolve technical issues in production systems',
+        'Contribute to architecture decisions and technical planning'
+      ],
+      qualifications: [
+        "Bachelor's degree in Computer Science or related field",
+        '3+ years of experience in web development',
+        'Strong proficiency in JavaScript and modern frameworks',
+        'Experience with database design and SQL',
+        'Excellent communication and problem-solving skills'
+      ],
+      benefits: [
+        'Health, dental, and vision insurance',
+        'Flexible PTO policy',
+        'Remote work options',
+        '$3,000 annual learning budget',
+        'Stock options',
+        '401(k) with company match'
+      ],
+      keyPhrases: [
+        'full-stack development', 'agile methodology', 'scalable solutions',
+        'user experience', 'technical leadership', 'continuous learning'
+      ],
+      industryFocus: ['Technology', 'SaaS', 'B2B Software']
     };
 
+    const mockCVAnalysis: CVAnalysis = {
+      score: mockJobAnalysis.matchScore,
+      strengths: [
+        'Strong technical skills alignment with job requirements',
+        'Relevant experience in web development technologies',
+        'Good match for required programming languages',
+        'Professional experience level fits job requirements'
+      ],
+      weaknesses: [
+        'Missing some preferred skills like TypeScript and AWS',
+        'Could emphasize more leadership and mentoring experience',
+        'Limited cloud deployment experience mentioned',
+        'Could highlight more specific project outcomes'
+      ],
+      suggestions: [
+        'Add specific metrics and achievements from previous roles',
+        'Highlight any TypeScript or cloud platform experience',
+        'Emphasize collaborative and leadership experiences',
+        'Include relevant certifications or continuous learning efforts',
+        'Tailor your summary to match the job\'s key requirements'
+      ],
+      sections: {
+        summary: {
+          score: mockJobAnalysis.matchScore - 5,
+          feedback: 'Good alignment with role requirements',
+          suggestions: ['Customize summary to mention specific technologies', 'Add relevant metrics']
+        },
+        experience: {
+          score: mockJobAnalysis.matchScore + 3,
+          feedback: 'Strong relevant experience',
+          suggestions: ['Quantify achievements', 'Highlight team collaboration']
+        },
+        skills: {
+          score: mockJobAnalysis.matchScore - 8,
+          feedback: 'Good skill match with room for improvement',
+          suggestions: ['Add missing preferred skills', 'Group skills by category']
+        }
+      },
+      atsCompatibility: mockJobAnalysis.matchScore - 5,
+      keywordMatches: mockJobAnalysis.requiredSkills.slice(0, 4),
+      missingKeywords: mockJobAnalysis.preferredSkills.slice(0, 3)
+    };
+
+    setJobAnalysis(mockJobAnalysis);
     setIsAnalyzing(false);
-    onAnalysisComplete(mockAnalysis, cvText, jobDescription);
+    setCurrentStep('results');
+
+    // Call the completion handler
+    setTimeout(() => {
+      onAnalysisComplete(mockCVAnalysis, cvText, jobDescription);
+    }, 1000);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-yellow-50">
-      <div className="container mx-auto px-4 py-16">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="mb-6">
-            <BackButton onClick={onBack} label="Back to Home" variant="floating" />
+  const handleJobDescriptionPaste = (text: string) => {
+    setJobDescription(text);
+    
+    // Auto-extract job details from pasted text (simplified)
+    const lines = text.toLowerCase();
+    
+    // Try to detect company and role
+    const titleMatch = text.match(/job title[:\-\s]*(.*?)[\n\r]/i) || 
+                      text.match(/position[:\-\s]*(.*?)[\n\r]/i) ||
+                      text.match(/role[:\-\s]*(.*?)[\n\r]/i);
+    
+    if (titleMatch) {
+      console.log('Detected job title:', titleMatch[1].trim());
+    }
+  };
+
+  if (currentStep === 'analysis') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="p-12 max-w-md mx-auto text-center">
+          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Brain className="h-10 w-10 text-white animate-pulse" />
           </div>
           
-          <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <Target className="h-4 w-4" />
-            Job-Specific CV Analysis {targetMarket && `• ${targetMarket.flag} ${targetMarket.name}`}
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-6">
-            CV vs Job Description Analysis
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Upload your CV and paste the job description to get a detailed compatibility analysis. 
-            {targetMarket ? `Optimized for ${targetMarket.name} market preferences and ATS systems.` : 'See exactly what keywords you\'re missing and how to optimize for this specific role.'}
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Analyzing Job Match</h2>
+          <p className="text-gray-600 mb-6">Our AI is comparing your CV with the job requirements</p>
           
-          <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <Award className="h-4 w-4 text-yellow-600" />
-              <span>Earn +75 XP</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-blue-600" />
-              <span>AI-Powered Matching</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-green-600" />
-              <span>Job-Specific Tips</span>
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${analysisProgress}%` }}
+            ></div>
+          </div>
+          
+          <div className="text-sm text-gray-500">
+            {Math.round(analysisProgress)}% Complete
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (currentStep === 'results' && jobAnalysis) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex items-center gap-4">
+              <BackButton onClick={onBack} variant="minimal" />
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-gray-900">Job Match Analysis</h1>
+                <p className="text-gray-600">Detailed analysis of how your CV matches this position</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">Match Score</div>
+                <div className={`text-4xl font-bold ${
+                  jobAnalysis.matchScore >= 80 ? 'text-green-600' :
+                  jobAnalysis.matchScore >= 60 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {jobAnalysis.matchScore}%
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* CV Upload Section */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <Upload className="h-6 w-6 text-blue-600" />
-                Your Current CV
-              </h2>
-
-              {/* File Upload Area */}
-              <div
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 mb-6 ${
-                  dragActive 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-              >
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-700 mb-2">
-                  Drop your CV here or click to browse
-                </p>
-                <p className="text-gray-500 mb-4">Supports PDF, DOCX, and text files</p>
-                <button
-                  onClick={() => document.getElementById('cv-file-input')?.click()}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Choose File
-                </button>
-                <input
-                  id="cv-file-input"
-                  type="file"
-                  accept=".pdf,.docx,.txt"
-                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-                  className="hidden"
-                />
-              </div>
-
-              {/* PDF Notice */}
-              <div className="mb-6 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                <p className="text-yellow-800 text-sm">
-                  <strong>PDF Upload Tip:</strong> If you see garbled text after uploading a PDF, please copy and paste your CV text directly into the text area below instead. DOCX files typically work better for automatic text extraction.
-                </p>
-              </div>
-
-              {/* Text Input Alternative */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Or paste your CV text here:
-                </label>
-                <textarea
-                  value={cvText}
-                  onChange={(e) => setCvText(e.target.value)}
-                  rows={12}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="Paste your CV content here..."
-                />
-              </div>
-              
-              <div className="flex justify-end mt-2">
-                <button
-                  onClick={() => setCvText('')}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
-                >
-                  <X className="h-4 w-4" />
-                  Clear CV Text
-                </button>
-              </div>
-            </div>
-
-            {/* Job Description Section */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <Target className="h-6 w-6 text-green-600" />
-                Job Description
-              </h2>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Paste the complete job description:
-                </label>
-                <textarea
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  rows={16}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                  placeholder="Paste the full job description here including requirements, responsibilities, and qualifications..."
-                />
-              </div>
-              
-              <div className="flex justify-end mt-2">
-                <button
-                  onClick={() => setJobDescription('')}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
-                >
-                  <X className="h-4 w-4" />
-                  Clear Job Description
-                </button>
-              </div>
-
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                <h3 className="font-semibold text-green-900 mb-2">💡 Pro Tip:</h3>
-                <p className="text-green-800 text-sm">
-                  Include the entire job posting for best results. The AI will analyze requirements, 
-                  preferred qualifications, and company culture keywords to give you the most accurate matching score.
-                </p>
-              </div>
-            </div>
+        <div className="container mx-auto px-4 py-8 space-y-8">
+          {/* Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="p-6 text-center">
+              <DollarSign className="h-8 w-8 text-green-600 mx-auto mb-3" />
+              <div className="text-lg font-bold text-gray-900">{jobAnalysis.salaryRange}</div>
+              <div className="text-gray-600 text-sm">Salary Range</div>
+            </Card>
+            
+            <Card className="p-6 text-center">
+              <Clock className="h-8 w-8 text-blue-600 mx-auto mb-3" />
+              <div className="text-lg font-bold text-gray-900">{jobAnalysis.experienceLevel}</div>
+              <div className="text-gray-600 text-sm">Experience Level</div>
+            </Card>
+            
+            <Card className="p-6 text-center">
+              <Users className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+              <div className="text-lg font-bold text-gray-900">{jobAnalysis.companySize}</div>
+              <div className="text-gray-600 text-sm">Company Size</div>
+            </Card>
+            
+            <Card className="p-6 text-center">
+              <Target className="h-8 w-8 text-orange-600 mx-auto mb-3" />
+              <div className="text-lg font-bold text-gray-900">{jobAnalysis.remoteOptions}</div>
+              <div className="text-gray-600 text-sm">Work Style</div>
+            </Card>
           </div>
 
-          {/* Analysis Button */}
-          <div className="text-center mt-8">
-            <button
-              onClick={analyzeMatch}
-              disabled={isAnalyzing || !cvText.trim() || !jobDescription.trim()}
-              className="bg-gradient-to-r from-green-600 to-yellow-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-green-700 hover:to-yellow-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 mx-auto"
-            >
-              {isAnalyzing ? (
-                <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                  Analyzing Match...
-                </>
-              ) : (
-                <>
-                  <Target className="h-6 w-6" />
-                  Analyze CV vs Job Match
-                </>
-              )}
-            </button>
-            
-            {isAnalyzing && (
-              <div className="mt-4 text-center">
-                <p className="text-gray-600 mb-2">AI is analyzing your CV against the job requirements...</p>
-                <div className="flex justify-center space-x-1">
-                  <div className="w-2 h-2 bg-green-600 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-green-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-green-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          {/* Skills Analysis */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Required Skills Match
+              </h3>
+              <div className="space-y-2">
+                {jobAnalysis.requiredSkills.map((skill, index) => {
+                  const hasSkill = Math.random() > 0.3; // Mock skill matching
+                  return (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-gray-700">{skill}</span>
+                      {hasSkill ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Star className="h-5 w-5 text-yellow-600" />
+                Preferred Skills
+              </h3>
+              <div className="space-y-2">
+                {jobAnalysis.preferredSkills.map((skill, index) => {
+                  const hasSkill = Math.random() > 0.6; // Mock skill matching
+                  return (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-gray-700">{skill}</span>
+                      {hasSkill ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <div className="text-gray-400 text-xs">Missing</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+
+          {/* Job Details */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Key Responsibilities</h3>
+              <ul className="space-y-2">
+                {jobAnalysis.responsibilities.map((responsibility, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-700 text-sm">{responsibility}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Benefits & Perks</h3>
+              <ul className="space-y-2">
+                {jobAnalysis.benefits.map((benefit, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-sm">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </div>
+
+          {/* Action Items */}
+          <Card className="p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-600" />
+              Recommendations to Improve Your Match
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Skills to Highlight</h4>
+                <div className="flex flex-wrap gap-2">
+                  {jobAnalysis.requiredSkills.slice(0, 4).map((skill, index) => (
+                    <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                      {skill}
+                    </span>
+                  ))}
                 </div>
               </div>
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Skills to Learn</h4>
+                <div className="flex flex-wrap gap-2">
+                  {jobAnalysis.preferredSkills.slice(0, 3).map((skill, index) => (
+                    <span key={index} className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* CTA */}
+          <div className="text-center">
+            <Button
+              onClick={() => onAnalysisComplete({
+                score: jobAnalysis.matchScore,
+                strengths: [
+                  'Strong technical skills alignment',
+                  'Relevant experience level',
+                  'Good cultural fit indicators'
+                ],
+                weaknesses: [
+                  'Missing some preferred qualifications',
+                  'Could emphasize more achievements'
+                ],
+                suggestions: [
+                  'Tailor CV to highlight matching skills',
+                  'Add relevant project examples',
+                  'Emphasize quantifiable achievements'
+                ],
+                sections: {},
+                atsCompatibility: jobAnalysis.matchScore - 5,
+                keywordMatches: jobAnalysis.requiredSkills.slice(0, 4),
+                missingKeywords: jobAnalysis.preferredSkills.slice(0, 3)
+              }, cvText, jobDescription)}
+              icon={<ArrowRight className="h-4 w-4" />}
+              size="lg"
+            >
+              Get Detailed Improvement Suggestions
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center gap-4">
+            <BackButton onClick={onBack} variant="minimal" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Job Match Analysis</h1>
+              <p className="text-gray-600">
+                {targetMarket 
+                  ? `Analyze how your CV matches ${targetMarket.name} job requirements`
+                  : 'Compare your CV against specific job descriptions'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Instructions */}
+          <Card className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-blue-600" />
+              How It Works
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">1. Paste Job Description</h3>
+                <p className="text-gray-600 text-sm">Copy the full job posting you're interested in</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Upload className="h-6 w-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">2. Add Your CV</h3>
+                <p className="text-gray-600 text-sm">Paste your current CV content for comparison</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <BarChart3 className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">3. Get Analysis</h3>
+                <p className="text-gray-600 text-sm">Receive detailed match analysis and suggestions</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Job Description Input */}
+          <Card className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Job Description</h2>
+            <div className="space-y-4">
+              <textarea
+                value={jobDescription}
+                onChange={(e) => handleJobDescriptionPaste(e.target.value)}
+                placeholder="Paste the complete job description here, including requirements, responsibilities, qualifications, and benefits..."
+                className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              />
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>{jobDescription.length} characters</span>
+                <span>Include full job posting for best analysis</span>
+              </div>
+            </div>
+          </Card>
+
+          {/* CV Input */}
+          <Card className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Your CV Content</h2>
+            <div className="space-y-4">
+              <textarea
+                value={cvText}
+                onChange={(e) => setCvText(e.target.value)}
+                placeholder="Paste your CV content here, including all sections: summary, experience, education, skills, etc..."
+                className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              />
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>{cvText.length} characters</span>
+                <span>Include all relevant sections for comprehensive analysis</span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Analysis Button */}
+          <div className="text-center">
+            <Button
+              onClick={analyzeJobDescription}
+              disabled={!jobDescription.trim() || !cvText.trim() || isAnalyzing}
+              icon={isAnalyzing ? <ButtonSpinner /> : <Zap className="h-5 w-5" />}
+              size="lg"
+            >
+              {isAnalyzing ? 'Analyzing...' : 'Analyze Job Match'}
+            </Button>
+            
+            {(!jobDescription.trim() || !cvText.trim()) && (
+              <p className="text-gray-500 text-sm mt-2">
+                Please provide both job description and CV content to start analysis
+              </p>
             )}
           </div>
 
-          {/* What You'll Get */}
-          <div className="mt-16 bg-white rounded-2xl shadow-lg p-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">What You'll Get from This Analysis</h3>
-            
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <TrendingUp className="h-6 w-6 text-blue-600" />
-                </div>
-                <h4 className="font-semibold text-gray-900 mb-2">Match Score</h4>
-                <p className="text-gray-600 text-sm">Get a percentage score showing how well your CV matches the job requirements</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-                <h4 className="font-semibold text-gray-900 mb-2">Keyword Analysis</h4>
-                <p className="text-gray-600 text-sm">See which keywords you have and which ones you're missing from the job posting</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="h-6 w-6 text-purple-600" />
-                </div>
-                <h4 className="font-semibold text-gray-900 mb-2">Improvement Tips</h4>
-                <p className="text-gray-600 text-sm">Get specific suggestions on how to optimize your CV for this exact role</p>
-              </div>
-            </div>
-          </div>
+          {/* Sample Job Description */}
+          <Card className="p-6 bg-blue-50 border-blue-200">
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">Need a sample job description?</h3>
+            <p className="text-blue-800 text-sm mb-4">
+              Use this example to test the analysis feature:
+            </p>
+            <button
+              onClick={() => setJobDescription(`Software Engineer - Frontend
+Company: TechCorp Inc.
+Location: San Francisco, CA (Remote friendly)
+Salary: $80,000 - $120,000
+
+We are looking for a passionate Frontend Developer to join our team...
+
+Requirements:
+• 3+ years of experience with React and JavaScript
+• Strong knowledge of HTML, CSS, and modern web technologies
+• Experience with REST APIs and state management
+• Bachelor's degree in Computer Science or related field
+• Excellent problem-solving and communication skills
+
+Preferred:
+• TypeScript experience
+• Knowledge of Next.js or similar frameworks
+• Experience with testing frameworks (Jest, Cypress)
+• Familiarity with cloud platforms (AWS, Azure)
+
+Benefits:
+• Competitive salary and equity
+• Health, dental, and vision insurance
+• Flexible PTO and remote work options
+• $2,000 annual learning budget`)}
+              className="text-blue-600 hover:text-blue-800 text-sm underline"
+            >
+              Use this sample job description
+            </button>
+          </Card>
         </div>
       </div>
     </div>
