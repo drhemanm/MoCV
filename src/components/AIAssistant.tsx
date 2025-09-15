@@ -7,7 +7,7 @@ import {
   Copy, ThumbsUp, ThumbsDown, MoreHorizontal, Edit3
 } from 'lucide-react';
 import { TargetMarket, CVTemplate } from '../types';
-import { BackButton } from './BackButton';
+import BackButton from './BackButton';
 import { ButtonSpinner } from './LoadingSpinner';
 
 interface AIAssistantProps {
