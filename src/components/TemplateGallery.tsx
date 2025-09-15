@@ -1448,9 +1448,6 @@ const RealisticTemplateCard = memo<RealisticTemplateCardProps>(({
 
 RealisticTemplateCard.displayName = 'RealisticTemplateCard';
 
-export default TemplateGallery;
-// Advanced TemplateGallery - Section 4: Error Boundaries, Utilities & Final Export
-
 // Error Boundary Component for Template Rendering
 interface ErrorBoundaryState {
   hasError: boolean;
