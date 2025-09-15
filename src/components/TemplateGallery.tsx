@@ -1,87 +1,95 @@
-// src/components/TemplateGallery.tsx - Apple Design + ATS Optimized
+// Enhanced TemplateGallery with real previews and customization
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronLeft, Check, Zap } from 'lucide-react';
+import { Search, ChevronLeft, Check, Zap, Palette, Type, Layout, Eye } from 'lucide-react';
 import { CVTemplate } from '../types';
 
 interface TemplateGalleryProps {
   templates: CVTemplate[];
   isLoading: boolean;
-  onTemplateSelect: (template: CVTemplate) => void;
+  onTemplateSelect: (template: CVTemplate, customization?: TemplateCustomization) => void;
   onTemplatePreview?: (template: CVTemplate) => void;
   onBack: () => void;
 }
 
-// Enhanced template data with ATS optimization info
+interface TemplateCustomization {
+  colorScheme: 'blue' | 'black' | 'green' | 'purple' | 'red';
+  accentColor: string;
+  fontStyle: 'modern' | 'classic' | 'minimal';
+  headerStyle: 'standard' | 'centered' | 'sidebar';
+  spacing: 'compact' | 'balanced' | 'spacious';
+}
+
+// Enhanced templates with distinctive visual differences
 const enhancedTemplates: CVTemplate[] = [
   {
     id: 'professional-standard',
     name: 'Professional Standard',
-    description: 'Clean, ATS-friendly design optimized for maximum compatibility',
+    description: 'Traditional two-column layout with clear hierarchy and optimal ATS structure',
     category: 'modern',
-    previewUrl: '/templates/professional-standard/preview.png',
-    markdownUrl: '/templates/professional-standard/template.md',
-    thumbnail: '/templates/professional-standard/thumb.png',
-    features: ['ATS Optimized', 'Clean Layout', 'Standard Headers'],
+    previewUrl: '',
+    markdownUrl: '',
+    thumbnail: '',
+    features: ['Two-Column Layout', 'ATS Optimized', 'Skills Sidebar'],
     difficulty: 'beginner',
     estimatedTime: '15 minutes',
     popularity: 95,
-    tags: ['professional', 'ats', 'standard', 'clean']
+    tags: ['professional', 'ats', 'two-column']
+  },
+  {
+    id: 'executive-timeline',
+    name: 'Executive Timeline',
+    description: 'Achievement-focused layout with timeline experience and leadership emphasis',
+    category: 'classic',
+    previewUrl: '',
+    markdownUrl: '',
+    thumbnail: '',
+    features: ['Timeline Layout', 'Achievement Focus', 'Executive Format'],
+    difficulty: 'intermediate',
+    estimatedTime: '20 minutes',
+    popularity: 88,
+    tags: ['executive', 'timeline', 'achievements']
   },
   {
     id: 'modern-minimal',
     name: 'Modern Minimal',
-    description: 'Contemporary design with optimal white space and readability',
+    description: 'Clean single-column design with subtle accents and maximum white space',
     category: 'minimal',
-    previewUrl: '/templates/modern-minimal/preview.png',
-    markdownUrl: '/templates/modern-minimal/template.md',
-    thumbnail: '/templates/modern-minimal/thumb.png',
-    features: ['Minimal Design', 'High Readability', 'ATS Compatible'],
+    previewUrl: '',
+    markdownUrl: '',
+    thumbnail: '',
+    features: ['Single Column', 'Minimal Design', 'Clean Typography'],
     difficulty: 'beginner',
     estimatedTime: '12 minutes',
-    popularity: 88,
-    tags: ['minimal', 'modern', 'clean']
+    popularity: 92,
+    tags: ['minimal', 'clean', 'simple']
   },
   {
-    id: 'executive-classic',
-    name: 'Executive Classic',
-    description: 'Traditional format preferred by senior-level positions',
-    category: 'classic',
-    previewUrl: '/templates/executive-classic/preview.png',
-    markdownUrl: '/templates/executive-classic/template.md',
-    thumbnail: '/templates/executive-classic/thumb.png',
-    features: ['Executive Format', 'Achievement Focus', 'Traditional Layout'],
+    id: 'creative-professional',
+    name: 'Creative Professional',
+    description: 'Balanced layout with visual elements while maintaining ATS compatibility',
+    category: 'creative',
+    previewUrl: '',
+    markdownUrl: '',
+    thumbnail: '',
+    features: ['Visual Elements', 'ATS Safe', 'Portfolio Ready'],
     difficulty: 'intermediate',
-    estimatedTime: '20 minutes',
+    estimatedTime: '25 minutes',
     popularity: 82,
-    tags: ['executive', 'classic', 'senior']
+    tags: ['creative', 'visual', 'portfolio']
   },
   {
-    id: 'tech-optimized',
-    name: 'Tech Optimized',
-    description: 'Designed specifically for technical roles and skill showcasing',
+    id: 'tech-focused',
+    name: 'Tech Focused',
+    description: 'Optimized for technical roles with prominent skills and project sections',
     category: 'modern',
-    previewUrl: '/templates/tech-optimized/preview.png',
-    markdownUrl: '/templates/tech-optimized/template.md',
-    thumbnail: '/templates/tech-optimized/thumb.png',
-    features: ['Technical Skills Focus', 'Project Showcase', 'GitHub Integration'],
+    previewUrl: '',
+    markdownUrl: '',
+    thumbnail: '',
+    features: ['Technical Skills Grid', 'Project Showcase', 'GitHub Integration'],
     difficulty: 'intermediate',
     estimatedTime: '18 minutes',
-    popularity: 91,
-    tags: ['tech', 'developer', 'skills']
-  },
-  {
-    id: 'universal-format',
-    name: 'Universal Format',
-    description: 'Works across all industries with maximum ATS compatibility',
-    category: 'classic',
-    previewUrl: '/templates/universal-format/preview.png',
-    markdownUrl: '/templates/universal-format/template.md',
-    thumbnail: '/templates/universal-format/thumb.png',
-    features: ['100% ATS Compatible', 'Industry Neutral', 'Standard Sections'],
-    difficulty: 'beginner',
-    estimatedTime: '10 minutes',
-    popularity: 97,
-    tags: ['universal', 'ats', 'compatible']
+    popularity: 89,
+    tags: ['tech', 'developer', 'projects']
   }
 ];
 
@@ -95,20 +103,22 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [showCustomization, setShowCustomization] = useState<string | null>(null);
+  const [customization, setCustomization] = useState<TemplateCustomization>({
+    colorScheme: 'blue',
+    accentColor: '#3B82F6',
+    fontStyle: 'modern',
+    headerStyle: 'standard',
+    spacing: 'balanced'
+  });
 
-  // Use enhanced templates if props are empty (fallback)
   const templates = propTemplates.length > 0 ? propTemplates : enhancedTemplates;
 
-  // Filter templates
   const filteredTemplates = useMemo(() => {
     let filtered = templates;
-
-    // Category filter
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(template => template.category === selectedCategory);
     }
-
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(template =>
@@ -117,7 +127,6 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         template.tags.some(tag => tag.toLowerCase().includes(query))
       );
     }
-
     return filtered;
   }, [templates, selectedCategory, searchQuery]);
 
@@ -125,15 +134,31 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     { id: 'all', name: 'All Templates' },
     { id: 'modern', name: 'Modern' },
     { id: 'classic', name: 'Classic' },
-    { id: 'minimal', name: 'Minimal' }
+    { id: 'minimal', name: 'Minimal' },
+    { id: 'creative', name: 'Creative' }
+  ];
+
+  const colorSchemes = [
+    { id: 'blue', name: 'Professional Blue', color: '#3B82F6', bg: 'bg-blue-50' },
+    { id: 'black', name: 'Classic Black', color: '#1F2937', bg: 'bg-gray-50' },
+    { id: 'green', name: 'Success Green', color: '#059669', bg: 'bg-green-50' },
+    { id: 'purple', name: 'Creative Purple', color: '#7C3AED', bg: 'bg-purple-50' },
+    { id: 'red', name: 'Bold Red', color: '#DC2626', bg: 'bg-red-50' }
   ];
 
   const handleTemplateSelect = (template: CVTemplate) => {
-    setSelectedTemplate(template.id);
-    // Brief selection feedback before navigation
-    setTimeout(() => {
-      onTemplateSelect(template);
-    }, 150);
+    if (showCustomization === template.id) {
+      // Confirm selection with customization
+      onTemplateSelect(template, customization);
+    } else {
+      // Show customization panel
+      setShowCustomization(template.id);
+      setSelectedTemplate(template.id);
+    }
+  };
+
+  const handleUseTemplate = (template: CVTemplate) => {
+    onTemplateSelect(template, customization);
   };
 
   if (isLoading) {
@@ -150,8 +175,8 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="border-b border-gray-100 sticky top-0 bg-white z-10">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+      <div className="border-b border-gray-100 sticky top-0 bg-white z-20">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={onBack}
@@ -162,11 +187,10 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             </button>
             <div>
               <h1 className="text-3xl font-semibold text-gray-900">Choose your template</h1>
-              <p className="text-gray-600 mt-1">All templates are ATS-optimized and professionally designed</p>
+              <p className="text-gray-600 mt-1">Professional templates with customization options</p>
             </div>
           </div>
 
-          {/* Search */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -178,8 +202,6 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            {/* Category Filter */}
             <div className="flex gap-2">
               {categories.map((category) => (
                 <button
@@ -199,82 +221,131 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         </div>
       </div>
 
-      {/* Templates Grid */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {filteredTemplates.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No templates found matching your criteria.</p>
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory('all');
-              }}
-              className="text-blue-600 hover:text-blue-700 mt-2"
-            >
-              Clear filters
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTemplates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                isSelected={selectedTemplate === template.id}
-                onSelect={handleTemplateSelect}
-                onPreview={onTemplatePreview}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ATS Information Footer */}
-      <div className="border-t border-gray-100 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <div className="text-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              ATS-Optimized for Maximum Success
-            </h3>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              All templates are designed to pass through Applicant Tracking Systems 
-              used by 95% of companies, ensuring your CV reaches human recruiters.
-            </p>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex gap-8">
+          {/* Templates Grid */}
+          <div className="flex-1">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredTemplates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  isSelected={selectedTemplate === template.id}
+                  isCustomizing={showCustomization === template.id}
+                  customization={customization}
+                  onSelect={handleTemplateSelect}
+                  onPreview={onTemplatePreview}
+                />
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Check className="w-6 h-6 text-green-600" />
+          {/* Customization Panel */}
+          {showCustomization && (
+            <div className="w-80 bg-gray-50 rounded-2xl p-6 sticky top-32 h-fit">
+              <div className="flex items-center gap-3 mb-6">
+                <Palette className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Customize Template</h3>
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">ATS Compatible</h4>
-              <p className="text-sm text-gray-600">Standard formatting that ATS systems can read perfectly</p>
-            </div>
-            <div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Zap className="w-6 h-6 text-blue-600" />
+
+              {/* Color Scheme */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-3">Color Scheme</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {colorSchemes.map((scheme) => (
+                    <button
+                      key={scheme.id}
+                      onClick={() => setCustomization(prev => ({
+                        ...prev,
+                        colorScheme: scheme.id as any,
+                        accentColor: scheme.color
+                      }))}
+                      className={`p-3 rounded-lg border-2 transition-colors ${
+                        customization.colorScheme === scheme.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div 
+                        className="w-6 h-6 rounded-full mx-auto mb-2"
+                        style={{ backgroundColor: scheme.color }}
+                      />
+                      <div className="text-xs font-medium text-center">{scheme.name}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">Keyword Optimized</h4>
-              <p className="text-sm text-gray-600">Structured to highlight your skills and experience effectively</p>
-            </div>
-            <div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Search className="w-6 h-6 text-purple-600" />
+
+              {/* Font Style */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-3">Typography</h4>
+                <div className="space-y-2">
+                  {[
+                    { id: 'modern', name: 'Modern Sans-serif', desc: 'Clean and contemporary' },
+                    { id: 'classic', name: 'Classic Serif', desc: 'Traditional and formal' },
+                    { id: 'minimal', name: 'Minimal', desc: 'Simple and unobtrusive' }
+                  ].map((font) => (
+                    <button
+                      key={font.id}
+                      onClick={() => setCustomization(prev => ({ ...prev, fontStyle: font.id as any }))}
+                      className={`w-full p-3 rounded-lg border text-left transition-colors ${
+                        customization.fontStyle === font.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="font-medium">{font.name}</div>
+                      <div className="text-xs text-gray-600">{font.desc}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <h4 className="font-medium text-gray-900 mb-1">Recruiter Friendly</h4>
-              <p className="text-sm text-gray-600">Clean, scannable design that recruiters can quickly evaluate</p>
+
+              {/* Spacing */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-3">Spacing</h4>
+                <div className="space-y-2">
+                  {[
+                    { id: 'compact', name: 'Compact', desc: 'More content, less space' },
+                    { id: 'balanced', name: 'Balanced', desc: 'Perfect readability' },
+                    { id: 'spacious', name: 'Spacious', desc: 'Generous white space' }
+                  ].map((spacing) => (
+                    <button
+                      key={spacing.id}
+                      onClick={() => setCustomization(prev => ({ ...prev, spacing: spacing.id as any }))}
+                      className={`w-full p-3 rounded-lg border text-left transition-colors ${
+                        customization.spacing === spacing.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="font-medium">{spacing.name}</div>
+                      <div className="text-xs text-gray-600">{spacing.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleUseTemplate(templates.find(t => t.id === showCustomization)!)}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Use This Template
+              </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-// Template Card Component
+// Enhanced Template Card with realistic previews
 interface TemplateCardProps {
   template: CVTemplate;
   isSelected: boolean;
+  isCustomizing: boolean;
+  customization: TemplateCustomization;
   onSelect: (template: CVTemplate) => void;
   onPreview?: (template: CVTemplate) => void;
 }
@@ -282,9 +353,140 @@ interface TemplateCardProps {
 const TemplateCard: React.FC<TemplateCardProps> = ({
   template,
   isSelected,
+  isCustomizing,
+  customization,
   onSelect,
   onPreview
 }) => {
+  // Generate distinctive preview based on template type
+  const renderTemplatePreview = () => {
+    const accentColor = customization.accentColor;
+    
+    switch (template.id) {
+      case 'professional-standard':
+        return (
+          <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex">
+            <div className="flex-1 pr-3">
+              <div className="h-4 rounded w-3/4 mb-2" style={{ backgroundColor: '#1F2937' }}></div>
+              <div className="h-2 bg-gray-500 rounded w-1/2 mb-3"></div>
+              <div className="h-px bg-gray-200 mb-3"></div>
+              <div className="space-y-2">
+                <div className="h-2 bg-gray-400 rounded w-full"></div>
+                <div className="h-2 bg-gray-400 rounded w-4/5"></div>
+                <div className="h-2 bg-gray-400 rounded w-3/4"></div>
+              </div>
+            </div>
+            <div className="w-1/3 pl-3 border-l border-gray-200">
+              <div className="h-3 rounded w-full mb-2" style={{ backgroundColor: accentColor }}></div>
+              <div className="space-y-1">
+                <div className="h-2 bg-gray-300 rounded w-full"></div>
+                <div className="h-2 bg-gray-300 rounded w-5/6"></div>
+                <div className="h-2 bg-gray-300 rounded w-4/5"></div>
+              </div>
+            </div>
+          </div>
+        );
+        
+      case 'executive-timeline':
+        return (
+          <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <div className="h-4 rounded w-3/4 mb-2" style={{ backgroundColor: '#1F2937' }}></div>
+            <div className="h-2 bg-gray-500 rounded w-1/2 mb-3"></div>
+            <div className="relative">
+              <div className="absolute left-0 top-0 bottom-0 w-px" style={{ backgroundColor: accentColor }}></div>
+              <div className="pl-4 space-y-3">
+                <div className="relative">
+                  <div className="absolute -left-5 top-0 w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }}></div>
+                  <div className="h-2 bg-gray-600 rounded w-2/3 mb-1"></div>
+                  <div className="h-2 bg-gray-400 rounded w-1/2"></div>
+                </div>
+                <div className="relative">
+                  <div className="absolute -left-5 top-0 w-2 h-2 rounded-full bg-gray-300"></div>
+                  <div className="h-2 bg-gray-600 rounded w-3/4 mb-1"></div>
+                  <div className="h-2 bg-gray-400 rounded w-2/5"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+        
+      case 'modern-minimal':
+        return (
+          <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div className="text-center mb-4">
+              <div className="h-4 rounded w-1/2 mb-2 mx-auto" style={{ backgroundColor: '#1F2937' }}></div>
+              <div className="h-2 bg-gray-500 rounded w-1/3 mx-auto"></div>
+            </div>
+            <div className="h-px bg-gray-200 mb-4"></div>
+            <div className="space-y-3">
+              <div className="h-2 rounded w-1/4" style={{ backgroundColor: accentColor }}></div>
+              <div className="space-y-1">
+                <div className="h-2 bg-gray-400 rounded w-full"></div>
+                <div className="h-2 bg-gray-400 rounded w-4/5"></div>
+              </div>
+            </div>
+          </div>
+        );
+        
+      case 'creative-professional':
+        return (
+          <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-8 h-8 rounded-full" style={{ backgroundColor: accentColor }}></div>
+              <div className="flex-1">
+                <div className="h-3 rounded w-3/4 mb-1" style={{ backgroundColor: '#1F2937' }}></div>
+                <div className="h-2 bg-gray-500 rounded w-1/2"></div>
+              </div>
+            </div>
+            <div className="h-px bg-gray-200 mb-3"></div>
+            <div className="grid grid-cols-3 gap-1 mb-3">
+              <div className="h-4 bg-gray-100 rounded"></div>
+              <div className="h-4 bg-gray-100 rounded"></div>
+              <div className="h-4 bg-gray-100 rounded"></div>
+            </div>
+            <div className="space-y-1">
+              <div className="h-2 bg-gray-400 rounded w-full"></div>
+              <div className="h-2 bg-gray-400 rounded w-4/5"></div>
+            </div>
+          </div>
+        );
+        
+      case 'tech-focused':
+        return (
+          <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <div className="h-4 rounded w-3/4 mb-2" style={{ backgroundColor: '#1F2937' }}></div>
+            <div className="h-2 bg-gray-500 rounded w-1/2 mb-3"></div>
+            <div className="grid grid-cols-4 gap-1 mb-3">
+              <div className="h-3 rounded text-center" style={{ backgroundColor: accentColor }}></div>
+              <div className="h-3 bg-gray-300 rounded"></div>
+              <div className="h-3 bg-gray-300 rounded"></div>
+              <div className="h-3 bg-gray-300 rounded"></div>
+            </div>
+            <div className="space-y-2">
+              <div className="h-2 bg-gray-600 rounded w-2/3"></div>
+              <div className="h-2 bg-gray-400 rounded w-full"></div>
+              <div className="h-2 bg-gray-400 rounded w-4/5"></div>
+            </div>
+          </div>
+        );
+        
+      default:
+        return (
+          <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-900 rounded w-3/4"></div>
+              <div className="h-2 bg-gray-600 rounded w-1/2"></div>
+              <div className="h-px bg-gray-200"></div>
+              <div className="space-y-2">
+                <div className="h-2 bg-gray-400 rounded w-full"></div>
+                <div className="h-2 bg-gray-400 rounded w-4/5"></div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
     <div 
       className={`
@@ -294,34 +496,14 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
       `}
       onClick={() => onSelect(template)}
     >
-      {/* Template Preview */}
       <div className="aspect-[3/4] bg-gray-50 p-4">
-        <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-100 p-3">
-          {/* Mock CV Content */}
-          <div className="space-y-3">
-            <div className="h-4 bg-gray-900 rounded w-3/4"></div>
-            <div className="h-2 bg-gray-600 rounded w-1/2"></div>
-            <div className="h-px bg-gray-200 my-3"></div>
-            <div className="space-y-2">
-              <div className="h-2 bg-gray-400 rounded w-full"></div>
-              <div className="h-2 bg-gray-400 rounded w-4/5"></div>
-              <div className="h-2 bg-gray-400 rounded w-3/4"></div>
-            </div>
-            <div className="h-px bg-gray-200 my-3"></div>
-            <div className="h-3 bg-gray-600 rounded w-1/3 mb-2"></div>
-            <div className="space-y-1">
-              <div className="h-2 bg-gray-300 rounded w-full"></div>
-              <div className="h-2 bg-gray-300 rounded w-5/6"></div>
-            </div>
-          </div>
-        </div>
+        {renderTemplatePreview()}
       </div>
 
-      {/* Template Info */}
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-semibold text-gray-900">{template.name}</h3>
-          {template.popularity >= 95 && (
+          {template.popularity >= 90 && (
             <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
               Popular
             </span>
@@ -332,7 +514,6 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
           {template.description}
         </p>
 
-        {/* Features */}
         <div className="flex flex-wrap gap-1 mb-3">
           {template.features.slice(0, 3).map((feature, index) => (
             <span
@@ -344,13 +525,17 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
           ))}
         </div>
 
-        {/* Template Stats */}
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span>{template.estimatedTime}</span>
-          <span className="flex items-center gap-1">
-            {isSelected && <Check className="w-4 h-4 text-blue-600" />}
-            {template.difficulty}
-          </span>
+          <div className="flex items-center gap-2">
+            {isCustomizing && (
+              <span className="text-blue-600 font-medium flex items-center gap-1">
+                <Palette className="w-3 h-3" />
+                Customizing
+              </span>
+            )}
+            <span className="capitalize">{template.difficulty}</span>
+          </div>
         </div>
       </div>
     </div>
