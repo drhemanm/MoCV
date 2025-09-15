@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Eye, Download, Save, Edit3, Plus, Trash2, ChevronLeft, ChevronRight,
   User, FileText, Briefcase, GraduationCap, Star, Lightbulb, Award,
-  MapPin, Mail, Phone, Globe, LinkedIn, Calendar, ExternalLink,
+  MapPin, Mail, Phone, Globe, Calendar, ExternalLink,
   Zap, Target, Palette, Layout, RefreshCw, Share2, Settings,
   CheckCircle, AlertCircle, Info, Copy, Maximize2, Minimize2
 } from 'lucide-react';
@@ -431,7 +431,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
             setSaveStatus('unsaved');
           }}
           placeholder="linkedin.com/in/johndoe"
-          icon={<LinkedIn className="h-4 w-4" />}
+          icon={<ExternalLink  className="h-4 w-4" />}
           fullWidth
         />
       </div>
