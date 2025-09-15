@@ -511,5 +511,23 @@ export const fetchTemplateContent = async (markdownUrl: string): Promise<string>
   return service.fetchTemplateContent(markdownUrl);
 };
 
+export const getTemplateContentByType = async (templateId: string, type: 'markdown' | 'html' = 'markdown'): Promise<string> => {
+  const service = new TemplateService();
+  const template = await service.getTemplate(templateId);
+  
+  if (type === 'html') {
+    // Convert markdown to HTML - simplified version
+    const markdown = await service.fetchTemplateContent(template.markdownUrl);
+    return markdown.replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                  .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                  .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                  .replace(/\n/g, '<br>');
+  }
+  
+  return service.fetchTemplateContent(template.markdownUrl);
+};
+
 // Export the service class as default
 export default TemplateService;
