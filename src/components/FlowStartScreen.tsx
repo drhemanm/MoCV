@@ -15,6 +15,7 @@ interface FlowStartScreenProps {
 }
 
 const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
+  gameData, // Keep interface compatible
   onImproveCV,
   onCreateNew,
   onAnalyzeVsJob,
