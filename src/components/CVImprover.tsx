@@ -6,9 +6,9 @@ import {
   Eye, Edit3, Copy, ThumbsUp, ThumbsDown, Sparkles
 } from 'lucide-react';
 import { TargetMarket, CVAnalysis } from '../types';
-import { BackButton } from './BackButton';
-import { Card } from '../UI/Card';
-import { Button } from '../UI/Button';
+import BackButton from './BackButton';
+import { Card } from './UI/Card';
+import { Button } from './UI/Button';
 
 interface CVImproverProps {
   targetMarket: TargetMarket | null;
