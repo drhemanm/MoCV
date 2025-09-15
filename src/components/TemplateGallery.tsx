@@ -1,601 +1,358 @@
-// src/components/TemplateGallery.tsx
-import React, { useState, useEffect } from 'react';
-import { 
-  Search, Filter, Star, Eye, Download, ArrowLeft, 
-  Grid, List, Zap, Crown, CheckCircle, Heart,
-  Palette, Layout, Target, Users, Briefcase
-} from 'lucide-react';
+// src/components/TemplateGallery.tsx - Apple Design + ATS Optimized
+import React, { useState, useMemo } from 'react';
+import { Search, ChevronLeft, Check, Zap } from 'lucide-react';
 import { CVTemplate } from '../types';
-import BackButton from './BackButton';
 
 interface TemplateGalleryProps {
-  onSelectTemplate: (template: CVTemplate) => void;
+  templates: CVTemplate[];
+  isLoading: boolean;
+  onTemplateSelect: (template: CVTemplate) => void;
+  onTemplatePreview?: (template: CVTemplate) => void;
   onBack: () => void;
-  selectedTemplateId?: string;
 }
 
+// Enhanced template data with ATS optimization info
+const enhancedTemplates: CVTemplate[] = [
+  {
+    id: 'professional-standard',
+    name: 'Professional Standard',
+    description: 'Clean, ATS-friendly design optimized for maximum compatibility',
+    category: 'modern',
+    previewUrl: '/templates/professional-standard/preview.png',
+    markdownUrl: '/templates/professional-standard/template.md',
+    thumbnail: '/templates/professional-standard/thumb.png',
+    features: ['ATS Optimized', 'Clean Layout', 'Standard Headers'],
+    difficulty: 'beginner',
+    estimatedTime: '15 minutes',
+    popularity: 95,
+    tags: ['professional', 'ats', 'standard', 'clean']
+  },
+  {
+    id: 'modern-minimal',
+    name: 'Modern Minimal',
+    description: 'Contemporary design with optimal white space and readability',
+    category: 'minimal',
+    previewUrl: '/templates/modern-minimal/preview.png',
+    markdownUrl: '/templates/modern-minimal/template.md',
+    thumbnail: '/templates/modern-minimal/thumb.png',
+    features: ['Minimal Design', 'High Readability', 'ATS Compatible'],
+    difficulty: 'beginner',
+    estimatedTime: '12 minutes',
+    popularity: 88,
+    tags: ['minimal', 'modern', 'clean']
+  },
+  {
+    id: 'executive-classic',
+    name: 'Executive Classic',
+    description: 'Traditional format preferred by senior-level positions',
+    category: 'classic',
+    previewUrl: '/templates/executive-classic/preview.png',
+    markdownUrl: '/templates/executive-classic/template.md',
+    thumbnail: '/templates/executive-classic/thumb.png',
+    features: ['Executive Format', 'Achievement Focus', 'Traditional Layout'],
+    difficulty: 'intermediate',
+    estimatedTime: '20 minutes',
+    popularity: 82,
+    tags: ['executive', 'classic', 'senior']
+  },
+  {
+    id: 'tech-optimized',
+    name: 'Tech Optimized',
+    description: 'Designed specifically for technical roles and skill showcasing',
+    category: 'modern',
+    previewUrl: '/templates/tech-optimized/preview.png',
+    markdownUrl: '/templates/tech-optimized/template.md',
+    thumbnail: '/templates/tech-optimized/thumb.png',
+    features: ['Technical Skills Focus', 'Project Showcase', 'GitHub Integration'],
+    difficulty: 'intermediate',
+    estimatedTime: '18 minutes',
+    popularity: 91,
+    tags: ['tech', 'developer', 'skills']
+  },
+  {
+    id: 'universal-format',
+    name: 'Universal Format',
+    description: 'Works across all industries with maximum ATS compatibility',
+    category: 'classic',
+    previewUrl: '/templates/universal-format/preview.png',
+    markdownUrl: '/templates/universal-format/template.md',
+    thumbnail: '/templates/universal-format/thumb.png',
+    features: ['100% ATS Compatible', 'Industry Neutral', 'Standard Sections'],
+    difficulty: 'beginner',
+    estimatedTime: '10 minutes',
+    popularity: 97,
+    tags: ['universal', 'ats', 'compatible']
+  }
+];
+
 const TemplateGallery: React.FC<TemplateGalleryProps> = ({
-  onSelectTemplate,
-  onBack,
-  selectedTemplateId
+  templates: propTemplates,
+  isLoading,
+  onTemplateSelect,
+  onTemplatePreview,
+  onBack
 }) => {
-  const [templates, setTemplates] = useState<CVTemplate[]>([]);
-  const [filteredTemplates, setFilteredTemplates] = useState<CVTemplate[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<'popularity' | 'name' | 'newest'>('popularity');
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [previewTemplate, setPreviewTemplate] = useState<CVTemplate | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
-  // Mock template data - in production, this would come from an API
-  const mockTemplates: CVTemplate[] = [
-    {
-      id: 'modern-professional',
-      name: 'Modern Professional',
-      description: 'Clean and contemporary design perfect for corporate roles',
-      category: 'modern',
-      previewUrl: '/templates/modern-professional-preview.jpg',
-      markdownUrl: '/templates/modern-professional.md',
-      thumbnail: '/templates/modern-professional-thumb.jpg',
-      features: ['ATS Optimized', 'Two Column Layout', 'Professional Colors', 'Icon Support'],
-      difficulty: 'beginner',
-      estimatedTime: '15 minutes',
-      popularity: 95,
-      tags: ['corporate', 'business', 'executive', 'finance', 'consulting']
-    },
-    {
-      id: 'creative-designer',
-      name: 'Creative Designer',
-      description: 'Bold and artistic layout for creative professionals',
-      category: 'creative',
-      previewUrl: '/templates/creative-designer-preview.jpg',
-      markdownUrl: '/templates/creative-designer.md',
-      thumbnail: '/templates/creative-designer-thumb.jpg',
-      features: ['Visual Appeal', 'Portfolio Section', 'Color Customization', 'Graphics Support'],
-      difficulty: 'intermediate',
-      estimatedTime: '25 minutes',
-      popularity: 88,
-      tags: ['design', 'creative', 'marketing', 'advertising', 'media']
-    },
-    {
-      id: 'tech-minimal',
-      name: 'Tech Minimal',
-      description: 'Streamlined design focused on technical skills and achievements',
-      category: 'minimal',
-      previewUrl: '/templates/tech-minimal-preview.jpg',
-      markdownUrl: '/templates/tech-minimal.md',
-      thumbnail: '/templates/tech-minimal-thumb.jpg',
-      features: ['Skills Focused', 'GitHub Integration', 'Project Showcase', 'Code-Friendly'],
-      difficulty: 'beginner',
-      estimatedTime: '12 minutes',
-      popularity: 92,
-      tags: ['technology', 'software', 'engineering', 'startup', 'development']
-    },
-    {
-      id: 'classic-academic',
-      name: 'Classic Academic',
-      description: 'Traditional format ideal for academic and research positions',
-      category: 'classic',
-      previewUrl: '/templates/classic-academic-preview.jpg',
-      markdownUrl: '/templates/classic-academic.md',
-      thumbnail: '/templates/classic-academic-thumb.jpg',
-      features: ['Publication Ready', 'Research Focus', 'Bibliography Support', 'Academic Standards'],
-      difficulty: 'advanced',
-      estimatedTime: '30 minutes',
-      popularity: 78,
-      tags: ['academic', 'research', 'education', 'science', 'university']
-    },
-    {
-      id: 'executive-premium',
-      name: 'Executive Premium',
-      description: 'Sophisticated design for C-level and senior management roles',
-      category: 'modern',
-      previewUrl: '/templates/executive-premium-preview.jpg',
-      markdownUrl: '/templates/executive-premium.md',
-      thumbnail: '/templates/executive-premium-thumb.jpg',
-      features: ['Leadership Focus', 'Achievement Highlights', 'Premium Layout', 'Executive Summary'],
-      difficulty: 'intermediate',
-      estimatedTime: '20 minutes',
-      popularity: 85,
-      tags: ['executive', 'management', 'leadership', 'ceo', 'director']
-    },
-    {
-      id: 'fresh-graduate',
-      name: 'Fresh Graduate',
-      description: 'Entry-level friendly template highlighting education and potential',
-      category: 'minimal',
-      previewUrl: '/templates/fresh-graduate-preview.jpg',
-      markdownUrl: '/templates/fresh-graduate.md',
-      thumbnail: '/templates/fresh-graduate-thumb.jpg',
-      features: ['Education Focus', 'Skills Emphasis', 'Clean Layout', 'Entry-Level Optimized'],
-      difficulty: 'beginner',
-      estimatedTime: '10 minutes',
-      popularity: 90,
-      tags: ['graduate', 'entry-level', 'student', 'internship', 'junior']
-    }
-  ];
+  // Use enhanced templates if props are empty (fallback)
+  const templates = propTemplates.length > 0 ? propTemplates : enhancedTemplates;
 
-  useEffect(() => {
-    // Simulate loading templates
-    const loadTemplates = async () => {
-      setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setTemplates(mockTemplates);
-      setFilteredTemplates(mockTemplates);
-      setIsLoading(false);
-    };
-
-    loadTemplates();
-
-    // Load favorites from localStorage
-    const savedFavorites = localStorage.getItem('mocv_favorite_templates');
-    if (savedFavorites) {
-      setFavorites(new Set(JSON.parse(savedFavorites)));
-    }
-  }, []);
-
-  useEffect(() => {
-    filterTemplates();
-  }, [searchTerm, selectedCategory, selectedDifficulty, sortBy, templates]);
-
-  const filterTemplates = () => {
-    let filtered = [...templates];
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(template =>
-        template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
+  // Filter templates
+  const filteredTemplates = useMemo(() => {
+    let filtered = templates;
 
     // Category filter
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(template => template.category === selectedCategory);
     }
 
-    // Difficulty filter
-    if (selectedDifficulty !== 'all') {
-      filtered = filtered.filter(template => template.difficulty === selectedDifficulty);
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(template =>
+        template.name.toLowerCase().includes(query) ||
+        template.description.toLowerCase().includes(query) ||
+        template.tags.some(tag => tag.toLowerCase().includes(query))
+      );
     }
 
-    // Sort
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'popularity':
-          return b.popularity - a.popularity;
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'newest':
-          return a.id.localeCompare(b.id); // Mock newest sort
-        default:
-          return 0;
-      }
-    });
-
-    setFilteredTemplates(filtered);
-  };
-
-  const toggleFavorite = (templateId: string) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(templateId)) {
-      newFavorites.delete(templateId);
-    } else {
-      newFavorites.add(templateId);
-    }
-    setFavorites(newFavorites);
-    localStorage.setItem('mocv_favorite_templates', JSON.stringify([...newFavorites]));
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'modern': return <Zap className="h-4 w-4" />;
-      case 'creative': return <Palette className="h-4 w-4" />;
-      case 'minimal': return <Layout className="h-4 w-4" />;
-      case 'classic': return <Briefcase className="h-4 w-4" />;
-      default: return <Layout className="h-4 w-4" />;
-    }
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'beginner': return 'text-green-600 bg-green-100';
-      case 'intermediate': return 'text-yellow-600 bg-yellow-100';
-      case 'advanced': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
+    return filtered;
+  }, [templates, selectedCategory, searchQuery]);
 
   const categories = [
-    { id: 'all', name: 'All Templates', count: templates.length },
-    { id: 'modern', name: 'Modern', count: templates.filter(t => t.category === 'modern').length },
-    { id: 'creative', name: 'Creative', count: templates.filter(t => t.category === 'creative').length },
-    { id: 'minimal', name: 'Minimal', count: templates.filter(t => t.category === 'minimal').length },
-    { id: 'classic', name: 'Classic', count: templates.filter(t => t.category === 'classic').length }
+    { id: 'all', name: 'All Templates' },
+    { id: 'modern', name: 'Modern' },
+    { id: 'classic', name: 'Classic' },
+    { id: 'minimal', name: 'Minimal' }
   ];
 
-  const TemplateCard: React.FC<{ template: CVTemplate; isCompact?: boolean }> = ({ 
-    template, 
-    isCompact = false 
-  }) => (
-    <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 group ${
-      selectedTemplateId === template.id ? 'ring-2 ring-blue-500 border-blue-500' : ''
-    }`}>
-      {/* Template Preview */}
-      <div className="relative">
-        <div className={`bg-gray-100 ${isCompact ? 'h-32' : 'h-48'} flex items-center justify-center`}>
-          <div className="text-center text-gray-500">
-            <Layout className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm">Template Preview</p>
+  const handleTemplateSelect = (template: CVTemplate) => {
+    setSelectedTemplate(template.id);
+    // Brief selection feedback before navigation
+    setTimeout(() => {
+      onTemplateSelect(template);
+    }, 150);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading templates...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="border-b border-gray-100 sticky top-0 bg-white z-10">
+        <div className="max-w-6xl mx-auto px-6 py-6">
+          <div className="flex items-center gap-4 mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </button>
+            <div>
+              <h1 className="text-3xl font-semibold text-gray-900">Choose your template</h1>
+              <p className="text-gray-600 mt-1">All templates are ATS-optimized and professionally designed</p>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search templates..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                    selectedCategory === category.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-        
-        {/* Overlay Actions */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2">
+      </div>
+
+      {/* Templates Grid */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {filteredTemplates.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No templates found matching your criteria.</p>
             <button
-              onClick={() => setPreviewTemplate(template)}
-              className="bg-white text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors"
-              title="Preview Template"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('all');
+              }}
+              className="text-blue-600 hover:text-blue-700 mt-2"
             >
-              <Eye className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => onSelectTemplate(template)}
-              className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
-              title="Use Template"
-            >
-              <CheckCircle className="h-4 w-4" />
+              Clear filters
             </button>
           </div>
-        </div>
-
-        {/* Favorite Button */}
-        <button
-          onClick={() => toggleFavorite(template.id)}
-          className="absolute top-3 right-3 p-1.5 bg-white bg-opacity-90 rounded-full hover:bg-opacity-100 transition-all"
-        >
-          <Heart 
-            className={`h-4 w-4 ${
-              favorites.has(template.id) 
-                ? 'text-red-500 fill-current' 
-                : 'text-gray-400'
-            }`} 
-          />
-        </button>
-
-        {/* Popularity Badge */}
-        {template.popularity > 90 && (
-          <div className="absolute top-3 left-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-            <Crown className="h-3 w-3" />
-            Popular
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                isSelected={selectedTemplate === template.id}
+                onSelect={handleTemplateSelect}
+                onPreview={onTemplatePreview}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Template Info */}
-      <div className={`p-${isCompact ? '3' : '4'}`}>
-        <div className="flex items-start justify-between mb-2">
-          <h3 className={`font-semibold text-gray-900 ${isCompact ? 'text-sm' : 'text-base'}`}>
-            {template.name}
-          </h3>
-          <div className="flex items-center gap-1 text-yellow-500">
-            <Star className="h-3 w-3 fill-current" />
-            <span className="text-xs text-gray-600">{template.popularity}</span>
+      {/* ATS Information Footer */}
+      <div className="border-t border-gray-100 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="text-center mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              ATS-Optimized for Maximum Success
+            </h3>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              All templates are designed to pass through Applicant Tracking Systems 
+              used by 95% of companies, ensuring your CV reaches human recruiters.
+            </p>
           </div>
-        </div>
 
-        <p className={`text-gray-600 mb-3 ${isCompact ? 'text-xs' : 'text-sm'}`}>
-          {template.description}
-        </p>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1 mb-3">
-          {template.tags.slice(0, isCompact ? 2 : 3).map(tag => (
-            <span key={tag} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-              {tag}
-            </span>
-          ))}
-          {template.tags.length > (isCompact ? 2 : 3) && (
-            <span className="text-gray-500 text-xs">+{template.tags.length - (isCompact ? 2 : 3)}</span>
-          )}
-        </div>
-
-        {/* Features */}
-        {!isCompact && (
-          <div className="space-y-1 mb-3">
-            {template.features.slice(0, 2).map(feature => (
-              <div key={feature} className="flex items-center gap-2 text-xs text-gray-600">
-                <CheckCircle className="h-3 w-3 text-green-500" />
-                {feature}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Check className="w-6 h-6 text-green-600" />
               </div>
-            ))}
+              <h4 className="font-medium text-gray-900 mb-1">ATS Compatible</h4>
+              <p className="text-sm text-gray-600">Standard formatting that ATS systems can read perfectly</p>
+            </div>
+            <div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Zap className="w-6 h-6 text-blue-600" />
+              </div>
+              <h4 className="font-medium text-gray-900 mb-1">Keyword Optimized</h4>
+              <p className="text-sm text-gray-600">Structured to highlight your skills and experience effectively</p>
+            </div>
+            <div>
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Search className="w-6 h-6 text-purple-600" />
+              </div>
+              <h4 className="font-medium text-gray-900 mb-1">Recruiter Friendly</h4>
+              <p className="text-sm text-gray-600">Clean, scannable design that recruiters can quickly evaluate</p>
+            </div>
           </div>
-        )}
-
-        {/* Meta Info */}
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-2">
-            {getCategoryIcon(template.category)}
-            <span className="capitalize">{template.category}</span>
-          </div>
-          <div className={`px-2 py-1 rounded-full ${getDifficultyColor(template.difficulty)}`}>
-            {template.difficulty}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 mt-3">
-          <button
-            onClick={() => setPreviewTemplate(template)}
-            className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-          >
-            Preview
-          </button>
-          <button
-            onClick={() => onSelectTemplate(template)}
-            className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            Use Template
-          </button>
         </div>
       </div>
     </div>
   );
+};
 
+// Template Card Component
+interface TemplateCardProps {
+  template: CVTemplate;
+  isSelected: boolean;
+  onSelect: (template: CVTemplate) => void;
+  onPreview?: (template: CVTemplate) => void;
+}
+
+const TemplateCard: React.FC<TemplateCardProps> = ({
+  template,
+  isSelected,
+  onSelect,
+  onPreview
+}) => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <BackButton onClick={onBack} label="Back" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">CV Templates</h1>
-                <p className="text-gray-600">Choose a professional template to get started</p>
-              </div>
+    <div 
+      className={`
+        bg-white border rounded-2xl overflow-hidden transition-all duration-200 cursor-pointer
+        hover:shadow-lg hover:border-gray-300
+        ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-gray-200'}
+      `}
+      onClick={() => onSelect(template)}
+    >
+      {/* Template Preview */}
+      <div className="aspect-[3/4] bg-gray-50 p-4">
+        <div className="w-full h-full bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+          {/* Mock CV Content */}
+          <div className="space-y-3">
+            <div className="h-4 bg-gray-900 rounded w-3/4"></div>
+            <div className="h-2 bg-gray-600 rounded w-1/2"></div>
+            <div className="h-px bg-gray-200 my-3"></div>
+            <div className="space-y-2">
+              <div className="h-2 bg-gray-400 rounded w-full"></div>
+              <div className="h-2 bg-gray-400 rounded w-4/5"></div>
+              <div className="h-2 bg-gray-400 rounded w-3/4"></div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              {/* View Mode Toggle */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
-                  }`}
-                >
-                  <Grid className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
-                  }`}
-                >
-                  <List className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Sort Dropdown */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-              >
-                <option value="popularity">Most Popular</option>
-                <option value="name">Name A-Z</option>
-                <option value="newest">Newest First</option>
-              </select>
+            <div className="h-px bg-gray-200 my-3"></div>
+            <div className="h-3 bg-gray-600 rounded w-1/3 mb-2"></div>
+            <div className="space-y-1">
+              <div className="h-2 bg-gray-300 rounded w-full"></div>
+              <div className="h-2 bg-gray-300 rounded w-5/6"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Filters Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-28">
-              <h3 className="font-semibold text-gray-900 mb-4">Filters</h3>
-              
-              {/* Search */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Search Templates</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search by name or tag..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+      {/* Template Info */}
+      <div className="p-4">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="font-semibold text-gray-900">{template.name}</h3>
+          {template.popularity >= 95 && (
+            <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+              Popular
+            </span>
+          )}
+        </div>
+        
+        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+          {template.description}
+        </p>
 
-              {/* Categories */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Category</label>
-                <div className="space-y-2">
-                  {categories.map(category => (
-                    <button
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                        selectedCategory === category.id
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {getCategoryIcon(category.id)}
-                        <span className="text-sm font-medium">{category.name}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">{category.count}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+        {/* Features */}
+        <div className="flex flex-wrap gap-1 mb-3">
+          {template.features.slice(0, 3).map((feature, index) => (
+            <span
+              key={index}
+              className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
+            >
+              {feature}
+            </span>
+          ))}
+        </div>
 
-              {/* Difficulty */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Difficulty</label>
-                <div className="space-y-2">
-                  {['all', 'beginner', 'intermediate', 'advanced'].map(difficulty => (
-                    <button
-                      key={difficulty}
-                      onClick={() => setSelectedDifficulty(difficulty)}
-                      className={`w-full text-left p-2 rounded-lg border transition-colors capitalize ${
-                        selectedDifficulty === difficulty
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <span className="text-sm font-medium">{difficulty}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('all');
-                  setSelectedDifficulty('all');
-                }}
-                className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-              >
-                Clear All Filters
-              </button>
-            </div>
-          </div>
-
-          {/* Templates Grid */}
-          <div className="lg:col-span-3">
-            {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''} found
-                </h2>
-                {searchTerm && (
-                  <p className="text-sm text-gray-600">
-                    Results for "{searchTerm}"
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Loading State */}
-            {isLoading ? (
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="h-48 bg-gray-200 animate-pulse"></div>
-                    <div className="p-4 space-y-3">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                      <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
-                      <div className="flex gap-2">
-                        <div className="h-6 bg-gray-200 rounded-full w-16 animate-pulse"></div>
-                        <div className="h-6 bg-gray-200 rounded-full w-20 animate-pulse"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : filteredTemplates.length === 0 ? (
-              /* No Results */
-              <div className="text-center py-12">
-                <Target className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No templates found</h3>
-                <p className="text-gray-600 mb-4">
-                  Try adjusting your filters or search terms
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCategory('all');
-                    setSelectedDifficulty('all');
-                  }}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              /* Templates Grid/List */
-              <div className={
-                viewMode === 'grid' 
-                  ? 'grid md:grid-cols-2 xl:grid-cols-3 gap-6'
-                  : 'space-y-4'
-              }>
-                {filteredTemplates.map(template => (
-                  <TemplateCard 
-                    key={template.id} 
-                    template={template}
-                    isCompact={viewMode === 'list'}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Template Stats */}
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <span>{template.estimatedTime}</span>
+          <span className="flex items-center gap-1">
+            {isSelected && <Check className="w-4 h-4 text-blue-600" />}
+            {template.difficulty}
+          </span>
         </div>
       </div>
-
-      {/* Preview Modal */}
-      {previewTemplate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">{previewTemplate.name}</h3>
-                <p className="text-gray-600">{previewTemplate.description}</p>
-              </div>
-              <button
-                onClick={() => setPreviewTemplate(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              <div className="bg-gray-100 h-96 rounded-lg flex items-center justify-center mb-6">
-                <div className="text-center text-gray-500">
-                  <Layout className="h-16 w-16 mx-auto mb-4" />
-                  <p className="text-lg font-medium">Template Preview</p>
-                  <p className="text-sm">Full preview coming soon</p>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setPreviewTemplate(null)}
-                  className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    onSelectTemplate(previewTemplate);
-                    setPreviewTemplate(null);
-                  }}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Use This Template
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
