@@ -1,6 +1,6 @@
-// src/types/index.ts - Complete, consistent type definitions
+// src/types/index.ts - Simplified without target market complexity
 
-// Core CV Template (matches what components actually use)
+// Core CV Template (no market dependencies)
 export interface CVTemplate {
   id: string;
   name: string;
@@ -16,17 +16,14 @@ export interface CVTemplate {
   tags: string[];
 }
 
-// Target Market (simplified)
+// Optional target market (if needed for analysis features only)
 export interface TargetMarket {
   id: string;
   name: string;
-  region: string;
   description: string;
-  skillFocus?: string[];
-  industries?: string[];
 }
 
-// CV Data Structure
+// CV Data Structure (clean, no market assumptions)
 export interface CVData {
   personalInfo: PersonalInfo;
   professionalSummary: string;
@@ -96,7 +93,7 @@ export interface Certification {
   credentialId?: string;
 }
 
-// CV Analysis
+// CV Analysis (simplified)
 export interface CVAnalysis {
   score: number;
   strengths: string[];
@@ -114,7 +111,7 @@ export interface CVAnalysis {
   missingKeywords: string[];
 }
 
-// Simplified Game/User Data (remove complex gamification)
+// Minimal game data (if keeping gamification)
 export interface GameData {
   level: number;
   xp: number;
@@ -140,18 +137,17 @@ export interface Achievement {
   };
 }
 
-// App State Management
+// App State (clean)
 export interface AppState {
   currentView: AppView;
   selectedTemplate: CVTemplate | null;
-  selectedTargetMarket: TargetMarket | null;
   cvData: CVData | null;
   gameData: GameData;
 }
 
 export enum AppView {
   HOME = 'home',
-  TEMPLATE_GALLERY = 'templates',
+  TEMPLATES = 'templates',
   CV_BUILDER = 'builder',
   CV_PREVIEW = 'preview',
   CV_IMPROVER = 'improver',
