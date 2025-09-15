@@ -1,447 +1,422 @@
-// Gamification Service - Handles XP, levels, achievements, and rewards
-export interface XPGain {
-  amount: number;
-  reason: string;
-  timestamp: Date;
+// src/services/gamificationService.ts
+import { GameData, Achievement } from '../types';
+
+interface XPResult {
+  levelUp: boolean;
+  newLevel?: number;
+  achievements?: string[];
 }
-
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  xpReward: number;
-  unlocked: boolean;
-  unlockedAt?: Date;
-}
-
-export interface GameData {
-  totalXP: number;
-  currentLevel: number;
-  uploadsCount: number;
-  achievements: string[];
-  consecutiveDays: number;
-  lastUploadDate: string;
-  highestScore: number;
-  streakCount: number;
-  totalCVsCreated: number;
-  totalAnalyses: number;
-  totalInterviews: number;
-  lastXPGain?: XPGain;
-}
-
-// XP Rewards for different actions
-export const XP_REWARDS = {
-  CV_UPLOAD: 25,
-  CV_ANALYSIS: 50,
-  CV_CREATION: 100,
-  TEMPLATE_SELECTION: 15,
-  PROFILE_COMPLETION: 30,
-  INTERVIEW_PRACTICE: 75,
-  JOB_MATCH_ANALYSIS: 60,
-  DAILY_LOGIN: 10,
-  STREAK_BONUS: 20,
-  HIGH_ATS_SCORE: 40, // For scores above 85
-  FIRST_TIME_BONUS: 50,
-  ACHIEVEMENT_UNLOCK: 25
-};
-
-// Level thresholds (exponential growth)
-export const LEVEL_THRESHOLDS = [
-  0,     // Level 0
-  100,   // Level 1
-  250,   // Level 2
-  450,   // Level 3
-  700,   // Level 4
-  1000,  // Level 5
-  1350,  // Level 6
-  1750,  // Level 7
-  2200,  // Level 8
-  2700,  // Level 9
-  3250,  // Level 10
-  3850,  // Level 11
-  4500,  // Level 12
-  5200,  // Level 13
-  5950,  // Level 14
-  6750,  // Level 15
-  7600,  // Level 16
-  8500,  // Level 17
-  9450,  // Level 18
-  10450, // Level 19
-  11500  // Level 20 (max)
-];
-
-// Available achievements
-export const ACHIEVEMENTS: { [key: string]: Omit<Achievement, 'unlocked' | 'unlockedAt'> } = {
-  FIRST_CV: {
-    id: 'FIRST_CV',
-    name: 'CV Creator',
-    description: 'Created your first CV',
-    icon: '🎯',
-    xpReward: 50
-  },
-  ANALYZER: {
-    id: 'ANALYZER',
-    name: 'CV Analyzer',
-    description: 'Analyzed your first CV',
-    icon: '🔍',
-    xpReward: 30
-  },
-  INTERVIEWER: {
-    id: 'INTERVIEWER',
-    name: 'Interview Ready',
-    description: 'Completed your first mock interview',
-    icon: '🎤',
-    xpReward: 75
-  },
-  HIGH_SCORER: {
-    id: 'HIGH_SCORER',
-    name: 'ATS Master',
-    description: 'Achieved an ATS score of 90+',
-    icon: '🏆',
-    xpReward: 100
-  },
-  STREAK_WARRIOR: {
-    id: 'STREAK_WARRIOR',
-    name: 'Streak Warrior',
-    description: 'Used the platform for 7 consecutive days',
-    icon: '🔥',
-    xpReward: 150
-  },
-  CV_COLLECTOR: {
-    id: 'CV_COLLECTOR',
-    name: 'CV Collector',
-    description: 'Created 5 different CVs',
-    icon: '📚',
-    xpReward: 200
-  },
-  PERFECTIONIST: {
-    id: 'PERFECTIONIST',
-    name: 'Perfectionist',
-    description: 'Achieved a perfect 100 ATS score',
-    icon: '💎',
-    xpReward: 250
-  },
-  GLOBAL_CITIZEN: {
-    id: 'GLOBAL_CITIZEN',
-    name: 'Global Citizen',
-    description: 'Created CVs for 3 different markets',
-    icon: '🌍',
-    xpReward: 150
-  },
-  MENTOR: {
-    id: 'MENTOR',
-    name: 'Career Mentor',
-    description: 'Used all platform features',
-    icon: '👨‍🏫',
-    xpReward: 300
-  }
-};
 
 class GamificationService {
-  private static instance: GamificationService;
-  private gameData: GameData;
-  private listeners: ((data: GameData) => void)[] = [];
+  private storageKey = 'mocv_game_data';
+  private listeners: Set<(data: GameData) => void> = new Set();
 
-  private constructor() {
-    this.gameData = this.loadGameData();
-    this.checkDailyLogin();
-  }
+  // XP thresholds for each level
+  private levelThresholds = [
+    0, 100, 250, 500, 1000, 1750, 2750, 4000, 5500, 7500, 10000,
+    13000, 16500, 20500, 25000, 30000, 35500, 41500, 48000, 55000, 62500
+  ];
 
-  static getInstance(): GamificationService {
-    if (!GamificationService.instance) {
-      GamificationService.instance = new GamificationService();
+  // Achievement definitions
+  private achievementDefinitions: Achievement[] = [
+    {
+      id: 'first_cv',
+      name: 'CV Creator',
+      description: 'Created your first CV',
+      icon: '🎯',
+      rarity: 'common',
+      maxProgress: 1
+    },
+    {
+      id: 'template_explorer',
+      name: 'Template Explorer',
+      description: 'Selected 5 different templates',
+      icon: '🎨',
+      rarity: 'common',
+      maxProgress: 5
+    },
+    {
+      id: 'ai_powered',
+      name: 'AI Powered',
+      description: 'Used AI assistant to generate content',
+      icon: '🤖',
+      rarity: 'common',
+      maxProgress: 1
+    },
+    {
+      id: 'analyzer_pro',
+      name: 'Analyzer Pro',
+      description: 'Analyzed 10 CVs',
+      icon: '📊',
+      rarity: 'rare',
+      maxProgress: 10
+    },
+    {
+      id: 'job_matcher',
+      name: 'Job Matcher',
+      description: 'Completed 5 job match analyses',
+      icon: '🎯',
+      rarity: 'rare',
+      maxProgress: 5
+    },
+    {
+      id: 'interview_ready',
+      name: 'Interview Ready',
+      description: 'Completed interview preparation',
+      icon: '💼',
+      rarity: 'rare',
+      maxProgress: 1
+    },
+    {
+      id: 'perfectionist',
+      name: 'Perfectionist',
+      description: 'Achieved a CV score of 95+',
+      icon: '⭐',
+      rarity: 'epic',
+      maxProgress: 1
+    },
+    {
+      id: 'power_user',
+      name: 'Power User',
+      description: 'Created 20 CVs',
+      icon: '🚀',
+      rarity: 'epic',
+      maxProgress: 20
+    },
+    {
+      id: 'master_builder',
+      name: 'Master Builder',
+      description: 'Reached level 10',
+      icon: '👑',
+      rarity: 'legendary',
+      maxProgress: 1
+    },
+    {
+      id: 'cv_legend',
+      name: 'CV Legend',
+      description: 'Earned 10,000 XP',
+      icon: '🏆',
+      rarity: 'legendary',
+      maxProgress: 1
     }
-    return GamificationService.instance;
+  ];
+
+  constructor() {
+    this.initializeGameData();
   }
 
-  // Subscribe to game data changes
-  subscribe(callback: (data: GameData) => void) {
-    this.listeners.push(callback);
-    return () => {
-      this.listeners = this.listeners.filter(listener => listener !== callback);
-    };
+  private initializeGameData(): void {
+    const existing = this.getGameData();
+    if (!existing.level) {
+      const initialData: GameData = {
+        level: 1,
+        xp: 0,
+        xpToNextLevel: 100,
+        totalXP: 0,
+        achievements: this.achievementDefinitions.map(def => ({
+          ...def,
+          progress: 0,
+          unlockedAt: undefined
+        })),
+        streaks: {
+          daily: 0,
+          weekly: 0
+        },
+        stats: {
+          cvsCreated: 0,
+          templatesUsed: 0,
+          analysisCompleted: 0,
+          interviewsPrepped: 0
+        }
+      };
+      this.saveGameData(initialData);
+    }
   }
 
-  private notifyListeners() {
-    this.listeners.forEach(listener => listener(this.gameData));
-  }
-
-  private loadGameData(): GameData {
-    const saved = localStorage.getItem('mocv_game_data');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
+  getGameData(): GameData {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (stored) {
+        const data = JSON.parse(stored);
+        // Merge with achievement definitions to handle new achievements
+        const mergedAchievements = this.achievementDefinitions.map(def => {
+          const existing = data.achievements?.find((a: Achievement) => a.id === def.id);
+          return existing ? { ...def, ...existing } : { ...def, progress: 0 };
+        });
+        
         return {
-          totalXP: parsed.totalXP || 0,
-          currentLevel: parsed.currentLevel || 0,
-          uploadsCount: parsed.uploadsCount || 0,
-          achievements: parsed.achievements || [],
-          consecutiveDays: parsed.consecutiveDays || 0,
-          lastUploadDate: parsed.lastUploadDate || new Date().toISOString(),
-          highestScore: parsed.highestScore || 0,
-          streakCount: parsed.streakCount || 0,
-          totalCVsCreated: parsed.totalCVsCreated || 0,
-          totalAnalyses: parsed.totalAnalyses || 0,
-          totalInterviews: parsed.totalInterviews || 0,
-          lastXPGain: parsed.lastXPGain ? {
-            ...parsed.lastXPGain,
-            timestamp: new Date(parsed.lastXPGain.timestamp)
-          } : undefined
+          ...data,
+          achievements: mergedAchievements
         };
-      } catch (error) {
-        console.error('Error loading game data:', error);
-        return this.getDefaultGameData();
       }
+    } catch (error) {
+      console.error('Error loading game data:', error);
     }
-    return this.getDefaultGameData();
-  }
-
-  private getDefaultGameData(): GameData {
+    
     return {
+      level: 1,
+      xp: 0,
+      xpToNextLevel: 100,
       totalXP: 0,
-      currentLevel: 0,
-      uploadsCount: 0,
-      achievements: [],
-      consecutiveDays: 0,
-      lastUploadDate: new Date().toISOString(),
-      highestScore: 0,
-      streakCount: 0,
-      totalCVsCreated: 0,
-      totalAnalyses: 0,
-      totalInterviews: 0
-    };
-  }
-
-  private saveGameData() {
-    localStorage.setItem('mocv_game_data', JSON.stringify(this.gameData));
-    this.notifyListeners();
-  }
-
-  private checkDailyLogin() {
-    const today = new Date().toDateString();
-    const lastLogin = new Date(this.gameData.lastUploadDate).toDateString();
-    
-    if (today !== lastLogin) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      
-      if (lastLogin === yesterday.toDateString()) {
-        // Consecutive day
-        this.gameData.consecutiveDays += 1;
-        this.gameData.streakCount += 1;
-        this.awardXP(XP_REWARDS.DAILY_LOGIN + XP_REWARDS.STREAK_BONUS, 'Daily login streak bonus');
-      } else {
-        // Streak broken
-        this.gameData.consecutiveDays = 1;
-        this.gameData.streakCount = 0;
-        this.awardXP(XP_REWARDS.DAILY_LOGIN, 'Daily login');
+      achievements: this.achievementDefinitions.map(def => ({ ...def, progress: 0 })),
+      streaks: { daily: 0, weekly: 0 },
+      stats: {
+        cvsCreated: 0,
+        templatesUsed: 0,
+        analysisCompleted: 0,
+        interviewsPrepped: 0
       }
-      
-      this.gameData.lastUploadDate = new Date().toISOString();
-      this.saveGameData();
-    }
-  }
-
-  // Calculate level from XP
-  private calculateLevel(xp: number): number {
-    for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-      if (xp >= LEVEL_THRESHOLDS[i]) {
-        return i;
-      }
-    }
-    return 0;
-  }
-
-  // Get XP needed for next level
-  getXPForNextLevel(): number {
-    const nextLevel = this.gameData.currentLevel + 1;
-    if (nextLevel >= LEVEL_THRESHOLDS.length) {
-      return LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
-    }
-    return LEVEL_THRESHOLDS[nextLevel];
-  }
-
-  // Get current level progress (0-100)
-  getLevelProgress(): number {
-    const currentLevelXP = LEVEL_THRESHOLDS[this.gameData.currentLevel] || 0;
-    const nextLevelXP = this.getXPForNextLevel();
-    const progressXP = this.gameData.totalXP - currentLevelXP;
-    const totalNeeded = nextLevelXP - currentLevelXP;
-    
-    if (totalNeeded <= 0) return 100;
-    return Math.min(100, Math.max(0, (progressXP / totalNeeded) * 100));
-  }
-
-  // Award XP and handle level ups
-  awardXP(amount: number, reason: string): { levelUp: boolean; newLevel?: number; achievements?: string[] } {
-    const oldLevel = this.gameData.currentLevel;
-    this.gameData.totalXP += amount;
-    this.gameData.currentLevel = this.calculateLevel(this.gameData.totalXP);
-    
-    this.gameData.lastXPGain = {
-      amount,
-      reason,
-      timestamp: new Date()
     };
-
-    const result: { levelUp: boolean; newLevel?: number; achievements?: string[] } = {
-      levelUp: this.gameData.currentLevel > oldLevel
-    };
-
-    if (result.levelUp) {
-      result.newLevel = this.gameData.currentLevel;
-      // Award bonus XP for level up
-      this.gameData.totalXP += 25;
-    }
-
-    // Check for new achievements
-    const newAchievements = this.checkAchievements();
-    if (newAchievements.length > 0) {
-      result.achievements = newAchievements;
-    }
-
-    this.saveGameData();
-    return result;
   }
 
-  // Check and unlock achievements
-  private checkAchievements(): string[] {
+  private saveGameData(data: GameData): void {
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(data));
+      this.notifyListeners(data);
+    } catch (error) {
+      console.error('Error saving game data:', error);
+    }
+  }
+
+  subscribe(listener: (data: GameData) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notifyListeners(data: GameData): void {
+    this.listeners.forEach(listener => listener(data));
+  }
+
+  awardXP(xpGain: number): XPResult {
+    const data = this.getGameData();
+    const oldLevel = data.level;
+    
+    data.xp += xpGain;
+    data.totalXP += xpGain;
+    
+    // Check for level up
+    let newLevel = oldLevel;
+    while (newLevel < this.levelThresholds.length - 1 && 
+           data.totalXP >= this.levelThresholds[newLevel]) {
+      newLevel++;
+    }
+    
+    const levelUp = newLevel > oldLevel;
+    if (levelUp) {
+      data.level = newLevel;
+      data.xp = data.totalXP - this.levelThresholds[newLevel - 1];
+    }
+    
+    // Calculate XP to next level
+    if (newLevel < this.levelThresholds.length - 1) {
+      data.xpToNextLevel = this.levelThresholds[newLevel] - data.totalXP;
+    } else {
+      data.xpToNextLevel = 0; // Max level reached
+    }
+    
+    this.saveGameData(data);
+    
+    return {
+      levelUp,
+      newLevel: levelUp ? newLevel : undefined,
+      achievements: this.checkAchievements(data)
+    };
+  }
+
+  private checkAchievements(data: GameData): string[] {
     const newAchievements: string[] = [];
     
-    // First CV
-    if (this.gameData.totalCVsCreated >= 1 && !this.gameData.achievements.includes('CV Creator')) {
-      this.unlockAchievement('FIRST_CV');
-      newAchievements.push('CV Creator');
-    }
-
-    // First Analysis
-    if (this.gameData.totalAnalyses >= 1 && !this.gameData.achievements.includes('CV Analyzer')) {
-      this.unlockAchievement('ANALYZER');
-      newAchievements.push('CV Analyzer');
-    }
-
-    // First Interview
-    if (this.gameData.totalInterviews >= 1 && !this.gameData.achievements.includes('Interview Ready')) {
-      this.unlockAchievement('INTERVIEWER');
-      newAchievements.push('Interview Ready');
-    }
-
-    // High ATS Score
-    if (this.gameData.highestScore >= 90 && !this.gameData.achievements.includes('ATS Master')) {
-      this.unlockAchievement('HIGH_SCORER');
-      newAchievements.push('ATS Master');
-    }
-
-    // Perfect Score
-    if (this.gameData.highestScore >= 100 && !this.gameData.achievements.includes('Perfectionist')) {
-      this.unlockAchievement('PERFECTIONIST');
-      newAchievements.push('Perfectionist');
-    }
-
-    // Streak Warrior
-    if (this.gameData.consecutiveDays >= 7 && !this.gameData.achievements.includes('Streak Warrior')) {
-      this.unlockAchievement('STREAK_WARRIOR');
-      newAchievements.push('Streak Warrior');
-    }
-
-    // CV Collector
-    if (this.gameData.totalCVsCreated >= 5 && !this.gameData.achievements.includes('CV Collector')) {
-      this.unlockAchievement('CV_COLLECTOR');
-      newAchievements.push('CV Collector');
-    }
-
+    data.achievements.forEach(achievement => {
+      if (achievement.unlockedAt) return; // Already unlocked
+      
+      let shouldUnlock = false;
+      let progress = achievement.progress || 0;
+      
+      switch (achievement.id) {
+        case 'first_cv':
+          progress = data.stats.cvsCreated;
+          shouldUnlock = data.stats.cvsCreated >= 1;
+          break;
+        case 'template_explorer':
+          progress = data.stats.templatesUsed;
+          shouldUnlock = data.stats.templatesUsed >= 5;
+          break;
+        case 'ai_powered':
+          // This would be tracked separately when AI is used
+          break;
+        case 'analyzer_pro':
+          progress = data.stats.analysisCompleted;
+          shouldUnlock = data.stats.analysisCompleted >= 10;
+          break;
+        case 'job_matcher':
+          // This would be tracked separately for job matches
+          break;
+        case 'interview_ready':
+          progress = data.stats.interviewsPrepped;
+          shouldUnlock = data.stats.interviewsPrepped >= 1;
+          break;
+        case 'perfectionist':
+          // This would be tracked when a high score is achieved
+          break;
+        case 'power_user':
+          progress = data.stats.cvsCreated;
+          shouldUnlock = data.stats.cvsCreated >= 20;
+          break;
+        case 'master_builder':
+          progress = data.level >= 10 ? 1 : 0;
+          shouldUnlock = data.level >= 10;
+          break;
+        case 'cv_legend':
+          progress = data.totalXP >= 10000 ? 1 : 0;
+          shouldUnlock = data.totalXP >= 10000;
+          break;
+      }
+      
+      achievement.progress = progress;
+      
+      if (shouldUnlock) {
+        achievement.unlockedAt = new Date();
+        newAchievements.push(achievement.name);
+      }
+    });
+    
     return newAchievements;
   }
 
-  private unlockAchievement(achievementId: string) {
-    const achievement = ACHIEVEMENTS[achievementId];
-    if (achievement && !this.gameData.achievements.includes(achievement.name)) {
-      this.gameData.achievements.push(achievement.name);
-      this.gameData.totalXP += achievement.xpReward;
-    }
+  // Specific action tracking methods
+  trackCVCreation(): XPResult {
+    const data = this.getGameData();
+    data.stats.cvsCreated++;
+    this.saveGameData(data);
+    return this.awardXP(100);
   }
 
-  // Public methods for tracking actions
-  trackCVCreation() {
-    this.gameData.totalCVsCreated += 1;
-    this.gameData.uploadsCount += 1;
-    
-    const isFirst = this.gameData.totalCVsCreated === 1;
-    const xpAmount = isFirst ? XP_REWARDS.CV_CREATION + XP_REWARDS.FIRST_TIME_BONUS : XP_REWARDS.CV_CREATION;
-    const reason = isFirst ? 'First CV created! Welcome bonus!' : 'CV created';
-    
-    return this.awardXP(xpAmount, reason);
+  trackTemplateSelection(): XPResult {
+    const data = this.getGameData();
+    data.stats.templatesUsed++;
+    this.saveGameData(data);
+    return this.awardXP(15);
   }
 
-  trackCVAnalysis(score?: number) {
-    this.gameData.totalAnalyses += 1;
+  trackCVAnalysis(score: number): XPResult {
+    const data = this.getGameData();
+    data.stats.analysisCompleted++;
+    this.saveGameData(data);
     
-    if (score && score > this.gameData.highestScore) {
-      this.gameData.highestScore = score;
-    }
-    
-    let xpAmount = XP_REWARDS.CV_ANALYSIS;
-    let reason = 'CV analyzed';
-    
-    if (score && score >= 85) {
-      xpAmount += XP_REWARDS.HIGH_ATS_SCORE;
-      reason += ' with high ATS score!';
-    }
-    
-    const isFirst = this.gameData.totalAnalyses === 1;
-    if (isFirst) {
-      xpAmount += XP_REWARDS.FIRST_TIME_BONUS;
-      reason = 'First CV analysis! ' + reason;
+    // Bonus XP for high scores
+    let xpGain = 50;
+    if (score >= 95) {
+      xpGain += 25; // Bonus for perfectionist score
+      // Award perfectionist achievement
+      const perfectionist = data.achievements.find(a => a.id === 'perfectionist');
+      if (perfectionist && !perfectionist.unlockedAt) {
+        perfectionist.unlockedAt = new Date();
+        perfectionist.progress = 1;
+      }
+    } else if (score >= 85) {
+      xpGain += 15;
+    } else if (score >= 75) {
+      xpGain += 10;
     }
     
-    return this.awardXP(xpAmount, reason);
+    this.saveGameData(data);
+    return this.awardXP(xpGain);
   }
 
-  trackInterviewPractice() {
-    this.gameData.totalInterviews += 1;
+  trackJobMatchAnalysis(): XPResult {
+    const data = this.getGameData();
     
-    const isFirst = this.gameData.totalInterviews === 1;
-    const xpAmount = isFirst ? XP_REWARDS.INTERVIEW_PRACTICE + XP_REWARDS.FIRST_TIME_BONUS : XP_REWARDS.INTERVIEW_PRACTICE;
-    const reason = isFirst ? 'First interview practice! Welcome bonus!' : 'Interview practice completed';
+    // Track job matcher achievement
+    const jobMatcher = data.achievements.find(a => a.id === 'job_matcher');
+    if (jobMatcher) {
+      jobMatcher.progress = (jobMatcher.progress || 0) + 1;
+      if (jobMatcher.progress >= 5 && !jobMatcher.unlockedAt) {
+        jobMatcher.unlockedAt = new Date();
+      }
+    }
     
-    return this.awardXP(xpAmount, reason);
+    this.saveGameData(data);
+    return this.awardXP(60);
   }
 
-  trackTemplateSelection() {
-    return this.awardXP(XP_REWARDS.TEMPLATE_SELECTION, 'Template selected');
+  trackProfileCompletion(): XPResult {
+    const data = this.getGameData();
+    
+    // Track AI powered achievement
+    const aiPowered = data.achievements.find(a => a.id === 'ai_powered');
+    if (aiPowered && !aiPowered.unlockedAt) {
+      aiPowered.unlockedAt = new Date();
+      aiPowered.progress = 1;
+    }
+    
+    this.saveGameData(data);
+    return this.awardXP(30);
   }
 
-  trackJobMatchAnalysis() {
-    return this.awardXP(XP_REWARDS.JOB_MATCH_ANALYSIS, 'Job match analysis completed');
+  trackInterviewPrep(): XPResult {
+    const data = this.getGameData();
+    data.stats.interviewsPrepped++;
+    this.saveGameData(data);
+    return this.awardXP(40);
   }
 
-  trackProfileCompletion() {
-    return this.awardXP(XP_REWARDS.PROFILE_COMPLETION, 'Profile section completed');
+  // Utility methods
+  getAchievementProgress(achievementId: string): { current: number; max: number; unlocked: boolean } {
+    const data = this.getGameData();
+    const achievement = data.achievements.find(a => a.id === achievementId);
+    
+    if (!achievement) {
+      return { current: 0, max: 1, unlocked: false };
+    }
+    
+    return {
+      current: achievement.progress || 0,
+      max: achievement.maxProgress || 1,
+      unlocked: !!achievement.unlockedAt
+    };
   }
 
-  // Get current game data
-  getGameData(): GameData {
-    return { ...this.gameData };
+  getUnlockedAchievements(): Achievement[] {
+    const data = this.getGameData();
+    return data.achievements.filter(a => a.unlockedAt);
   }
 
-  // Reset game data (for testing)
-  resetGameData() {
-    this.gameData = this.getDefaultGameData();
-    this.saveGameData();
+  getLevelProgress(): { current: number; max: number; percentage: number } {
+    const data = this.getGameData();
+    const currentLevelXP = data.level > 1 ? this.levelThresholds[data.level - 1] : 0;
+    const nextLevelXP = this.levelThresholds[data.level] || data.totalXP;
+    const progressInLevel = data.totalXP - currentLevelXP;
+    const xpNeededForLevel = nextLevelXP - currentLevelXP;
+    
+    return {
+      current: progressInLevel,
+      max: xpNeededForLevel,
+      percentage: (progressInLevel / xpNeededForLevel) * 100
+    };
   }
 
-  // Get level badge info
-  getLevelBadge() {
-    const level = this.gameData.currentLevel;
-    if (level >= 15) return { level: 'Grandmaster', icon: '👑', color: 'text-purple-600 bg-purple-100' };
-    if (level >= 12) return { level: 'Master', icon: '🏆', color: 'text-yellow-600 bg-yellow-100' };
-    if (level >= 9) return { level: 'Expert', icon: '⭐', color: 'text-blue-600 bg-blue-100' };
-    if (level >= 6) return { level: 'Advanced', icon: '🚀', color: 'text-green-600 bg-green-100' };
-    if (level >= 3) return { level: 'Intermediate', icon: '📈', color: 'text-orange-600 bg-orange-100' };
-    if (level >= 1) return { level: 'Beginner', icon: '🌱', color: 'text-teal-600 bg-teal-100' };
-    return { level: 'Starter', icon: '✨', color: 'text-gray-600 bg-gray-100' };
+  // Reset methods (for testing/development)
+  resetGameData(): void {
+    localStorage.removeItem(this.storageKey);
+    this.initializeGameData();
+  }
+
+  exportGameData(): string {
+    return JSON.stringify(this.getGameData(), null, 2);
+  }
+
+  importGameData(jsonData: string): boolean {
+    try {
+      const data = JSON.parse(jsonData);
+      this.saveGameData(data);
+      return true;
+    } catch (error) {
+      console.error('Error importing game data:', error);
+      return false;
+    }
   }
 }
 
-export default GamificationService.getInstance();
+// Create and export singleton instance
+const gamificationService = new GamificationService();
+export default gamificationService;
