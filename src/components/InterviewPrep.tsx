@@ -1,812 +1,672 @@
-import React, { useState, useEffect } from 'react';
-import { MessageCircle, Upload, FileText, Send, Bot, User, Trophy, Target, CheckCircle, AlertCircle, Lightbulb, X, ArrowLeft } from 'lucide-react';
-import { CVAnalysis } from '../types';
-import BackButton from './BackButton';
-import { extractTextFromFile } from '../services/cvParsingService';
-import gamificationService from '../services/gamificationService';
+// src/components/InterviewPrep.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  MessageSquare, Play, Pause, RotateCcw, CheckCircle, Clock, 
+  Star, Brain, Mic, MicOff, Volume2, VolumeX, ChevronRight,
+  ChevronLeft, Award, Target, Lightbulb, BarChart3, Timer,
+  BookOpen, Users, Briefcase, Heart, Zap, RefreshCw
+} from 'lucide-react';
+import { TargetMarket } from '../types';
+import { BackButton } from './BackButton';
+import { Card } from './UI/Card';
+import { Button } from './UI/Button';
 
 interface InterviewPrepProps {
+  targetMarket: TargetMarket | null;
   onBack: () => void;
 }
 
-interface ChatMessage {
+interface Question {
   id: string;
-  type: 'user' | 'ai' | 'system';
-  content: string;
-  timestamp: Date;
-}
-
-interface InterviewQuestion {
-  id: string;
+  category: string;
   question: string;
-  category: 'technical' | 'behavioral' | 'situational' | 'company-specific';
-  difficulty: 'easy' | 'medium' | 'hard';
+  tips: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  timeLimit?: number; // in seconds
+  followUp?: string[];
 }
 
-const InterviewPrep: React.FC<InterviewPrepProps> = ({ onBack }) => {
-  const [cvText, setCvText] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
-  const [currentStep, setCurrentStep] = useState<'upload' | 'interview' | 'results'>('upload');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentAnswer, setCurrentAnswer] = useState('');
-  const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
+interface PracticeSession {
+  questionId: string;
+  startTime: Date;
+  endTime?: Date;
+  duration?: number;
+  rating?: number;
+  notes?: string;
+}
+
+const InterviewPrep: React.FC<InterviewPrepProps> = ({ targetMarket, onBack }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<{ questionId: string; answer: string; score: number; feedback: string }[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [readinessScore, setReadinessScore] = useState(0);
-  const [dragActive, setDragActive] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>('general');
+  const [practiceMode, setPracticeMode] = useState<'guided' | 'timed' | 'free'>('guided');
+  const [currentSession, setCurrentSession] = useState<PracticeSession | null>(null);
+  const [completedSessions, setCompletedSessions] = useState<PracticeSession[]>([]);
+  const [showTips, setShowTips] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
 
-  // Award XP when interview is completed
+  const timerRef = useRef<NodeJS.Timeout>();
+  const audioRef = useRef<HTMLAudioElement>();
+
+  // Interview questions database
+  const questionDatabase: Question[] = [
+    // General Questions
+    {
+      id: 'general-1',
+      category: 'general',
+      question: 'Tell me about yourself and your professional background.',
+      tips: [
+        'Keep it concise (2-3 minutes)',
+        'Focus on professional achievements',
+        'Connect your experience to the role',
+        'End with why you\'re interested in this position'
+      ],
+      difficulty: 'beginner',
+      timeLimit: 180,
+      followUp: ['What motivates you in your work?', 'How do you handle stress?']
+    },
+    {
+      id: 'general-2',
+      category: 'general',
+      question: 'Why are you interested in this role and our company?',
+      tips: [
+        'Research the company beforehand',
+        'Mention specific company values or projects',
+        'Explain how your skills align with their needs',
+        'Show genuine enthusiasm'
+      ],
+      difficulty: 'beginner',
+      timeLimit: 120
+    },
+    {
+      id: 'general-3',
+      category: 'general',
+      question: 'What are your greatest strengths and how do they apply to this role?',
+      tips: [
+        'Choose 2-3 relevant strengths',
+        'Provide specific examples',
+        'Connect to job requirements',
+        'Avoid generic answers'
+      ],
+      difficulty: 'beginner',
+      timeLimit: 150
+    },
+    {
+      id: 'general-4',
+      category: 'general',
+      question: 'Describe a challenging situation you faced at work and how you handled it.',
+      tips: [
+        'Use the STAR method (Situation, Task, Action, Result)',
+        'Choose a relevant example',
+        'Focus on your problem-solving process',
+        'Highlight positive outcomes'
+      ],
+      difficulty: 'intermediate',
+      timeLimit: 300
+    },
+    {
+      id: 'general-5',
+      category: 'general',
+      question: 'Where do you see yourself in 5 years?',
+      tips: [
+        'Show ambition but be realistic',
+        'Align with company growth opportunities',
+        'Demonstrate commitment to the field',
+        'Avoid mentioning other companies'
+      ],
+      difficulty: 'beginner',
+      timeLimit: 120
+    },
+
+    // Technical Questions (adaptable to different fields)
+    {
+      id: 'technical-1',
+      category: 'technical',
+      question: 'Describe your experience with the key technologies/tools mentioned in the job description.',
+      tips: [
+        'Be specific about your experience level',
+        'Mention relevant projects',
+        'Discuss learning and adaptation',
+        'Be honest about areas for growth'
+      ],
+      difficulty: 'intermediate',
+      timeLimit: 240
+    },
+    {
+      id: 'technical-2',
+      category: 'technical',
+      question: 'How do you stay updated with industry trends and best practices?',
+      tips: [
+        'Mention specific resources (blogs, courses, conferences)',
+        'Show continuous learning mindset',
+        'Discuss recent trends you\'ve followed',
+        'Explain how you apply new knowledge'
+      ],
+      difficulty: 'intermediate',
+      timeLimit: 180
+    },
+    {
+      id: 'technical-3',
+      category: 'technical',
+      question: 'Walk me through your problem-solving process when faced with a complex technical challenge.',
+      tips: [
+        'Outline your systematic approach',
+        'Mention research and collaboration',
+        'Discuss testing and validation',
+        'Show persistence and creativity'
+      ],
+      difficulty: 'advanced',
+      timeLimit: 300
+    },
+
+    // Behavioral Questions
+    {
+      id: 'behavioral-1',
+      category: 'behavioral',
+      question: 'Tell me about a time when you had to work with a difficult team member.',
+      tips: [
+        'Focus on your actions, not blame',
+        'Show empathy and professionalism',
+        'Describe the resolution process',
+        'Highlight positive outcomes'
+      ],
+      difficulty: 'intermediate',
+      timeLimit: 240
+    },
+    {
+      id: 'behavioral-2',
+      category: 'behavioral',
+      question: 'Describe a time when you had to meet a tight deadline.',
+      tips: [
+        'Explain your planning and prioritization',
+        'Mention any help you sought',
+        'Describe how you maintained quality',
+        'Share lessons learned'
+      ],
+      difficulty: 'intermediate',
+      timeLimit: 210
+    },
+    {
+      id: 'behavioral-3',
+      category: 'behavioral',
+      question: 'Give an example of when you took initiative to improve a process or solve a problem.',
+      tips: [
+        'Choose a significant example',
+        'Explain your motivation',
+        'Detail the steps you took',
+        'Quantify the impact if possible'
+      ],
+      difficulty: 'advanced',
+      timeLimit: 270
+    },
+
+    // Leadership Questions
+    {
+      id: 'leadership-1',
+      category: 'leadership',
+      question: 'Describe your leadership style and provide an example of when you led a team.',
+      tips: [
+        'Define your leadership approach',
+        'Provide a specific example',
+        'Explain how you motivated others',
+        'Discuss challenges and outcomes'
+      ],
+      difficulty: 'advanced',
+      timeLimit: 300
+    },
+    {
+      id: 'leadership-2',
+      category: 'leadership',
+      question: 'How do you handle conflicts within your team?',
+      tips: [
+        'Show diplomatic approach',
+        'Mention active listening',
+        'Describe mediation techniques',
+        'Focus on resolution and learning'
+      ],
+      difficulty: 'advanced',
+      timeLimit: 240
+    }
+  ];
+
+  // Filter questions based on category and difficulty
+  const filteredQuestions = questionDatabase.filter(q => {
+    const categoryMatch = selectedCategory === 'all' || q.category === selectedCategory;
+    const difficultyMatch = selectedDifficulty === 'all' || q.difficulty === selectedDifficulty;
+    return categoryMatch && difficultyMatch;
+  });
+
+  const currentQuestion = filteredQuestions[currentQuestionIndex];
+
+  const categories = [
+    { id: 'all', name: 'All Questions', icon: BookOpen },
+    { id: 'general', name: 'General', icon: MessageSquare },
+    { id: 'technical', name: 'Technical', icon: Brain },
+    { id: 'behavioral', name: 'Behavioral', icon: Users },
+    { id: 'leadership', name: 'Leadership', icon: Award }
+  ];
+
+  // Timer functionality
   useEffect(() => {
-    if (currentStep === 'results' && readinessScore > 0) {
-      const result = gamificationService.trackInterviewPractice();
-      // You could show XP notification here if needed
-    }
-  }, [currentStep, readinessScore]);
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFile = async (file: File) => {
-    try {
-      // Show loading state
-      const loadingMessage = document.createElement('div');
-      loadingMessage.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      loadingMessage.textContent = 'Processing your CV...';
-      document.body.appendChild(loadingMessage);
-      
-      const extractedText = await extractTextFromFile(file);
-      
-      // Remove loading message
-      if (document.body.contains(loadingMessage)) {
-        document.body.removeChild(loadingMessage);
-      }
-      
-      // Check if we got actual content or fallback
-      if (extractedText && extractedText.trim() && 
-          !extractedText.includes('John Doe') && 
-          !extractedText.includes('john.doe@email.com')) {
-        setCvText(extractedText);
-        
-        // Show success message
-        const successMessage = document.createElement('div');
-        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        successMessage.textContent = 'CV uploaded and processed successfully!';
-        document.body.appendChild(successMessage);
-        
-        // Remove success message after 3 seconds
-        setTimeout(() => {
-          if (document.body.contains(successMessage)) {
-            document.body.removeChild(successMessage);
-          }
-        }, 3000);
-      } else {
-        // Show warning for fallback content
-        const warningMessage = document.createElement('div');
-        warningMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        warningMessage.innerHTML = `
-          <div>CV uploaded but text extraction limited.</div>
-          <div class="text-xs mt-1">Please paste your CV text manually for best results.</div>
-        `;
-        document.body.appendChild(warningMessage);
-        
-        // Set empty text to encourage manual input
-        setCvText('');
-        
-        // Remove warning message after 5 seconds
-        setTimeout(() => {
-          if (document.body.contains(warningMessage)) {
-            document.body.removeChild(warningMessage);
-          }
-        }, 5000);
-      }
-      
-      // Remove loading message
-      if (document.body.contains(loadingMessage)) {
-        document.body.removeChild(loadingMessage);
-      }
-      
-      // Check if we got actual content or fallback
-      if (extractedText && extractedText.trim() && 
-          !extractedText.includes('John Doe') && 
-          !extractedText.includes('john.doe@email.com')) {
-        setCvText(extractedText);
-        
-        // Show success message
-        const successMessage = document.createElement('div');
-        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        successMessage.textContent = 'CV uploaded and processed successfully!';
-        document.body.appendChild(successMessage);
-        
-        // Remove success message after 3 seconds
-        setTimeout(() => {
-          if (document.body.contains(successMessage)) {
-            document.body.removeChild(successMessage);
-          }
-        }, 3000);
-      } else {
-        // Show warning for fallback content
-        const warningMessage = document.createElement('div');
-        warningMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        warningMessage.innerHTML = `
-          <div>CV uploaded but text extraction limited.</div>
-          <div class="text-xs mt-1">Please paste your CV text manually for best results.</div>
-        `;
-        document.body.appendChild(warningMessage);
-        
-        // Set empty text to encourage manual input
-        setCvText('');
-        
-        // Remove warning message after 5 seconds
-        setTimeout(() => {
-          if (document.body.contains(warningMessage)) {
-            document.body.removeChild(warningMessage);
-          }
-        }, 5000);
-      }
-    } catch (error) {
-      console.error('File parsing error:', error);
-      
-      // Show error message
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      errorMessage.innerHTML = `
-        <div>Failed to parse CV file.</div>
-        <div class="text-xs mt-1">Please try pasting your CV text directly below.</div>
-      `;
-      document.body.appendChild(errorMessage);
-      
-      // Remove error message after 5 seconds
-      setTimeout(() => {
-        if (document.body.contains(errorMessage)) {
-          document.body.removeChild(errorMessage);
-        }
-      }, 5000);
-      // Show error message
-    }
-  };
-
-  const generateQuestions = async () => {
-    if (!cvText.trim() || !jobDescription.trim()) {
-      alert('Please provide both your CV and the job description');
-      return;
-    }
-
-    setIsGenerating(true);
-    
-    // Simulate AI question generation
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const mockQuestions: InterviewQuestion[] = [
-      {
-        id: '1',
-        question: "Tell me about your experience leading a development team. How do you handle conflicts within your team?",
-        category: 'behavioral',
-        difficulty: 'medium'
-      },
-      {
-        id: '2',
-        question: "You mentioned implementing microservices architecture. Can you walk me through your approach and the challenges you faced?",
-        category: 'technical',
-        difficulty: 'hard'
-      },
-      {
-        id: '3',
-        question: "How would you handle a situation where a critical production system goes down during peak hours?",
-        category: 'situational',
-        difficulty: 'hard'
-      },
-      {
-        id: '4',
-        question: "Why are you interested in joining our company specifically, and how do you see yourself contributing to our engineering culture?",
-        category: 'company-specific',
-        difficulty: 'medium'
-      },
-      {
-        id: '5',
-        question: "Describe a time when you had to learn a new technology quickly to meet a project deadline.",
-        category: 'behavioral',
-        difficulty: 'easy'
-      }
-    ];
-
-    setQuestions(mockQuestions);
-    setCurrentStep('interview');
-    setIsGenerating(false);
-
-    // Add initial AI message
-    const initialMessage: ChatMessage = {
-      id: 'init',
-      type: 'ai',
-      content: `Great! I've analyzed your CV and the job description. I've prepared 5 customized interview questions that are likely to come up based on your background and the role requirements. Let's start with the first question. Take your time to think through your answer.`,
-      timestamp: new Date()
-    };
-
-    setMessages([initialMessage]);
-    
-    // Add first question
-    setTimeout(() => {
-      const questionMessage: ChatMessage = {
-        id: 'q1',
-        type: 'ai',
-        content: `**Question 1 (Behavioral - Medium):**\n\n${mockQuestions[0].question}`,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, questionMessage]);
-    }, 1000);
-  };
-
-  const submitAnswer = async () => {
-    if (!currentAnswer.trim()) return;
-
-    const currentQuestion = questions[currentQuestionIndex];
-    
-    // Add user answer to chat
-    const userMessage: ChatMessage = {
-      id: `answer-${currentQuestionIndex}`,
-      type: 'user',
-      content: currentAnswer,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-
-    // Simulate AI feedback generation
-    setIsGenerating(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Generate mock feedback and score
-    const mockScore = Math.floor(Math.random() * 30) + 70; // 70-100 range
-    const mockFeedback = generateFeedback(currentQuestion, mockScore);
-
-    const feedbackMessage: ChatMessage = {
-      id: `feedback-${currentQuestionIndex}`,
-      type: 'ai',
-      content: `**Score: ${mockScore}/100**\n\n${mockFeedback}`,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, feedbackMessage]);
-
-    // Store answer and feedback
-    setAnswers(prev => [...prev, {
-      questionId: currentQuestion.id,
-      answer: currentAnswer,
-      score: mockScore,
-      feedback: mockFeedback
-    }]);
-
-    setCurrentAnswer('');
-    setIsGenerating(false);
-
-    // Move to next question or show results
-    if (currentQuestionIndex < questions.length - 1) {
-      setTimeout(() => {
-        const nextIndex = currentQuestionIndex + 1;
-        setCurrentQuestionIndex(nextIndex);
-        
-        const nextQuestionMessage: ChatMessage = {
-          id: `q${nextIndex + 1}`,
-          type: 'ai',
-          content: `**Question ${nextIndex + 1} (${questions[nextIndex].category} - ${questions[nextIndex].difficulty}):**\n\n${questions[nextIndex].question}`,
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, nextQuestionMessage]);
-      }, 2000);
+    if (isRecording && !isPaused) {
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
     } else {
-      // Calculate overall readiness score
-      const avgScore = answers.reduce((sum, a) => sum + a.score, mockScore) / (answers.length + 1);
-      setReadinessScore(Math.round(avgScore));
-      
-      setTimeout(() => {
-        setCurrentStep('results');
-      }, 2000);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isRecording, isPaused]);
+
+  const startPractice = () => {
+    setIsRecording(true);
+    setIsPaused(false);
+    setRecordingTime(0);
+    setCurrentSession({
+      questionId: currentQuestion.id,
+      startTime: new Date()
+    });
+  };
+
+  const pausePractice = () => {
+    setIsPaused(!isPaused);
+  };
+
+  const stopPractice = () => {
+    setIsRecording(false);
+    setIsPaused(false);
+    
+    if (currentSession) {
+      const endTime = new Date();
+      const duration = recordingTime;
+      const completedSession: PracticeSession = {
+        ...currentSession,
+        endTime,
+        duration
+      };
+      setCompletedSessions(prev => [...prev, completedSession]);
+    }
+    
+    setCurrentSession(null);
+    setRecordingTime(0);
+  };
+
+  const resetPractice = () => {
+    setIsRecording(false);
+    setIsPaused(false);
+    setRecordingTime(0);
+    setCurrentSession(null);
+  };
+
+  const nextQuestion = () => {
+    if (currentQuestionIndex < filteredQuestions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      resetPractice();
     }
   };
 
-  const generateFeedback = (question: InterviewQuestion, score: number): string => {
-    const feedbacks = {
-      high: [
-        "Excellent answer! You demonstrated strong leadership skills and provided specific examples.",
-        "Great response! You showed technical depth and practical problem-solving approach.",
-        "Outstanding! You clearly articulated your thought process and showed genuine interest.",
-        "Very strong answer! You provided concrete examples and showed self-awareness."
-      ],
-      medium: [
-        "Good answer, but could be improved by adding more specific examples or metrics.",
-        "Solid response, but try to be more concise and focus on the key points.",
-        "Nice approach, but consider mentioning the impact or results of your actions.",
-        "Good foundation, but could benefit from more details about your specific role."
-      ],
-      low: [
-        "Your answer needs more structure. Try using the STAR method (Situation, Task, Action, Result).",
-        "Consider providing more specific examples to support your points.",
-        "Try to be more confident in your delivery and provide concrete examples.",
-        "Focus on highlighting your achievements and the value you brought to the situation."
-      ]
-    };
-
-    const category = score >= 85 ? 'high' : score >= 70 ? 'medium' : 'low';
-    const randomFeedback = feedbacks[category][Math.floor(Math.random() * feedbacks[category].length)];
-    
-    return randomFeedback;
+  const previousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      resetPractice();
+    }
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return 'text-green-600 bg-green-100';
-    if (score >= 70) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (currentStep === 'upload') {
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'beginner': return 'bg-green-100 text-green-800';
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
+      case 'advanced': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTimeWarning = () => {
+    if (!currentQuestion?.timeLimit) return null;
+    const timeLeft = currentQuestion.timeLimit - recordingTime;
+    if (timeLeft <= 30 && timeLeft > 0) {
+      return 'warning'; // 30 seconds left
+    } else if (timeLeft <= 0) {
+      return 'danger'; // time's up
+    }
+    return null;
+  };
+
+  if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        <div className="container mx-auto px-4 py-16">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="mb-6">
-              <BackButton onClick={onBack} label="Back to Home" variant="floating" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="container mx-auto px-4 py-8">
+          <Card className="p-8 text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">No questions available</h2>
+            <p className="text-gray-600 mb-4">Try adjusting your filters to see more questions.</p>
+            <Button onClick={() => {
+              setSelectedCategory('all');
+              setSelectedDifficulty('all');
+            }}>
+              Reset Filters
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center gap-4 mb-4">
+            <BackButton onClick={onBack} variant="minimal" />
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900">Interview Preparation</h1>
+              <p className="text-gray-600">
+                Practice interview questions for {targetMarket?.name || 'your target role'}
+              </p>
             </div>
             
-            <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <MessageCircle className="h-4 w-4" />
-              AI Interview Preparation
+            {/* Practice Stats */}
+            <div className="text-center">
+              <div className="text-lg font-bold text-gray-900">Session Progress</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {currentQuestionIndex + 1} / {filteredQuestions.length}
+              </div>
+              <div className="text-sm text-gray-500">
+                {completedSessions.length} completed
+              </div>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-6">
-              Prepare for Your Interview
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Upload your CV and paste the job description to get personalized mock interview questions. 
-              Practice with our AI interviewer and get instant feedback to improve your performance.
-            </p>
           </div>
 
-          <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* CV Upload Section */}
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <Upload className="h-6 w-6 text-blue-600" />
-                  Your CV
-                </h2>
-
-                <div
-                  className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 mb-6 ${
-                    dragActive 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-lg font-medium text-gray-700 mb-2">
-                    Drop your CV here or click to browse
-                  </p>
-                  <p className="text-gray-500 mb-4">Supports PDF, DOCX, and text files</p>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4">
+            {/* Category Filter */}
+            <div className="flex gap-2">
+              {categories.map((category) => {
+                const IconComponent = category.icon;
+                return (
                   <button
-                    onClick={() => document.getElementById('cv-file-input')?.click()}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    key={category.id}
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      setCurrentQuestionIndex(0);
+                      resetPractice();
+                    }}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedCategory === category.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
                   >
-                    Choose File
+                    <IconComponent className="h-4 w-4" />
+                    {category.name}
                   </button>
-                  <input
-                    id="cv-file-input"
-                    type="file"
-                    accept=".pdf,.docx,.txt"
-                    onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-                    className="hidden"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Or paste your CV text here:
-                  </label>
-                  <textarea
-                    value={cvText}
-                    onChange={(e) => setCvText(e.target.value)}
-                    rows={12}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Paste your CV content here..."
-                  />
-                </div>
-                
-                <div className="flex justify-end mt-2">
-                  <button
-                    onClick={() => setCvText('')}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
-                  >
-                    <X className="h-4 w-4" />
-                    Clear CV Text
-                  </button>
-                </div>
-              </div>
-
-              {/* Job Description Section */}
-              <div className="bg-white rounded-2xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <Target className="h-6 w-6 text-indigo-600" />
-                  Job Description
-                </h2>
-
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Paste the job description you're interviewing for:
-                  </label>
-                  <textarea
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    rows={16}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                    placeholder="Paste the complete job description here..."
-                  />
-                </div>
-                
-                <div className="flex justify-end mt-2">
-                  <button
-                    onClick={() => setJobDescription('')}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1"
-                  >
-                    <X className="h-4 w-4" />
-                    Clear Job Description
-                  </button>
-                </div>
-
-                <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                  <h3 className="font-semibold text-indigo-900 mb-2">🎯 What You'll Get:</h3>
-                  <ul className="text-indigo-800 text-sm space-y-1">
-                    <li>• 5 personalized interview questions</li>
-                    <li>• Real-time feedback on your answers</li>
-                    <li>• Interview readiness score</li>
-                    <li>• Specific improvement suggestions</li>
-                  </ul>
-                </div>
-                
-                {/* File Upload Tips */}
-                <div className="mt-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                  <h3 className="font-semibold text-yellow-900 mb-2">💡 Upload Tips:</h3>
-                  <ul className="text-yellow-800 text-sm space-y-1">
-                    <li>• If PDF upload shows garbled text, copy and paste your CV text manually instead</li>
-                    <li>• DOCX files usually work better than PDFs for text extraction</li>
-                    <li>• Make sure your CV has clear section headers</li>
-                    <li>• Manual text input often gives the best results for analysis</li>
-                  </ul>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
-            {/* Generate Questions Button */}
-            <div className="text-center mt-8">
-              <button
-                onClick={generateQuestions}
-                disabled={isGenerating || !cvText.trim() || !jobDescription.trim()}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 mx-auto"
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                    Generating Questions...
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="h-6 w-6" />
-                    Start Interview Practice
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Difficulty Filter */}
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => {
+                setSelectedDifficulty(e.target.value as any);
+                setCurrentQuestionIndex(0);
+                resetPractice();
+              }}
+              className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="all">All Levels</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
           </div>
         </div>
       </div>
-    );
-  }
 
-  if (currentStep === 'interview') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          {/* Header */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={onBack}
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </button>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Current Question Card */}
+          <Card className="p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <MessageSquare className="h-6 w-6 text-blue-600" />
+                </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Mock Interview Session</h1>
-                  <p className="text-gray-600">Question {currentQuestionIndex + 1} of {questions.length}</p>
+                  <h2 className="text-xl font-bold text-gray-900">Practice Question</h2>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(currentQuestion.difficulty)}`}>
+                      {currentQuestion.difficulty}
+                    </span>
+                    <span className="text-gray-500 text-sm">{currentQuestion.category}</span>
+                    {currentQuestion.timeLimit && (
+                      <span className="text-gray-500 text-sm flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatTime(currentQuestion.timeLimit)} suggested
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Progress</div>
-                <div className="w-32 bg-gray-200 rounded-full h-2 mt-1">
+
+              <Button
+                variant="outline"
+                onClick={() => setShowTips(!showTips)}
+                icon={<Lightbulb className="h-4 w-4" />}
+                size="sm"
+              >
+                {showTips ? 'Hide Tips' : 'Show Tips'}
+              </Button>
+            </div>
+
+            {/* Question */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {currentQuestion.question}
+              </h3>
+              
+              {currentQuestion.timeLimit && (
+                <div className="text-sm text-gray-600">
+                  Suggested response time: {formatTime(currentQuestion.timeLimit)}
+                </div>
+              )}
+            </div>
+
+            {/* Tips */}
+            {showTips && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <h4 className="font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4" />
+                  Tips for answering this question:
+                </h4>
+                <ul className="space-y-1">
+                  {currentQuestion.tips.map((tip, index) => (
+                    <li key={index} className="text-yellow-700 text-sm flex items-start gap-2">
+                      <div className="w-1 h-1 bg-yellow-600 rounded-full mt-2 flex-shrink-0"></div>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Recording Controls */}
+            <div className="text-center">
+              {/* Timer Display */}
+              <div className="mb-6">
+                <div className={`text-6xl font-bold mb-2 ${
+                  getTimeWarning() === 'danger' ? 'text-red-600' :
+                  getTimeWarning() === 'warning' ? 'text-yellow-600' : 'text-gray-900'
+                }`}>
+                  {formatTime(recordingTime)}
+                </div>
+                
+                {currentQuestion.timeLimit && (
+                  <div className="text-sm text-gray-500">
+                    {getTimeWarning() === 'danger' ? 'Time is up!' :
+                     getTimeWarning() === 'warning' ? 'Wrap up your answer' :
+                     `${formatTime(currentQuestion.timeLimit - recordingTime)} remaining`}
+                  </div>
+                )}
+                
+                {isRecording && (
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    <span className="text-red-600 text-sm font-medium">Recording...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Control Buttons */}
+              <div className="flex justify-center gap-4 mb-6">
+                {!isRecording ? (
+                  <Button
+                    onClick={startPractice}
+                    icon={<Play className="h-5 w-5" />}
+                    size="lg"
+                  >
+                    Start Practice
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      onClick={pausePractice}
+                      variant="outline"
+                      icon={isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+                      size="lg"
+                    >
+                      {isPaused ? 'Resume' : 'Pause'}
+                    </Button>
+                    <Button
+                      onClick={stopPractice}
+                      variant="danger"
+                      icon={<CheckCircle className="h-5 w-5" />}
+                      size="lg"
+                    >
+                      Finish Answer
+                    </Button>
+                  </>
+                )}
+                
+                <Button
+                  onClick={resetPractice}
+                  variant="outline"
+                  icon={<RotateCcw className="h-5 w-5" />}
+                  size="lg"
+                  disabled={!isRecording && recordingTime === 0}
+                >
+                  Reset
+                </Button>
+              </div>
+
+              {/* Progress Bar */}
+              {currentQuestion.timeLimit && (
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                   <div 
-                    className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      getTimeWarning() === 'danger' ? 'bg-red-500' :
+                      getTimeWarning() === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                    }`}
+                    style={{ width: `${Math.min((recordingTime / currentQuestion.timeLimit) * 100, 100)}%` }}
                   ></div>
                 </div>
-              </div>
+              )}
             </div>
-          </div>
+          </Card>
 
-          {/* Chat Interface */}
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg">
-              {/* Messages */}
-              <div className="h-96 overflow-y-auto p-6 space-y-4">
-                {messages.map((message) => (
-                  <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`flex items-start gap-3 max-w-3xl ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        message.type === 'user' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-indigo-100 text-indigo-600'
-                      }`}>
-                        {message.type === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-                      </div>
-                      <div className={`rounded-2xl px-4 py-3 ${
-                        message.type === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}>
-                        <div className="whitespace-pre-wrap text-sm">{message.content}</div>
-                        <div className={`text-xs mt-1 ${
-                          message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-                        }`}>
-                          {message.timestamp.toLocaleTimeString()}
-                        </div>
-                      </div>
-                    </div>
+          {/* Navigation */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <Button
+                onClick={previousQuestion}
+                disabled={currentQuestionIndex === 0}
+                variant="outline"
+                icon={<ChevronLeft className="h-4 w-4" />}
+              >
+                Previous Question
+              </Button>
+
+              <div className="text-center">
+                <div className="text-sm text-gray-500 mb-1">Question</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {currentQuestionIndex + 1} of {filteredQuestions.length}
+                </div>
+              </div>
+
+              <Button
+                onClick={nextQuestion}
+                disabled={currentQuestionIndex === filteredQuestions.length - 1}
+                icon={<ChevronRight className="h-4 w-4" />}
+              >
+                Next Question
+              </Button>
+            </div>
+          </Card>
+
+          {/* Follow-up Questions */}
+          {currentQuestion.followUp && currentQuestion.followUp.length > 0 && (
+            <Card className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Brain className="h-5 w-5 text-purple-600" />
+                Potential Follow-up Questions
+              </h3>
+              <div className="space-y-2">
+                {currentQuestion.followUp.map((followUp, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <ChevronRight className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">{followUp}</span>
                   </div>
                 ))}
-                
-                {isGenerating && (
-                  <div className="flex justify-start">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                        <Bot className="h-4 w-4" />
-                      </div>
-                      <div className="bg-gray-100 rounded-2xl px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-                          <span className="text-sm text-gray-600">AI is analyzing your answer...</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
+            </Card>
+          )}
 
-              {/* Input Area */}
-              <div className="border-t border-gray-200 p-6">
-                <div className="flex gap-4">
-                  <textarea
-                    value={currentAnswer}
-                    onChange={(e) => setCurrentAnswer(e.target.value)}
-                    placeholder="Type your answer here... Take your time to think through your response."
-                    rows={3}
-                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                    disabled={isGenerating}
-                  />
-                  <button
-                    onClick={submitAnswer}
-                    disabled={!currentAnswer.trim() || isGenerating}
-                    className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    <Send className="h-4 w-4" />
-                    Submit
-                  </button>
+          {/* Practice Statistics */}
+          {completedSessions.length > 0 && (
+            <Card className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-green-600" />
+                Practice Statistics
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{completedSessions.length}</div>
+                  <div className="text-gray-600 text-sm">Questions Practiced</div>
                 </div>
-                <div className="mt-2 text-xs text-gray-500">
-                  Tip: Use the STAR method (Situation, Task, Action, Result) for behavioral questions
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatTime(Math.round(completedSessions.reduce((sum, session) => sum + (session.duration || 0), 0) / completedSessions.length))}
+                  </div>
+                  <div className="text-gray-600 text-sm">Average Response Time</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {formatTime(completedSessions.reduce((sum, session) => sum + (session.duration || 0), 0))}
+                  </div>
+                  <div className="text-gray-600 text-sm">Total Practice Time</div>
                 </div>
               </div>
-            </div>
-          </div>
+            </Card>
+          )}
         </div>
       </div>
-    );
-  }
-
-  if (currentStep === 'results') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        <div className="container mx-auto px-4 py-16">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <Trophy className="h-4 w-4" />
-              Interview Complete!
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-6">
-              Your Interview Performance
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Great job completing the mock interview! Here's your detailed performance analysis and suggestions for improvement.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto space-y-8">
-            {/* Overall Score */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Interview Readiness Score</h2>
-              <div className="relative w-32 h-32 mx-auto mb-6">
-                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="#e5e7eb"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="#6366f1"
-                    strokeWidth="2"
-                    strokeDasharray={`${readinessScore}, 100`}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-3xl font-bold text-gray-900">{readinessScore}%</span>
-                </div>
-              </div>
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${getScoreColor(readinessScore)}`}>
-                {readinessScore >= 85 ? (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    Excellent - You're interview ready!
-                  </>
-                ) : readinessScore >= 70 ? (
-                  <>
-                    <AlertCircle className="h-4 w-4" />
-                    Good - Some areas to improve
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-4 w-4" />
-                    Needs work - Practice more
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Question Breakdown */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Question-by-Question Analysis</h2>
-              <div className="space-y-6">
-                {answers.map((answer, index) => {
-                  const question = questions.find(q => q.id === answer.questionId);
-                  return (
-                    <div key={answer.questionId} className="border border-gray-200 rounded-lg p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-2">
-                            Question {index + 1}: {question?.category} ({question?.difficulty})
-                          </h3>
-                          <p className="text-gray-700 mb-3">{question?.question}</p>
-                        </div>
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(answer.score)}`}>
-                          {answer.score}/100
-                        </div>
-                      </div>
-                      
-                      <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                        <h4 className="font-medium text-gray-900 mb-2">Your Answer:</h4>
-                        <p className="text-gray-700 text-sm">{answer.answer}</p>
-                      </div>
-                      
-                      <div className="bg-blue-50 rounded-lg p-4">
-                        <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
-                          <Lightbulb className="h-4 w-4" />
-                          Feedback:
-                        </h4>
-                        <p className="text-blue-800 text-sm">{answer.feedback}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Improvement Suggestions */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Improvement Areas</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
-                  <h3 className="font-semibold text-yellow-900 mb-3">Structure Your Answers</h3>
-                  <p className="text-yellow-800 text-sm mb-3">
-                    Use the STAR method (Situation, Task, Action, Result) for behavioral questions to provide clear, structured responses.
-                  </p>
-                  <div className="text-xs text-yellow-700">
-                    Practice tip: Write down 3-5 STAR stories you can adapt to different questions.
-                  </div>
-                </div>
-                
-                <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-                  <h3 className="font-semibold text-blue-900 mb-3">Quantify Your Impact</h3>
-                  <p className="text-blue-800 text-sm mb-3">
-                    Include specific numbers, percentages, and metrics to demonstrate the impact of your work.
-                  </p>
-                  <div className="text-xs text-blue-700">
-                    Practice tip: Prepare metrics for your top 5 achievements.
-                  </div>
-                </div>
-                
-                <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-                  <h3 className="font-semibold text-green-900 mb-3">Show Enthusiasm</h3>
-                  <p className="text-green-800 text-sm mb-3">
-                    Demonstrate genuine interest in the role and company through your tone and specific examples.
-                  </p>
-                  <div className="text-xs text-green-700">
-                    Practice tip: Research the company's recent news and achievements.
-                  </div>
-                </div>
-                
-                <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
-                  <h3 className="font-semibold text-purple-900 mb-3">Ask Smart Questions</h3>
-                  <p className="text-purple-800 text-sm mb-3">
-                    Prepare thoughtful questions about the role, team, and company culture to show your interest.
-                  </p>
-                  <div className="text-xs text-purple-700">
-                    Practice tip: Prepare 5-7 questions about different aspects of the role.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => {
-                  setCurrentStep('upload');
-                  setMessages([]);
-                  setAnswers([]);
-                  setCurrentQuestionIndex(0);
-                  setCvText('');
-                  setJobDescription('');
-                }}
-                className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Practice Again
-              </button>
-              <button
-                onClick={onBack}
-                className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Back to Home
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 };
 
 export default InterviewPrep;
