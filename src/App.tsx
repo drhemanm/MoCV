@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { CVTemplate, CVAnalysis, GameData, TargetMarket } from './types';
+import { CVTemplate, CVAnalysis, GameData } from './types';
 import { fetchCVTemplates } from './services/templateService';
 import gamificationService from './services/gamificationService';
 
@@ -13,7 +13,6 @@ import CVImprover from './components/CVImprover';
 import JobDescriptionAnalyzer from './components/JobDescriptionAnalyzer';
 import InterviewPrep from './components/InterviewPrep';
 import MyCVsDashboard from './components/MyCVsDashboard';
-import TargetMarketSelector from './components/TargetMarketSelector';
 import AIAssistant from './components/AIAssistant';
 import TemplatePreview from './components/TemplatePreview';
 import ChatAssistant from './components/ChatAssistant';
@@ -23,9 +22,9 @@ import LoadingSpinner from './components/LoadingSpinner';
 import Toast from './components/Toast';
 import XPNotification from './components/XPNotification';
 
-// Simplified step types - focus on core flows
+// Clean step types - no market selector
 type AppStep = 'start' | 'my-cvs' | 'templates' | 'cv-builder' | 'analyzer' | 'improver' | 
-              'job-analyzer' | 'interview-prep' | 'target-market';
+              'job-analyzer' | 'interview-prep';
 
 // Enhanced CVData interface
 interface CVData {
@@ -86,7 +85,7 @@ interface ToastMessage {
 }
 
 const App: React.FC = () => {
-  // Simplified core state
+  // Clean core state
   const [currentStep, setCurrentStep] = useState<AppStep>('start');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,9 +94,8 @@ const App: React.FC = () => {
   const [templates, setTemplates] = useState<CVTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<CVTemplate | null>(null);
-  const [selectedMarket, setSelectedMarket] = useState<TargetMarket | null>(null);
   
-  // Analysis state
+  // Analysis state (for improvement features only)
   const [cvAnalysis, setCvAnalysis] = useState<CVAnalysis | null>(null);
   const [analyzedCVText, setAnalyzedCVText] = useState<string>('');
   
@@ -164,32 +162,30 @@ const App: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  // SIMPLIFIED NAVIGATION - Core flows only
+  // CLEAN NAVIGATION
   const navigateToStep = useCallback((step: AppStep) => {
     setCurrentStep(step);
     clearError();
   }, [clearError]);
 
   const navigateBack = useCallback(() => {
-    // Simple back navigation
     const backMap: Record<AppStep, AppStep> = {
       'my-cvs': 'start',
       'templates': 'start',
       'cv-builder': 'templates',
       'analyzer': 'start',
       'improver': 'analyzer',
-      'job-analyzer': 'target-market',
-      'interview-prep': 'target-market',
-      'target-market': 'start'
+      'job-analyzer': 'start',
+      'interview-prep': 'start'
     };
     
     const previousStep = backMap[currentStep] || 'start';
     navigateToStep(previousStep);
   }, [currentStep, navigateToStep]);
 
-  // CORE HANDLERS - Streamlined
+  // PRIMARY HANDLERS - No market complexity
   
-  // 1. CREATE NEW CV FLOW (Simplified - no market selector interruption)
+  // 1. CREATE NEW CV FLOW (Clean and simple)
   const handleCreateNew = useCallback(() => {
     console.log('Create New CV clicked - navigating to templates');
     navigateToStep('templates');
@@ -219,54 +215,30 @@ const App: React.FC = () => {
     localStorage.setItem('mocv_selected_template', template.id);
     localStorage.setItem('mocv_selected_template_data', JSON.stringify(template));
     
-    // DIRECT navigation to CV builder - no market selector interruption
+    // DIRECT navigation to CV builder
     navigateToStep('cv-builder');
     addToast(`Template "${template.name}" selected`, 'success');
   }, [navigateToStep, addToast]);
 
-  // 2. OTHER FLOWS (Keep existing logic but add market selector step)
+  // 2. OTHER FLOWS (Simplified - no market selector)
   const handleImproveCV = useCallback(() => {
-    navigateToStep('target-market');
-    // Store intended next step
-    sessionStorage.setItem('mocv_pending_flow', 'analyzer');
+    navigateToStep('analyzer');
   }, [navigateToStep]);
 
   const handleAnalyzeVsJob = useCallback(() => {
-    navigateToStep('target-market');
-    sessionStorage.setItem('mocv_pending_flow', 'job-analyzer');
+    navigateToStep('job-analyzer');
   }, [navigateToStep]);
 
   const handleInterviewPrep = useCallback(() => {
-    navigateToStep('target-market');
-    sessionStorage.setItem('mocv_pending_flow', 'interview-prep');
+    navigateToStep('interview-prep');
   }, [navigateToStep]);
 
   const handleMyCVs = useCallback(() => {
     navigateToStep('my-cvs');
   }, [navigateToStep]);
 
-  // Market selection handler
-  const handleMarketSelect = useCallback((market: TargetMarket) => {
-    setSelectedMarket(market);
-    
-    // Get intended flow from session storage
-    const pendingFlow = sessionStorage.getItem('mocv_pending_flow');
-    const flowMap: Record<string, AppStep> = {
-      'analyzer': 'analyzer',
-      'job-analyzer': 'job-analyzer',
-      'interview-prep': 'interview-prep'
-    };
-    
-    const nextStep = pendingFlow && flowMap[pendingFlow] ? flowMap[pendingFlow] : 'start';
-    navigateToStep(nextStep);
-    
-    // Clear pending flow
-    sessionStorage.removeItem('mocv_pending_flow');
-    addToast(`Target market selected: ${market.name}`, 'success');
-  }, [navigateToStep, addToast]);
-
   // Analysis completion handler
-  const handleAnalysisComplete = useCallback((analysis: CVAnalysis, cvText: string, jobDesc?: string) => {
+  const handleAnalysisComplete = useCallback((analysis: CVAnalysis, cvText: string) => {
     try {
       setCvAnalysis(analysis);
       setAnalyzedCVText(cvText);
@@ -295,7 +267,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <div className="min-h-screen flex flex-col">
-        {/* Simplified Header */}
+        {/* Clean Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
@@ -339,146 +311,3 @@ const App: React.FC = () => {
                 <p className="text-red-800">{error}</p>
                 <button 
                   onClick={clearError}
-                  className="text-red-600 hover:text-red-800 text-sm underline mt-1"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* SIMPLIFIED MAIN CONTENT */}
-        <main className="flex-1">
-          {currentStep === 'start' && (
-            <FlowStartScreen
-              gameData={gameData}
-              onImproveCV={handleImproveCV}
-              onCreateNew={handleCreateNew}
-              onAnalyzeVsJob={handleAnalyzeVsJob}
-              onInterviewPrep={handleInterviewPrep}
-              onMyCVs={handleMyCVs}
-            />
-          )}
-          
-          {currentStep === 'templates' && (
-            <TemplateGallery
-              targetMarket={selectedMarket}
-              templates={templates}
-              isLoading={isLoading}
-              onTemplateSelect={handleTemplateSelect}
-              onTemplatePreview={setPreviewTemplate}
-              onBack={navigateBack}
-            />
-          )}
-          
-          {currentStep === 'cv-builder' && (
-            <CVBuilder
-              targetMarket={selectedMarket}
-              selectedTemplate={selectedTemplate}
-              onBack={navigateBack}
-              onChangeTemplate={() => navigateToStep('templates')}
-            />
-          )}
-          
-          {currentStep === 'my-cvs' && (
-            <MyCVsDashboard
-              onBack={navigateBack}
-              onEditCV={handleEditCV}
-              onCreateNew={handleCreateNew}
-            />
-          )}
-
-          {currentStep === 'target-market' && (
-            <TargetMarketSelector
-              selectedFlow={sessionStorage.getItem('mocv_pending_flow') as any}
-              onMarketSelect={handleMarketSelect}
-              onBack={navigateBack}
-            />
-          )}
-
-          {currentStep === 'analyzer' && (
-            <CVAnalyzer
-              targetMarket={selectedMarket}
-              onAnalysisComplete={handleAnalysisComplete}
-              onCreateNew={handleCreateNew}
-              onBack={navigateBack}
-            />
-          )}
-
-          {currentStep === 'job-analyzer' && (
-            <JobDescriptionAnalyzer
-              targetMarket={selectedMarket}
-              onAnalysisComplete={handleAnalysisComplete}
-              onBack={navigateBack}
-            />
-          )}
-
-          {currentStep === 'interview-prep' && (
-            <InterviewPrep
-              targetMarket={selectedMarket}
-              onBack={navigateBack}
-            />
-          )}
-
-          {currentStep === 'improver' && cvAnalysis && (
-            <CVImprover
-              targetMarket={selectedMarket}
-              analysis={cvAnalysis}
-              originalCV={analyzedCVText}
-              onBack={navigateBack}
-              onCreateNew={handleCreateNew}
-            />
-          )}
-
-          {/* Template Preview Modal */}
-          {previewTemplate && (
-            <TemplatePreview
-              templateName={previewTemplate.name}
-              markdownUrl={previewTemplate.markdownUrl}
-              onClose={() => setPreviewTemplate(null)}
-              onUseTemplate={() => {
-                handleTemplateSelect(previewTemplate);
-                setPreviewTemplate(null);
-              }}
-            />
-          )}
-        </main>
-
-        <Footer />
-
-        {/* Chat Assistant */}
-        <ChatAssistant 
-          isOpen={isChatOpen} 
-          onToggle={() => setIsChatOpen(!isChatOpen)} 
-        />
-        
-        {/* XP Notification */}
-        {xpNotification && (
-          <XPNotification
-            xpGain={xpNotification.xpGain}
-            reason={xpNotification.reason}
-            levelUp={xpNotification.levelUp}
-            newLevel={xpNotification.newLevel}
-            achievements={xpNotification.achievements}
-            onClose={() => setXpNotification(null)}
-          />
-        )}
-
-        {/* Toast Notifications */}
-        <div className="fixed bottom-4 right-4 z-50 space-y-2">
-          {toasts.map(toast => (
-            <Toast
-              key={toast.id}
-              type={toast.type}
-              message={toast.message}
-              onClose={() => removeToast(toast.id)}
-            />
-          ))}
-        </div>
-      </div>
-    </ErrorBoundary>
-  );
-};
-
-export default App;
