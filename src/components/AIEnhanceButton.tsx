@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Wand2, Loader2, CheckCircle, X, RotateCcw, Copy } from 'lucide-react';
 import { enhanceText, getEnhancementSuggestions, EnhancementRequest, EnhancementResponse } from '../services/aiEnhancementService';
 import { getServiceStatus } from '../services/openaiService';
-import { enhanceText, getEnhancementSuggestions, EnhancementRequest, EnhancementResponse } from '../services/aiEnhancementService';
-import { getServiceStatus } from '../services/openaiService';
+
 
 interface AIEnhanceButtonProps {
   text: string;
