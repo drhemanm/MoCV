@@ -8,7 +8,7 @@ import {
 import { TargetMarket, CVAnalysis } from '../types';
 import { BackButton } from './BackButton';
 import { Card } from "../UI/Card";
-import { Button } from './UI/Button';
+import { Button } from '../UI/Button';
 import { ButtonSpinner } from './LoadingSpinner';
 
 interface JobDescriptionAnalyzerProps {
