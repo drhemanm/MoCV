@@ -3,85 +3,56 @@
 export interface CVTemplate {
   id: string;
   name: string;
+  category: 'Professional' | 'Creative' | 'Academic' | 'Technical' | 'Executive';
   description: string;
-  category: 'modern' | 'classic' | 'creative' | 'minimal';
-  previewUrl: string;
-  markdownUrl: string;
-  thumbnail: string;
+  preview: string;
+  isPremium: boolean;
+  price?: number;
   features: string[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  estimatedTime: string;
-  popularity: number;
-  tags: string[];
+  marketSuitability: string[];
+  atsOptimized: boolean;
+  colorScheme: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  layout: 'single-column' | 'two-column' | 'modern-grid' | 'timeline';
+  sections: string[];
 }
 
 export interface TargetMarket {
   id: string;
   name: string;
+  region: string;
+  preferences: {
+    photoRequired: boolean;
+    preferredLength: number; // in pages
+    commonSections: string[];
+    culturalNotes: string[];
+    atsImportance: number; // 1-10 scale
+  };
+  templates: string[]; // template IDs that work well for this market
   description: string;
-  icon: string;
-  color: string;
-  industries: string[];
-  skillFocus: string[];
-  salaryRange: string;
-  popularRoles: string[];
+  flag?: string; // country flag emoji or icon
 }
 
-export interface CVAnalysis {
-  score: number;
-  strengths: string[];
-  weaknesses: string[];
-  suggestions: string[];
-  sections: {
-    [key: string]: {
-      score: number;
-      feedback: string;
-      suggestions: string[];
-    };
+export interface CVData {
+  personalInfo: {
+    fullName: string;
+    title: string;
+    email: string;
+    phone: string;
+    location: string;
+    linkedin: string;
+    website: string;
+    photo: string;
   };
-  atsCompatibility: number;
-  keywordMatches: string[];
-  missingKeywords: string[];
-}
-
-export interface GameData {
-  level: number;
-  xp: number;
-  xpToNextLevel: number;
-  totalXP: number;
-  achievements: Achievement[];
-  streaks: {
-    daily: number;
-    weekly: number;
-  };
-  stats: {
-    cvsCreated: number;
-    templatesUsed: number;
-    analysisCompleted: number;
-    interviewsPrepped: number;
-  };
-}
-
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  unlockedAt?: Date;
-  progress?: number;
-  maxProgress?: number;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
-}
-
-export interface PersonalInfo {
-  fullName: string;
-  title: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin: string;
-  website: string;
   summary: string;
+  experience: Experience[];
+  education: Education[];
+  skills: Skill[];
+  projects: Project[];
+  certifications: Certification[];
 }
 
 export interface Experience {
@@ -93,8 +64,6 @@ export interface Experience {
   endDate: string;
   current: boolean;
   description: string;
-  achievements: string[];
-  technologies?: string[];
 }
 
 export interface Education {
@@ -104,17 +73,13 @@ export interface Education {
   location: string;
   graduationDate: string;
   gpa?: string;
-  honors?: string[];
-  relevantCourses?: string[];
 }
 
 export interface Skill {
   id: string;
   name: string;
   level: number; // 1-5 scale
-  category: string;
-  endorsed?: boolean;
-  years?: number;
+  category: 'Technical' | 'Soft Skills' | 'Languages' | 'Tools';
 }
 
 export interface Project {
@@ -123,10 +88,6 @@ export interface Project {
   description: string;
   technologies: string[];
   link?: string;
-  github?: string;
-  startDate?: string;
-  endDate?: string;
-  highlights: string[];
 }
 
 export interface Certification {
@@ -134,98 +95,114 @@ export interface Certification {
   name: string;
   issuer: string;
   date: string;
-  expiryDate?: string;
-  credentialId?: string;
-  verificationUrl?: string;
 }
 
-export interface CVData {
-  personalInfo: PersonalInfo;
-  experience: Experience[];
-  education: Education[];
-  skills: Skill[];
-  projects: Project[];
-  certifications: Certification[];
-  languages?: Language[];
-  volunteer?: VolunteerExperience[];
+export interface SavedCV {
+  id: string;
+  title: string;
+  templateName: string;
+  templateId: string;
+  dateCreated: Date;
+  dateModified: Date;
+  atsScore: number;
+  status: 'draft' | 'completed' | 'published';
+  cvData: CVData;
+  targetMarket?: string;
 }
 
-export interface Language {
+export interface AIAnalysis {
+  score: number;
+  suggestions: AISuggestion[];
+  strengths: string[];
+  improvements: string[];
+  keywords: string[];
+  readabilityScore: number;
+  lengthAnalysis: {
+    currentLength: number;
+    recommendedLength: number;
+    status: 'too_short' | 'optimal' | 'too_long';
+  };
+}
+
+export interface AISuggestion {
+  id: string;
+  type: 'improvement' | 'warning' | 'tip';
+  section: string;
+  message: string;
+  priority: 'low' | 'medium' | 'high';
+  example?: string;
+}
+
+export interface GamificationData {
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  badges: Badge[];
+  achievements: Achievement[];
+  streak: number;
+  totalCVsCreated: number;
+  totalDownloads: number;
+}
+
+export interface Badge {
   id: string;
   name: string;
-  proficiency: 'basic' | 'conversational' | 'fluent' | 'native';
-}
-
-export interface VolunteerExperience {
-  id: string;
-  role: string;
-  organization: string;
-  startDate: string;
-  endDate: string;
-  current: boolean;
   description: string;
+  icon: string;
+  dateEarned: Date;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
-export interface JobDescription {
-  title: string;
-  company: string;
-  requirements: string[];
-  responsibilities: string[];
-  skills: string[];
-  experience: string;
-  education: string;
-  location: string;
-  salary?: string;
-}
-
-export interface JobMatchAnalysis {
-  overallMatch: number;
-  skillsMatch: number;
-  experienceMatch: number;
-  educationMatch: number;
-  recommendations: string[];
-  missingSkills: string[];
-  strongPoints: string[];
-}
-
-// Application State Types
-export type AppStep = 
-  | 'start' 
-  | 'my-cvs' 
-  | 'market-selector' 
-  | 'analyzer' 
-  | 'improver' 
-  | 'job-analyzer' 
-  | 'interview-prep' 
-  | 'templates' 
-  | 'preview' 
-  | 'fill-method' 
-  | 'ai-assistant' 
-  | 'form' 
-  | 'final' 
-  | 'cv-builder';
-
-export type FlowType = 'analyze' | 'create' | 'job-match' | 'interview' | null;
-
-export type FillMethod = 'manual' | 'ai' | null;
-
-// Notification Types
-export interface NotificationData {
-  xpGain: number;
-  reason: string;
-  levelUp?: boolean;
-  newLevel?: number;
-  achievements?: string[];
-}
-
-export interface ToastMessage {
+export interface Achievement {
   id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  message: string;
-  duration?: number;
+  title: string;
+  description: string;
+  progress: number;
+  target: number;
+  completed: boolean;
+  reward: {
+    xp: number;
+    badge?: string;
+  };
 }
 
-// API Response Types
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  subscription: 'free' | 'premium' | 'enterprise';
+  preferences: {
+    language: string;
+    defaultMarket: string;
+    emailNotifications: boolean;
+    autoSave: boolean;
+  };
+  gamification: GamificationData;
+  createdAt: Date;
+  lastLogin: Date;
+}
+
+// Enums for better type safety
+export enum CVSection {
+  PERSONAL_INFO = 'personal',
+  SUMMARY = 'summary',
+  EXPERIENCE = 'experience',
+  EDUCATION = 'education',
+  SKILLS = 'skills',
+  PROJECTS = 'projects',
+  CERTIFICATIONS = 'certifications'
+}
+
+export enum AIEnhancementType {
+  GRAMMAR_CHECK = 'grammar',
+  TONE_IMPROVEMENT = 'tone',
+  KEYWORD_OPTIMIZATION = 'keywords',
+  LENGTH_OPTIMIZATION = 'length',
+  ATS_OPTIMIZATION = 'ats'
+}
+
+// API Response types
 export interface APIResponse<T> {
   success: boolean;
   data?: T;
@@ -233,66 +210,32 @@ export interface APIResponse<T> {
   message?: string;
 }
 
-// Service Types
-export interface TemplateService {
-  fetchTemplates(): Promise<CVTemplate[]>;
-  getTemplate(id: string): Promise<CVTemplate>;
-  downloadTemplate(id: string): Promise<Blob>;
-}
-
-export interface AIService {
-  generateContent(prompt: string, context?: any): Promise<string>;
-  analyzeCV(cvText: string, targetMarket?: TargetMarket): Promise<CVAnalysis>;
-  improveSection(section: string, feedback: string): Promise<string>;
-  generateJobMatch(cv: CVData, job: JobDescription): Promise<JobMatchAnalysis>;
-}
-
-// Component Props Types
-export interface BaseComponentProps {
-  className?: string;
-  children?: React.ReactNode;
-}
-
-export interface NavigationProps {
-  onBack?: () => void;
-  onNext?: () => void;
-  canGoBack?: boolean;
-  canGoNext?: boolean;
-}
-
-export interface FormStepProps extends NavigationProps {
-  data: Partial<CVData>;
-  onChange: (data: Partial<CVData>) => void;
-  errors?: Record<string, string>;
-}
-
-// Storage Types
-export interface StoredCV {
-  id: string;
-  name: string;
+export interface PDFGenerationOptions {
   templateId: string;
-  templateName: string;
-  targetMarket: TargetMarket;
-  cvData: CVData;
-  createdAt: Date;
-  updatedAt: Date;
-  version: number;
+  format: 'A4' | 'Letter';
+  quality: 'standard' | 'high';
+  includePhoto: boolean;
+  colorMode: 'color' | 'grayscale';
 }
 
-// Error Types
-export interface AppError {
-  code: string;
+// Navigation and UI types
+export interface NavigationStep {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  current: boolean;
+  optional: boolean;
+}
+
+export interface ToastNotification {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  title: string;
   message: string;
-  details?: any;
-  timestamp: Date;
+  duration?: number;
+  actions?: Array<{
+    label: string;
+    action: () => void;
+  }>;
 }
-
-// Analytics Types
-export interface AnalyticsEvent {
-  name: string;
-  properties?: Record<string, any>;
-  timestamp: Date;
-  userId?: string;
-}
-
-export default {};
