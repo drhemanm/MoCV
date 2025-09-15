@@ -311,4 +311,5 @@ export const ProgressBackButton: React.FC<ProgressBackButtonProps> = ({
   );
 };
 
+export { BackButton };
 export default BackButton;
