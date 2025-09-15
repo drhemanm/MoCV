@@ -1,8 +1,13 @@
-import React from 'react';
-import { Eye, Plus, Target, Sparkles, TrendingUp, FileText, Zap, Award, Users, Globe, MessageCircle, FolderOpen } from 'lucide-react';
-import GameProgress from './GameProgress';
+// src/components/FlowStartScreen.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Sparkles, Zap, Target, MessageSquare, FileText, TrendingUp, 
+  Users, Award, Clock, ArrowRight, ChevronRight, Play,
+  BarChart3, Brain, Rocket, Shield, Star, Globe, Crown,
+  PlusCircle, Search, RotateCcw, Briefcase, GraduationCap,
+  Code, Palette, Stethoscope, Calculator, Hammer, Mic
+} from 'lucide-react';
 import { GameData } from '../types';
-import gamificationService from '../services/gamificationService';
 
 interface FlowStartScreenProps {
   gameData: GameData;
@@ -21,349 +26,349 @@ const FlowStartScreen: React.FC<FlowStartScreenProps> = ({
   onInterviewPrep,
   onMyCVs
 }) => {
-  // Function to clear all data and reset for demo purposes
-  const handleResetData = () => {
-    if (window.confirm('Are you sure you want to reset all data? This will clear all CVs, progress, and start fresh.')) {
-      gamificationService.resetGameData();
-      localStorage.removeItem('mocv_saved_cvs');
-      window.location.reload();
-    }
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [activeCard, setActiveCard] = useState<string | null>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  // Real-time clock update
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Mouse tracking for interactive effects
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return '🌅 Good morning';
+    if (hour < 17) return '☀️ Good afternoon';
+    return '🌙 Good evening';
   };
 
+  const getMotivationalMessage = () => {
+    const messages = [
+      "Your dream job is just one great CV away!",
+      "Every professional journey begins with a perfect CV.",
+      "Today's the day to level up your career game!",
+      "Transform your experience into opportunity.",
+      "Your next career breakthrough starts here."
+    ];
+    return messages[Math.floor(Date.now() / (1000 * 60 * 60 * 24)) % messages.length];
+  };
+
+  // Primary action cards with stunning designs
+  const primaryActions = [
+    {
+      id: 'create',
+      title: 'Create New CV',
+      subtitle: 'Build from scratch with AI guidance',
+      description: 'Choose from 50+ professional templates and let our AI help you craft the perfect CV',
+      icon: PlusCircle,
+      gradient: 'from-blue-500 via-purple-500 to-pink-500',
+      bgColor: 'bg-gradient-to-br from-blue-50 to-purple-50',
+      iconColor: 'text-white',
+      stats: ['50+ Templates', 'AI-Powered', '5 min setup'],
+      onClick: onCreateNew,
+      featured: true,
+      badge: 'Most Popular'
+    },
+    {
+      id: 'improve',
+      title: 'Improve Existing CV',
+      subtitle: 'Get AI-powered suggestions',
+      description: 'Upload your current CV and receive detailed feedback with actionable improvements',
+      icon: TrendingUp,
+      gradient: 'from-green-500 via-emerald-500 to-teal-500',
+      bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50',
+      iconColor: 'text-white',
+      stats: ['Instant Analysis', 'ATS Check', 'Score Boost'],
+      onClick: onImproveCV,
+      featured: false
+    },
+    {
+      id: 'job-match',
+      title: 'Job Match Analysis',
+      subtitle: 'Compare CV with job requirements',
+      description: 'Paste a job description and see how well your CV matches the requirements',
+      icon: Target,
+      gradient: 'from-orange-500 via-red-500 to-pink-500',
+      bgColor: 'bg-gradient-to-br from-orange-50 to-red-50',
+      iconColor: 'text-white',
+      stats: ['Smart Matching', 'Gap Analysis', 'Success Rate'],
+      onClick: onAnalyzeVsJob,
+      featured: false
+    },
+    {
+      id: 'interview',
+      title: 'Interview Preparation',
+      subtitle: 'Practice with AI interviewer',
+      description: 'Get ready for interviews with personalized questions based on your role and industry',
+      icon: MessageSquare,
+      gradient: 'from-indigo-500 via-blue-500 to-cyan-500',
+      bgColor: 'bg-gradient-to-br from-indigo-50 to-blue-50',
+      iconColor: 'text-white',
+      stats: ['Role-Specific', 'Practice Sessions', 'Feedback'],
+      onClick: onInterviewPrep,
+      featured: false,
+      badge: 'New'
+    }
+  ];
+
+  // Quick access actions
+  const quickActions = [
+    { icon: FileText, label: 'My CVs', onClick: onMyCVs, color: 'text-blue-600' },
+    { icon: Search, label: 'Browse Templates', onClick: onCreateNew, color: 'text-purple-600' },
+    { icon: BarChart3, label: 'Analytics', onClick: () => {}, color: 'text-green-600' },
+    { icon: Users, label: 'Community', onClick: () => {}, color: 'text-orange-600' }
+  ];
+
+  // Industry icons for visual appeal
+  const industryIcons = [
+    { icon: Code, label: 'Tech', color: 'text-blue-500' },
+    { icon: Palette, label: 'Design', color: 'text-purple-500' },
+    { icon: Stethoscope, label: 'Healthcare', color: 'text-red-500' },
+    { icon: Calculator, label: 'Finance', color: 'text-green-500' },
+    { icon: Hammer, label: 'Engineering', color: 'text-orange-500' },
+    { icon: Mic, label: 'Marketing', color: 'text-pink-500' },
+    { icon: GraduationCap, label: 'Education', color: 'text-indigo-500' },
+    { icon: Briefcase, label: 'Business', color: 'text-gray-500' }
+  ];
+
+  // Success statistics (animated counters would be even better)
+  const stats = [
+    { value: '50,000+', label: 'CVs Created', icon: FileText, color: 'text-blue-600' },
+    { value: '98%', label: 'Success Rate', icon: TrendingUp, color: 'text-green-600' },
+    { value: '150+', label: 'Countries', icon: Globe, color: 'text-purple-600' },
+    { value: '4.9/5', label: 'User Rating', icon: Star, color: 'text-yellow-600' }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-4 py-16">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="text-center mb-6 flex justify-center">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-6 py-3 rounded-full text-sm font-medium shadow-lg animate-pulse">
-              <Sparkles className="h-4 w-4" />
-              AI-Powered CV Assistant for Mauritius & Africa
-            </div>
-          </div>
-          <div className="text-center mb-6 w-full flex justify-center">
-            <h1 className="text-5xl font-bold text-gray-900 animate-fade-in">
-              <div className="text-center">Welcome to</div>
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent text-center">MoCV.mu</div>
-            </h1>
-          </div>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center animate-slide-up">
-            Your intelligent CV companion designed to help Mauritians and Africans compete in global job markets. 
-            Get ATS-optimized CVs, AI-powered content, and beat international recruitment systems.
-          </p>
-          
-          {/* Demo Reset Button - Remove in production */}
-          <div className="mb-8 w-full flex justify-center">
-            <button
-              onClick={handleResetData}
-              className="group relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200 hover:from-red-50 hover:to-red-100 text-gray-600 hover:text-red-600 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl border border-gray-200 hover:border-red-200 backdrop-blur-sm"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <span className="text-lg group-hover:animate-spin transition-transform duration-500">🔄</span>
-                Reset Demo Data
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            </button>
-          </div>
-          
-          {/* Key Benefits */}
-          <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-12 animate-stagger-in">
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Target className="h-5 w-5 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">ATS Optimized</h3>
-              <p className="text-xs text-gray-600">Beat applicant tracking systems</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Zap className="h-5 w-5 text-purple-600" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">AI-Powered</h3>
-              <p className="text-xs text-gray-600">Smart content generation</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Globe className="h-5 w-5 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">Global Ready</h3>
-              <p className="text-xs text-gray-600">Compete internationally</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mb-3 mx-auto">
-                <Award className="h-5 w-5 text-orange-600" />
-              </div>
-              <h3 className="font-semibold text-sm mb-1">Gamified</h3>
-              <p className="text-xs text-gray-600">Earn XP and badges</p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-3xl animate-spin" style={{ animationDuration: '30s' }}></div>
+      </div>
 
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Actions */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* My CVs Dashboard */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                    <FolderOpen className="h-8 w-8 text-orange-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">My CVs Dashboard</h3>
-                    <p className="text-gray-600 mb-4">
-                      View, edit, and manage all your saved CVs in one place. Track ATS scores, 
-                      download PDFs, and organize your CV collection efficiently.
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                      <span className="flex items-center gap-1">
-                        <FileText className="h-4 w-4" />
-                        Manage CVs
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="h-4 w-4" />
-                        Track Scores
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Award className="h-4 w-4" />
-                        Quick Access
-                      </span>
-                    </div>
-                    <button
-                      onClick={onMyCVs}
-                      className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-orange-700 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                      View My CVs
-                    </button>
-                  </div>
+      <div className="relative z-10">
+        {/* Hero Section */}
+        <div ref={heroRef} className="container mx-auto px-4 pt-8 pb-12">
+          {/* Header with Level Info */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
+                {getGreeting()}! 👋
+              </h1>
+              <p className="text-xl text-gray-600 mb-4">{getMotivationalMessage()}</p>
+              <div className="text-sm text-gray-500">
+                {currentTime.toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
+            </div>
+
+            {/* Gamification Panel */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 min-w-[280px]">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
+                  <Crown className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Level {gameData.level}</h3>
+                  <p className="text-sm text-gray-600">{gameData.xp} / {gameData.xp + gameData.xpToNextLevel} XP</p>
                 </div>
               </div>
-
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Your Path</h2>
               
-              {/* Improve Existing CV */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                    <Eye className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">Improve Existing CV</h3>
-                    <p className="text-gray-600 mb-4">
-                      Upload your current CV and get instant ATS scoring, keyword analysis, and AI-powered improvement suggestions. 
-                      Perfect for optimizing what you already have.
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="h-4 w-4" />
-                        ATS Analysis
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Sparkles className="h-4 w-4" />
-                        AI Suggestions
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Award className="h-4 w-4" />
-                        +50 XP
-                      </span>
-                    </div>
-                    <button
-                      onClick={onImproveCV}
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                      Analyze My CV
-                    </button>
-                  </div>
-                </div>
+              {/* XP Progress Bar */}
+              <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(gameData.xp / (gameData.xp + gameData.xpToNextLevel)) * 100}%` }}
+                ></div>
               </div>
-
-              {/* Create New CV */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-green-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                    <Plus className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">Create New CV from Template</h3>
-                    <p className="text-gray-600 mb-4">
-                      Choose from professionally designed templates optimized for different industries. 
-                      Use AI assistance or fill manually - your choice.
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                      <span className="flex items-center gap-1">
-                        <FileText className="h-4 w-4" />
-                        15+ Templates
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Zap className="h-4 w-4" />
-                        AI Assistant
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Award className="h-4 w-4" />
-                        +100 XP
-                      </span>
-                    </div>
-                    <button
-                      onClick={onCreateNew}
-                      className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-300 transform hover:scale-105 flex items-center gap-2 shadow-lg hover:shadow-xl"
-                    >
-                      <FileText className="h-5 w-5" />
-                      Choose Template & Create CV
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Analyze vs Job Description */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-yellow-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                    <Target className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">Analyze CV vs Job Description</h3>
-                    <p className="text-gray-600 mb-4">
-                      Compare your CV against a specific job posting. Get keyword matching analysis, 
-                      compatibility scores, and tailored suggestions to beat the competition.
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                      <span className="flex items-center gap-1">
-                        <Target className="h-4 w-4" />
-                        Job Matching
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="h-4 w-4" />
-                        Keyword Analysis
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Award className="h-4 w-4" />
-                        +75 XP
-                      </span>
-                    </div>
-                    <button
-                      onClick={onAnalyzeVsJob}
-                      className="bg-gradient-to-r from-green-600 to-yellow-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-yellow-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                      Compare with Job
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Interview Preparation */}
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition-all duration-500 group hover:scale-[1.02] backdrop-blur-sm">
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                    <MessageCircle className="h-8 w-8 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">Prepare for Interviews</h3>
-                    <p className="text-gray-600 mb-4">
-                      Practice with AI-generated interview questions tailored to your CV and the job description. 
-                      Get instant feedback and improve your interview performance.
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                      <span className="flex items-center gap-1">
-                        <MessageCircle className="h-4 w-4" />
-                        Mock Interview
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="h-4 w-4" />
-                        Performance Score
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Award className="h-4 w-4" />
-                        +100 XP
-                      </span>
-                    </div>
-                    <button
-                      onClick={onInterviewPrep}
-                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                      Start Interview Practice
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Game Progress Sidebar */}
-            <div className="lg:col-span-1">
-              <GameProgress gameData={gameData} />
               
-              {/* Quick Tips */}
-              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 mt-6">
-                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-yellow-600" />
-                  Pro Tips for Mauritians
-                </h3>
-                <div className="space-y-3 text-sm text-gray-600">
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p>Include both English and French language skills to stand out in global markets</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p>Highlight remote work experience - it's highly valued by international employers</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p>Use metrics and numbers to quantify your achievements - this beats ATS systems</p>
-                  </div>
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div className="bg-blue-50 rounded-lg p-2">
+                  <div className="text-lg font-bold text-blue-600">{gameData.stats.cvsCreated}</div>
+                  <div className="text-xs text-blue-500">CVs Created</div>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-2">
+                  <div className="text-lg font-bold text-purple-600">{gameData.achievements.filter(a => a.unlockedAt).length}</div>
+                  <div className="text-xs text-purple-500">Achievements</div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Success Stories */}
-        <div className="max-w-4xl mx-auto mt-16">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Success Stories from Mauritius & Africa</h2>
-            <p className="text-gray-600">Real people who landed international jobs using MoCV.mu</p>
+          {/* Quick Actions Bar */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            {quickActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={action.onClick}
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl hover:bg-white hover:shadow-md transition-all duration-200 group"
+              >
+                <action.icon className={`h-4 w-4 ${action.color} group-hover:scale-110 transition-transform`} />
+                <span className="text-gray-700 font-medium">{action.label}</span>
+              </button>
+            ))}
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Users className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Priya R.</div>
-                  <div className="text-sm text-gray-500">Software Engineer</div>
+
+          {/* Primary Action Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+            {primaryActions.map((action) => (
+              <div
+                key={action.id}
+                className={`
+                  relative group cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-2
+                  ${activeCard === action.id ? 'scale-[1.02] -translate-y-2' : ''}
+                `}
+                onMouseEnter={() => setActiveCard(action.id)}
+                onMouseLeave={() => setActiveCard(null)}
+                onClick={action.onClick}
+              >
+                {/* Card Background with Gradient Border */}
+                <div className={`
+                  relative p-[2px] rounded-2xl bg-gradient-to-r ${action.gradient}
+                  ${action.featured ? 'ring-4 ring-blue-200/50' : ''}
+                `}>
+                  <div className={`
+                    relative ${action.bgColor} rounded-2xl p-8 h-full
+                    backdrop-blur-sm border border-white/20
+                    group-hover:bg-white/90 transition-all duration-300
+                  `}>
+                    {/* Featured Badge */}
+                    {action.badge && (
+                      <div className="absolute -top-3 -right-3">
+                        <div className={`
+                          bg-gradient-to-r ${action.gradient} text-white px-3 py-1 rounded-full text-xs font-bold
+                          shadow-lg animate-pulse
+                        `}>
+                          {action.badge}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Icon with Gradient Background */}
+                    <div className={`
+                      w-16 h-16 bg-gradient-to-r ${action.gradient} rounded-2xl 
+                      flex items-center justify-center mb-6 
+                      group-hover:scale-110 group-hover:rotate-3 transition-all duration-300
+                      shadow-xl
+                    `}>
+                      <action.icon className={`h-8 w-8 ${action.iconColor}`} />
+                    </div>
+
+                    {/* Content */}
+                    <div className="mb-6">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300">
+                        {action.title}
+                      </h3>
+                      <p className="text-gray-600 font-medium mb-3">{action.subtitle}</p>
+                      <p className="text-gray-500 text-sm leading-relaxed">{action.description}</p>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {action.stats.map((stat, index) => (
+                        <span
+                          key={index}
+                          className="bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-gray-700 border border-white/40"
+                        >
+                          {stat}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="flex items-center text-gray-700 group-hover:text-blue-600 transition-colors font-medium">
+                      <span>Get Started</span>
+                      <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+
+                    {/* Hover Effect Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+                  </div>
                 </div>
               </div>
-              <p className="text-sm text-gray-600">"Got my dream job at a UK tech company! The ATS optimization made all the difference."</p>
+            ))}
+          </div>
+
+          {/* Industry Focus Section */}
+          <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-8 mb-12 border border-white/30">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                Built for Every Industry
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Our AI understands the unique requirements of different industries and creates 
+                tailored CVs that speak the language of your field.
+              </p>
             </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <Users className="h-5 w-5 text-green-600" />
+
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              {industryIcons.map((industry, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col items-center p-4 rounded-2xl hover:bg-white/80 transition-all duration-200 group cursor-pointer"
+                >
+                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow mb-2 group-hover:scale-110 transition-transform">
+                    <industry.icon className={`h-6 w-6 ${industry.color}`} />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">{industry.label}</span>
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Jean-Marc L.</div>
-                  <div className="text-sm text-gray-500">Marketing Manager</div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600">"The AI assistant helped me rewrite my experience section. Landed 3 interviews in one week!"</p>
+              ))}
             </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <Users className="h-5 w-5 text-purple-600" />
+          </div>
+
+          {/* Success Statistics */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {stats.map((stat, index) => (
+              <div
+                key={index}
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20 hover:bg-white hover:shadow-lg transition-all duration-300 group"
+              >
+                <div className={`w-12 h-12 ${stat.color.replace('text-', 'bg-').replace('-600', '-100')} rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
+                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Amara K.</div>
-                  <div className="text-sm text-gray-500">Data Analyst</div>
-                </div>
+                <div className={`text-2xl font-bold ${stat.color} mb-1`}>{stat.value}</div>
+                <div className="text-gray-600 text-sm">{stat.label}</div>
               </div>
-              <p className="text-sm text-gray-600">"From Senegal to Silicon Valley! MoCV helped me create a CV that actually gets noticed."</p>
+            ))}
+          </div>
+
+          {/* Call to Action */}
+          <div className="text-center">
+            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-8 text-white relative overflow-hidden">
+              {/* Background Animation */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-white/10 to-blue-600/0 transform -skew-x-12 translate-x-full group-hover:translate-x-[-200%] transition-transform duration-1000"></div>
+              
+              <div className="relative z-10">
+                <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Career?</h2>
+                <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+                  Join thousands of professionals who have already created stunning CVs with our AI-powered platform.
+                </p>
+                <button
+                  onClick={onCreateNew}
+                  className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-bold hover:shadow-2xl hover:scale-105 transition-all duration-300 inline-flex items-center gap-2 group"
+                >
+                  <Rocket className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  Start Creating Now
+                  <Sparkles className="h-5 w-5 group-hover:rotate-12 transition-transform" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
