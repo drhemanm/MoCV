@@ -1,11 +1,13 @@
+// src/components/MyCVsDashboard.tsx - PART 1 OF 3
 import React, { useState, useEffect } from 'react';
-import { Save, Download, Eye, ArrowLeft, Plus, Trash2, Star, Zap, User, Briefcase, GraduationCap, Award, Globe, FileText, Target, Lightbulb, Upload } from 'lucide-react';
+import { Save, Download, Eye, ArrowLeft, Plus, Trash2, Star, Zap, User, Briefcase, GraduationCap, Award, Globe, FileText, Target, Lightbulb, Upload, Brain } from 'lucide-react';
 import { CVTemplate } from '../types';
 import { TargetMarket } from '../types';
 import BackButton from './BackButton';
 import LTRInput from './LTRInput';
 import AIEnhanceButton from './AIEnhanceButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
+import { AIInsightsPanel } from './AIInsightsPanel';
 import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
 import gamificationService from '../services/gamificationService';
 
@@ -91,6 +93,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showAIInsights, setShowAIInsights] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [photoError, setPhotoError] = useState<string>('');
 
@@ -340,6 +343,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
     { id: 'projects', name: 'Projects', icon: <Target className="h-5 w-5" /> },
     { id: 'certifications', name: 'Certifications', icon: <Award className="h-5 w-5" /> }
   ];
+
+// END OF PART 1 - Continue with Part 2
+// PART 2 OF 3 - Add this directly after Part 1
 
   const renderPersonalInfo = () => (
     <div className="space-y-6">
@@ -1113,6 +1119,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
     }
   };
 
+// END OF PART 2 - Continue with Part 3
+// PART 3 OF 3 - Add this directly after Part 2
+
   return (
     <div className="min-h-screen bg-gray-50 overflow-hidden" dir="ltr">
       {/* Header */}
@@ -1141,6 +1150,14 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               >
                 <Lightbulb className="h-4 w-4" />
                 AI Tips
+              </button>
+              
+              <button
+                onClick={() => setShowAIInsights(true)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Brain className="h-4 w-4" />
+                AI Analysis
               </button>
               
               <button
@@ -1440,6 +1457,14 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
         cvData={cvData}
         isVisible={showSuggestions}
         onClose={() => setShowSuggestions(false)}
+      />
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel
+        cvData={cvData}
+        targetMarket={targetMarket?.name}
+        isVisible={showAIInsights}
+        onClose={() => setShowAIInsights(false)}
       />
     </div>
   );
