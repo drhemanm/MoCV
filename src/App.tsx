@@ -311,3 +311,132 @@ const App: React.FC = () => {
                 <p className="text-red-800">{error}</p>
                 <button 
                   onClick={clearError}
+                  className="text-red-600 hover:text-red-800 text-sm underline mt-1"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CLEAN MAIN CONTENT - No target market complexity */}
+        <main className="flex-1">
+          {currentStep === 'start' && (
+            <FlowStartScreen
+              gameData={gameData}
+              onImproveCV={handleImproveCV}
+              onCreateNew={handleCreateNew}
+              onAnalyzeVsJob={handleAnalyzeVsJob}
+              onInterviewPrep={handleInterviewPrep}
+              onMyCVs={handleMyCVs}
+            />
+          )}
+          
+          {currentStep === 'templates' && (
+            <TemplateGallery
+              templates={templates}
+              isLoading={isLoading}
+              onTemplateSelect={handleTemplateSelect}
+              onTemplatePreview={setPreviewTemplate}
+              onBack={navigateBack}
+            />
+          )}
+          
+          {currentStep === 'cv-builder' && selectedTemplate && (
+            <CVBuilder
+              selectedTemplate={selectedTemplate}
+              onBack={navigateBack}
+              onChangeTemplate={() => navigateToStep('templates')}
+            />
+          )}
+          
+          {currentStep === 'my-cvs' && (
+            <MyCVsDashboard
+              onBack={navigateBack}
+              onEditCV={handleEditCV}
+              onCreateNew={handleCreateNew}
+            />
+          )}
+
+          {currentStep === 'analyzer' && (
+            <CVAnalyzer
+              onAnalysisComplete={handleAnalysisComplete}
+              onCreateNew={handleCreateNew}
+              onBack={navigateBack}
+            />
+          )}
+
+          {currentStep === 'job-analyzer' && (
+            <JobDescriptionAnalyzer
+              onAnalysisComplete={handleAnalysisComplete}
+              onBack={navigateBack}
+            />
+          )}
+
+          {currentStep === 'interview-prep' && (
+            <InterviewPrep
+              onBack={navigateBack}
+            />
+          )}
+
+          {currentStep === 'improver' && cvAnalysis && (
+            <CVImprover
+              analysis={cvAnalysis}
+              originalCV={analyzedCVText}
+              onBack={navigateBack}
+              onCreateNew={handleCreateNew}
+            />
+          )}
+
+          {/* Template Preview Modal */}
+          {previewTemplate && (
+            <TemplatePreview
+              templateName={previewTemplate.name}
+              markdownUrl={previewTemplate.markdownUrl}
+              onClose={() => setPreviewTemplate(null)}
+              onUseTemplate={() => {
+                handleTemplateSelect(previewTemplate);
+                setPreviewTemplate(null);
+              }}
+            />
+          )}
+        </main>
+
+        <Footer />
+
+        {/* Chat Assistant */}
+        <ChatAssistant 
+          isOpen={isChatOpen} 
+          onToggle={() => setIsChatOpen(!isChatOpen)} 
+        />
+        
+        {/* XP Notification */}
+        {xpNotification && (
+          <XPNotification
+            xpGain={xpNotification.xpGain}
+            reason={xpNotification.reason}
+            levelUp={xpNotification.levelUp}
+            newLevel={xpNotification.newLevel}
+            achievements={xpNotification.achievements}
+            onClose={() => setXpNotification(null)}
+          />
+        )}
+
+        {/* Toast Notifications */}
+        <div className="fixed bottom-4 right-4 z-50 space-y-2">
+          {toasts.map(toast => (
+            <Toast
+              key={toast.id}
+              type={toast.type}
+              message={toast.message}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
+        </div>
+      </div>
+    </ErrorBoundary>
+  );
+};
+
+export default App;
