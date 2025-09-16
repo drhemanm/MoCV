@@ -1,4 +1,4 @@
-// Advanced TemplateGallery - With Preview Modal Functionality
+// TemplateGallery.tsx - Fixed Version with Proper Error Handling
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { 
   Search, ChevronLeft, Check, Zap, Palette, Type, Layout, Eye, 
@@ -6,15 +6,21 @@ import {
   MapPin, Phone, Mail, Linkedin, Award, Briefcase, GraduationCap,
   User, Code, Lightbulb, Target, BarChart3, X, ChevronRight
 } from 'lucide-react';
-import { CVTemplate } from '../types';
 
-// Enhanced interfaces
-interface TemplateGalleryProps {
-  templates: CVTemplate[];
-  isLoading: boolean;
-  onTemplateSelect: (template: CVTemplate, customization?: TemplateCustomization) => void;
-  onTemplatePreview?: (template: CVTemplate) => void;
-  onBack: () => void;
+// Types with proper defaults and validation
+interface CVTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'modern' | 'creative' | 'traditional' | 'executive';
+  previewUrl?: string;
+  markdownUrl?: string;
+  thumbnail?: string;
+  features: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimatedTime: string;
+  popularity: number;
+  tags: string[];
 }
 
 interface TemplateCustomization {
@@ -25,14 +31,15 @@ interface TemplateCustomization {
   spacing: 'compact' | 'balanced' | 'spacious';
 }
 
-// Enhanced template type with realistic CV data
 interface EnhancedCVTemplate extends CVTemplate {
   successRate?: number;
   isPopular?: boolean;
   isNew?: boolean;
   atsScore?: number;
   industryFit?: string[];
-  // Realistic CV content for previews
+  layoutType: 'two-column' | 'single-column' | 'timeline' | 'creative' | 'executive' | 'modern';
+  primaryColor: string;
+  secondaryColor: string;
   sampleData: {
     name: string;
     title: string;
@@ -59,13 +66,18 @@ interface EnhancedCVTemplate extends CVTemplate {
       details?: string;
     }>;
   };
-  layoutType: 'two-column' | 'single-column' | 'timeline' | 'creative' | 'executive' | 'modern';
-  primaryColor: string;
-  secondaryColor: string;
 }
 
-// Realistic template data
-const enhancedTemplates: EnhancedCVTemplate[] = [
+interface TemplateGalleryProps {
+  templates?: CVTemplate[];
+  isLoading?: boolean;
+  onTemplateSelect: (template: CVTemplate, customization?: TemplateCustomization) => void;
+  onTemplatePreview?: (template: CVTemplate) => void;
+  onBack: () => void;
+}
+
+// Default template data with proper structure
+const defaultTemplates: EnhancedCVTemplate[] = [
   {
     id: 'professional-standard',
     name: 'Professional Standard',
@@ -94,7 +106,7 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
       email: 'sarah.mitchell@email.com',
       phone: '(555) 123-4567',
       linkedin: 'linkedin.com/in/sarahmitchell',
-      summary: 'Results-driven Business Analyst with 6+ years of experience in financial services and process optimization. Proven track record of leading cross-functional teams and delivering data-driven solutions.',
+      summary: 'Results-driven Business Analyst with 6+ years of experience in financial services and process optimization.',
       experiences: [
         {
           role: 'Senior Business Analyst',
@@ -102,40 +114,21 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
           duration: '2021 - Present',
           achievements: [
             'Led process optimization initiatives that reduced operational costs by 25%',
-            'Managed cross-functional teams of 8+ members across 3 departments',
-            'Implemented automated reporting systems saving 40+ hours monthly'
-          ]
-        },
-        {
-          role: 'Business Analyst',
-          company: 'JPMorgan Chase',
-          duration: '2019 - 2021',
-          achievements: [
-            'Developed automated reporting systems saving 40+ hours monthly',
-            'Collaborated with stakeholders to define business requirements',
-            'Improved data accuracy by 35% through process standardization'
+            'Managed cross-functional teams of 8+ members across 3 departments'
           ]
         }
       ],
       skills: [
         { name: 'SQL', level: 90, category: 'technical' },
         { name: 'Python', level: 85, category: 'technical' },
-        { name: 'Data Analysis', level: 95, category: 'technical' },
-        { name: 'Project Management', level: 88, category: 'soft' },
-        { name: 'Stakeholder Management', level: 92, category: 'soft' }
+        { name: 'Data Analysis', level: 95, category: 'technical' }
       ],
       education: [
         {
           degree: 'MBA, Finance',
           school: 'Wharton School',
           year: '2019',
-          details: 'Magna Cum Laude, Beta Gamma Sigma'
-        },
-        {
-          degree: 'BS, Economics',
-          school: 'NYU Stern',
-          year: '2017',
-          details: 'Minor in Data Science'
+          details: 'Magna Cum Laude'
         }
       ]
     }
@@ -168,7 +161,7 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
       email: 'alex.rivera@email.com',
       phone: '(555) 987-6543',
       linkedin: 'linkedin.com/in/alexrivera',
-      summary: 'Award-winning Creative Director with 8+ years creating compelling visual narratives for global brands. Passionate about innovative design solutions that drive engagement.',
+      summary: 'Award-winning Creative Director with 8+ years creating compelling visual narratives for global brands.',
       experiences: [
         {
           role: 'Creative Director',
@@ -176,34 +169,19 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
           duration: '2022 - Present',
           achievements: [
             'Led creative campaigns that increased client engagement by 150%',
-            'Managed creative team of 12 designers and copywriters',
             'Won 3 Cannes Lions for innovative advertising campaigns'
-          ]
-        },
-        {
-          role: 'Senior Art Director',
-          company: 'BBDO Worldwide',
-          duration: '2020 - 2022',
-          achievements: [
-            'Created award-winning campaigns for Fortune 500 clients',
-            'Increased team creative output by 35% through process optimization',
-            'Launched visual identity for 5 major brand repositioning projects'
           ]
         }
       ],
       skills: [
         { name: 'Adobe Creative Suite', level: 95, category: 'technical' },
-        { name: 'Figma', level: 90, category: 'technical' },
-        { name: 'Brand Strategy', level: 88, category: 'soft' },
-        { name: 'Team Leadership', level: 92, category: 'soft' },
-        { name: 'Campaign Development', level: 94, category: 'soft' }
+        { name: 'Brand Strategy', level: 88, category: 'soft' }
       ],
       education: [
         {
           degree: 'MFA, Graphic Design',
           school: 'ArtCenter College',
-          year: '2016',
-          details: 'Thesis: "Digital Storytelling in Modern Branding"'
+          year: '2016'
         }
       ]
     }
@@ -236,7 +214,7 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
       email: 'david.kumar@email.com',
       phone: '(555) 345-6789',
       linkedin: 'linkedin.com/in/davidkumar',
-      summary: 'Passionate Full Stack Developer with expertise in React, Node.js, and cloud architecture. Experienced in building scalable applications and leading technical teams.',
+      summary: 'Passionate Full Stack Developer with expertise in React, Node.js, and cloud architecture.',
       experiences: [
         {
           role: 'Senior Full Stack Developer',
@@ -244,34 +222,19 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
           duration: '2022 - Present',
           achievements: [
             'Built payment processing features handling $2B+ in transactions',
-            'Optimized API performance reducing response time by 60%',
-            'Led migration to microservices architecture'
-          ]
-        },
-        {
-          role: 'Software Engineer',
-          company: 'Shopify',
-          duration: '2020 - 2022',
-          achievements: [
-            'Developed e-commerce features used by 500k+ merchants',
-            'Implemented real-time data processing pipeline',
-            'Mentored 3 junior developers'
+            'Optimized API performance reducing response time by 60%'
           ]
         }
       ],
       skills: [
         { name: 'React', level: 95, category: 'technical' },
-        { name: 'Node.js', level: 90, category: 'technical' },
-        { name: 'TypeScript', level: 88, category: 'technical' },
-        { name: 'AWS', level: 85, category: 'technical' },
-        { name: 'GraphQL', level: 82, category: 'technical' }
+        { name: 'Node.js', level: 90, category: 'technical' }
       ],
       education: [
         {
           degree: 'BS, Computer Science',
           school: 'UT Austin',
-          year: '2020',
-          details: 'Dean\'s List, ACM Programming Contest Winner'
+          year: '2020'
         }
       ]
     }
@@ -287,347 +250,47 @@ const colorSchemes = [
   { id: 'red', name: 'Bold Red', color: '#dc2626', bg: 'bg-red-50', text: 'text-red-700', secondary: '#fef2f2' }
 ];
 
-// Template Card Props Interface
-interface RealisticTemplateCardProps {
+// Template Card Component
+interface TemplateCardProps {
   template: EnhancedCVTemplate;
   isSelected: boolean;
-  isCustomizing: boolean;
-  isHovered: boolean;
   isFavorited: boolean;
   customization: TemplateCustomization;
   onSelect: (template: CVTemplate) => void;
   onPreview?: (template: CVTemplate) => void;
-  onHover: (templateId: string | null) => void;
   onToggleFavorite: (templateId: string) => void;
-  renderPreview: (template: EnhancedCVTemplate) => React.ReactNode;
 }
 
-// Preview Modal Props
-interface PreviewModalProps {
-  template: EnhancedCVTemplate;
-  isOpen: boolean;
-  onClose: () => void;
-  onSelectTemplate: (template: EnhancedCVTemplate) => void;
-  customization: TemplateCustomization;
-}
-
-// Full-size Preview Modal Component
-const PreviewModal: React.FC<PreviewModalProps> = ({ 
-  template, 
-  isOpen, 
-  onClose, 
-  onSelectTemplate,
-  customization 
+const TemplateCard = memo<TemplateCardProps>(({
+  template,
+  isSelected,
+  isFavorited,
+  customization,
+  onSelect,
+  onPreview,
+  onToggleFavorite
 }) => {
-  if (!isOpen) return null;
+  // Validate template data before rendering
+  if (!template || !template.name || !template.id) {
+    console.warn('Invalid template data:', template);
+    return null;
+  }
 
-  const renderFullPreview = () => {
-    const { sampleData } = template;
-    const accentColor = customization.accentColor;
-    
-    return (
-      <div className="w-full max-w-4xl mx-auto bg-white shadow-2xl" style={{ aspectRatio: '8.5/11' }}>
-        {template.layoutType === 'two-column' ? (
-          // Professional Two-Column Layout
-          <div className="flex h-full">
-            {/* Main Content */}
-            <div className="flex-1 p-8">
-              {/* Header */}
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">{sampleData.name}</h1>
-                <h2 className="text-xl text-gray-600 mb-4">{sampleData.title}</h2>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {sampleData.location}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Professional Summary */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-3" style={{ color: accentColor }}>
-                  Professional Summary
-                </h3>
-                <p className="text-gray-700 leading-relaxed">{sampleData.summary}</p>
-              </div>
-              
-              {/* Experience */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4" style={{ color: accentColor }}>
-                  Professional Experience
-                </h3>
-                <div className="space-y-6">
-                  {sampleData.experiences.map((exp, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-gray-900">{exp.role}</h4>
-                        <span className="text-sm text-gray-500">{exp.duration}</span>
-                      </div>
-                      <p className="text-gray-600 mb-2">{exp.company}</p>
-                      <ul className="list-disc list-inside text-gray-700 space-y-1">
-                        {exp.achievements.map((achievement, i) => (
-                          <li key={i}>{achievement}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            {/* Sidebar */}
-            <div className="w-1/3 p-8" style={{ backgroundColor: colorSchemes.find(s => s.id === customization.colorScheme)?.secondary || '#f8fafc' }}>
-              {/* Contact */}
-              <div className="mb-8">
-                <h3 className="font-semibold mb-4" style={{ color: accentColor }}>Contact</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-600" />
-                    <span>{sampleData.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-600" />
-                    <span>{sampleData.email}</span>
-                  </div>
-                  {sampleData.linkedin && (
-                    <div className="flex items-center gap-2">
-                      <Linkedin className="w-4 h-4 text-gray-600" />
-                      <span>{sampleData.linkedin}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Skills */}
-              <div className="mb-8">
-                <h3 className="font-semibold mb-4" style={{ color: accentColor }}>Skills</h3>
-                <div className="space-y-3">
-                  {sampleData.skills.map((skill, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">{skill.name}</span>
-                        <span>{skill.level}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="h-2 rounded-full" 
-                          style={{ backgroundColor: accentColor, width: `${skill.level}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Education */}
-              <div>
-                <h3 className="font-semibold mb-4" style={{ color: accentColor }}>Education</h3>
-                <div className="space-y-4">
-                  {sampleData.education.map((edu, idx) => (
-                    <div key={idx}>
-                      <h4 className="font-semibold text-gray-900">{edu.degree}</h4>
-                      <p className="text-gray-600">{edu.school}</p>
-                      <p className="text-sm text-gray-500">{edu.year}</p>
-                      {edu.details && (
-                        <p className="text-sm text-gray-600 mt-1">{edu.details}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          // Single Column Layout for other templates
-          <div className="p-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">{sampleData.name}</h1>
-              <h2 className="text-xl text-gray-600 mb-4">{sampleData.title}</h2>
-              <div className="flex justify-center items-center gap-6 text-sm">
-                <span className="flex items-center gap-1">
-                  <Phone className="w-4 h-4" />
-                  {sampleData.phone}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Mail className="w-4 h-4" />
-                  {sampleData.email}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4" />
-                  {sampleData.location}
-                </span>
-              </div>
-            </div>
-            
-            <hr className="mb-8" />
-            
-            {/* Summary */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-3" style={{ color: accentColor }}>
-                Professional Summary
-              </h3>
-              <p className="text-gray-700 leading-relaxed">{sampleData.summary}</p>
-            </div>
-            
-            {/* Experience */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4" style={{ color: accentColor }}>
-                Experience
-              </h3>
-              <div className="space-y-6">
-                {sampleData.experiences.map((exp, idx) => (
-                  <div key={idx}>
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{exp.role}</h4>
-                        <p className="text-gray-600">{exp.company}</p>
-                      </div>
-                      <span className="text-sm text-gray-500">{exp.duration}</span>
-                    </div>
-                    <ul className="list-disc list-inside text-gray-700 space-y-1">
-                      {exp.achievements.map((achievement, i) => (
-                        <li key={i}>{achievement}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Skills */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4" style={{ color: accentColor }}>Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {sampleData.skills.map((skill, idx) => (
-                  <span 
-                    key={idx} 
-                    className="px-3 py-1 rounded-full text-sm font-medium"
-                    style={{ backgroundColor: colorSchemes.find(s => s.id === customization.colorScheme)?.secondary || '#f1f5f9', color: accentColor }}
-                  >
-                    {skill.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
+  const handleCardClick = useCallback(() => {
+    onSelect(template);
+  }, [onSelect, template]);
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">{template.name}</h2>
-            <p className="text-gray-600">{template.description}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => onSelectTemplate(template)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Use This Template
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        
-        {/* Preview Content */}
-        <div className="flex-1 overflow-auto p-6 bg-gray-100">
-          {renderFullPreview()}
-        </div>
-      </div>
-    </div>
-  );
-};
+  const handlePreviewClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPreview?.(template);
+  }, [onPreview, template]);
 
-// Main TemplateGallery Component
-const TemplateGallery: React.FC<TemplateGalleryProps> = ({
-  templates: propTemplates,
-  isLoading,
-  onTemplateSelect,
-  onTemplatePreview,
-  onBack
-}) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [previewTemplate, setPreviewTemplate] = useState<EnhancedCVTemplate | null>(null);
-  
-  const [customization, setCustomization] = useState<TemplateCustomization>({
-    colorScheme: 'blue',
-    accentColor: '#2563eb',
-    fontStyle: 'modern',
-    headerStyle: 'standard',
-    spacing: 'balanced'
-  });
+  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleFavorite(template.id);
+  }, [onToggleFavorite, template.id]);
 
-  const templates = propTemplates.length > 0 ? propTemplates : enhancedTemplates;
-
-  const filteredTemplates = useMemo(() => {
-    let filtered = templates;
-    
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(template => template.category === selectedCategory);
-    }
-    
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(template =>
-        template.name.toLowerCase().includes(query) ||
-        template.description.toLowerCase().includes(query) ||
-        template.tags.some(tag => tag.toLowerCase().includes(query))
-      );
-    }
-    
-    return filtered;
-  }, [templates, selectedCategory, searchQuery]);
-
-  const categories = [
-    { id: 'all', name: 'All Templates', count: templates.length },
-    { id: 'modern', name: 'Modern', count: templates.filter(t => t.category === 'modern').length },
-    { id: 'creative', name: 'Creative', count: templates.filter(t => t.category === 'creative').length }
-  ];
-
-  const toggleFavorite = useCallback((templateId: string) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(templateId)) {
-        newFavorites.delete(templateId);
-      } else {
-        newFavorites.add(templateId);
-      }
-      return newFavorites;
-    });
-  }, []);
-
-  const handleTemplateSelect = useCallback((template: CVTemplate) => {
-    onTemplateSelect(template, customization);
-  }, [customization, onTemplateSelect]);
-
-  const handlePreview = useCallback((template: CVTemplate) => {
-    setPreviewTemplate(template as EnhancedCVTemplate);
-  }, []);
-
-  const closePreview = useCallback(() => {
-    setPreviewTemplate(null);
-  }, []);
-
-  // Simple card preview rendering
-  const renderRealisticPreview = useCallback((template: EnhancedCVTemplate) => {
+  const renderPreview = () => {
     const accentColor = customization.accentColor;
     
     return (
@@ -651,7 +314,192 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         </div>
       </div>
     );
-  }, [customization]);
+  };
+
+  return (
+    <div 
+      className={`
+        group relative bg-white border rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer
+        hover:shadow-xl hover:shadow-gray-200/60 hover:-translate-y-1 hover:border-gray-300
+        ${isSelected ? 'ring-2 ring-blue-500 border-blue-500 shadow-lg transform -translate-y-1' : 'border-gray-200'}
+      `}
+      onClick={handleCardClick}
+    >
+      {/* Template Preview */}
+      <div className="aspect-[3/4] bg-gray-50 relative overflow-hidden">
+        <div className="w-full h-full transform transition-transform duration-300 group-hover:scale-105">
+          {renderPreview()}
+        </div>
+        
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+          <div className="flex space-x-3">
+            {onPreview && (
+              <button 
+                onClick={handlePreviewClick}
+                className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span>Preview</span>
+              </button>
+            )}
+            <button 
+              onClick={handleCardClick}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>Use Template</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex space-x-2">
+          {template.isPopular && (
+            <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center space-x-1">
+              <Sparkles className="w-3 h-3" />
+              <span>Popular</span>
+            </span>
+          )}
+          {template.isNew && (
+            <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+              New
+            </span>
+          )}
+        </div>
+
+        {/* Favorite Button */}
+        <button
+          onClick={handleFavoriteClick}
+          className={`absolute top-3 right-3 p-2 rounded-full transition-all ${
+            isFavorited
+              ? 'bg-red-500 text-white'
+              : 'bg-white/80 text-gray-700 hover:bg-white'
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
+        </button>
+      </div>
+
+      {/* Template Info */}
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900">{template.name}</h3>
+            <p className="text-sm text-gray-600 line-clamp-2">
+              {template.description}
+            </p>
+          </div>
+        </div>
+
+        {/* Metadata */}
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+          <span>{template.estimatedTime}</span>
+          <span className={`px-2 py-1 rounded-full font-medium ${
+            template.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
+            template.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
+            'bg-red-100 text-red-700'
+          }`}>
+            {template.difficulty}
+          </span>
+        </div>
+
+        {/* Features */}
+        <div className="flex flex-wrap gap-2">
+          {template.features.slice(0, 3).map((feature, index) => (
+            <span
+              key={index}
+              className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
+            >
+              {feature}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+TemplateCard.displayName = 'TemplateCard';
+
+// Main TemplateGallery Component
+const TemplateGallery: React.FC<TemplateGalleryProps> = ({
+  templates: propTemplates = [],
+  isLoading = false,
+  onTemplateSelect,
+  onTemplatePreview,
+  onBack
+}) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  
+  const [customization, setCustomization] = useState<TemplateCustomization>({
+    colorScheme: 'blue',
+    accentColor: '#2563eb',
+    fontStyle: 'modern',
+    headerStyle: 'standard',
+    spacing: 'balanced'
+  });
+
+  // Use provided templates or fallback to defaults with validation
+  const templates = useMemo(() => {
+    const templatesToUse = propTemplates.length > 0 ? propTemplates : defaultTemplates;
+    
+    // Validate templates and filter out invalid ones
+    return templatesToUse.filter(template => 
+      template && 
+      template.id && 
+      template.name && 
+      template.description &&
+      template.category
+    );
+  }, [propTemplates]);
+
+  const filteredTemplates = useMemo(() => {
+    let filtered = templates;
+    
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(template => template.category === selectedCategory);
+    }
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(template =>
+        template.name.toLowerCase().includes(query) ||
+        template.description.toLowerCase().includes(query) ||
+        (template.tags && template.tags.some(tag => tag.toLowerCase().includes(query)))
+      );
+    }
+    
+    return filtered;
+  }, [templates, selectedCategory, searchQuery]);
+
+  const categories = useMemo(() => [
+    { id: 'all', name: 'All Templates', count: templates.length },
+    { id: 'modern', name: 'Modern', count: templates.filter(t => t.category === 'modern').length },
+    { id: 'creative', name: 'Creative', count: templates.filter(t => t.category === 'creative').length },
+    { id: 'traditional', name: 'Traditional', count: templates.filter(t => t.category === 'traditional').length },
+    { id: 'executive', name: 'Executive', count: templates.filter(t => t.category === 'executive').length }
+  ], [templates]);
+
+  const toggleFavorite = useCallback((templateId: string) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(templateId)) {
+        newFavorites.delete(templateId);
+      } else {
+        newFavorites.add(templateId);
+      }
+      return newFavorites;
+    });
+  }, []);
+
+  const handleTemplateSelect = useCallback((template: CVTemplate) => {
+    setSelectedTemplate(template.id);
+    onTemplateSelect(template, customization);
+  }, [customization, onTemplateSelect]);
 
   if (isLoading) {
     return (
@@ -696,7 +544,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             </div>
           </div>
 
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-4 overflow-x-auto">
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -723,189 +571,38 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredTemplates.map((template) => (
-            <RealisticTemplateCard
-              key={template.id}
-              template={template as EnhancedCVTemplate}
-              isSelected={selectedTemplate === template.id}
-              isCustomizing={false}
-              isHovered={hoveredTemplate === template.id}
-              isFavorited={favorites.has(template.id)}
-              customization={customization}
-              onSelect={handleTemplateSelect}
-              onPreview={handlePreview}
-              onHover={setHoveredTemplate}
-              onToggleFavorite={toggleFavorite}
-              renderPreview={renderRealisticPreview}
-            />
-          ))}
-        </div>
+        {filteredTemplates.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No templates found matching your criteria.</p>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('all');
+              }}
+              className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template as EnhancedCVTemplate}
+                isSelected={selectedTemplate === template.id}
+                isFavorited={favorites.has(template.id)}
+                customization={customization}
+                onSelect={handleTemplateSelect}
+                onPreview={onTemplatePreview}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Preview Modal */}
-      {previewTemplate && (
-        <PreviewModal
-          template={previewTemplate}
-          isOpen={!!previewTemplate}
-          onClose={closePreview}
-          onSelectTemplate={handleTemplateSelect}
-          customization={customization}
-        />
-      )}
     </div>
   );
 };
-
-// Template Card Component
-const RealisticTemplateCard = memo<RealisticTemplateCardProps>(({
-  template,
-  isSelected,
-  isCustomizing,
-  isHovered,
-  isFavorited,
-  customization,
-  onSelect,
-  onPreview,
-  onHover,
-  onToggleFavorite,
-  renderPreview
-}) => {
-  const handleCardClick = useCallback(() => {
-    onSelect(template);
-  }, [onSelect, template]);
-
-  const handlePreviewClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onPreview?.(template);
-  }, [onPreview, template]);
-
-  const handleFavoriteClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleFavorite(template.id);
-  }, [onToggleFavorite, template.id]);
-
-  const handleMouseEnter = useCallback(() => {
-    onHover(template.id);
-  }, [onHover, template.id]);
-
-  const handleMouseLeave = useCallback(() => {
-    onHover(null);
-  }, [onHover]);
-
-  return (
-    <div 
-      className={`
-        group relative bg-white border rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer
-        hover:shadow-xl hover:shadow-gray-200/60 hover:-translate-y-1 hover:border-gray-300
-        ${isSelected ? 'ring-2 ring-blue-500 border-blue-500 shadow-lg transform -translate-y-1' : 'border-gray-200'}
-      `}
-      onClick={handleCardClick}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Template Preview */}
-      <div className="aspect-[3/4] bg-gray-50 relative overflow-hidden">
-        <div className="w-full h-full transform transition-transform duration-300 group-hover:scale-105">
-          {renderPreview(template)}
-        </div>
-        
-        {/* Hover Overlay */}
-        <div className={`absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300 ${
-          isHovered ? 'opacity-100' : 'opacity-0'
-        }`}>
-          <div className="flex space-x-3">
-            <button 
-              onClick={handlePreviewClick}
-              className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
-            >
-              <Eye className="w-4 h-4" />
-              <span>Preview</span>
-            </button>
-            <button 
-              onClick={handleCardClick}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-blue-700 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              <span>Use Template</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex space-x-2">
-          {template.isPopular && (
-            <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center space-x-1">
-              <Sparkles className="w-3 h-3" />
-              <span>Popular</span>
-            </span>
-          )}
-          {template.isNew && (
-            <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-              New
-            </span>
-          )}
-        </div>
-
-        {/* Favorite Button */}
-        <button
-          onClick={handleFavoriteClick}
-          className={`absolute top-3 right-3 p-2 rounded-full transition-all ${
-            isFavorited
-              ? 'bg-red-500 text-white'
-              : 'bg-white/80 text-gray-700 hover:bg-white'
-          }`}
-        >
-          <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
-        </button>
-
-        {/* Layout Type Indicator */}
-        <div className="absolute bottom-3 left-3">
-          <span className="bg-black/70 text-white text-xs px-2 py-1 rounded-full font-medium backdrop-blur-sm">
-            {template.layoutType?.replace('-', ' ') || 'template'}
-          </span>
-        </div>
-      </div>
-
-      {/* Template Info */}
-      <div className="p-5">
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900">{template.name}</h3>
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {template.description}
-            </p>
-          </div>
-        </div>
-
-        {/* Metadata */}
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-          <span>{template.estimatedTime}</span>
-          <span className={`px-2 py-1 rounded-full font-medium ${
-            template.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
-            template.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
-            'bg-red-100 text-red-700'
-          }`}>
-            {template.difficulty}
-          </span>
-        </div>
-
-        {/* Features */}
-        <div className="flex flex-wrap gap-2">
-          {template.features.slice(0, 3).map((feature, index) => (
-            <span
-              key={index}
-              className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
-            >
-              {feature}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-});
-
-RealisticTemplateCard.displayName = 'RealisticTemplateCard';
 
 export default TemplateGallery;
