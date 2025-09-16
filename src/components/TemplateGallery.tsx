@@ -231,3 +231,14 @@ const RealisticTemplateCard = memo<RealisticTemplateCardProps>(({
 });
 
 RealisticTemplateCard.displayName = 'RealisticTemplateCard';
+
+export default TemplateGallery;
+
+export { 
+  enhancedTemplates, 
+  colorSchemes, 
+  templateUtils,
+  type EnhancedCVTemplate,
+  type TemplateCustomization,
+  type TemplateGalleryProps 
+};
