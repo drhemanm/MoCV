@@ -1,17 +1,16 @@
-// World-Class Professional Template Gallery
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { 
   Search, ChevronLeft, Eye, Heart, Clock, Star, Download, Sparkles,
-  MapPin, Phone, Mail, Linkedin, User, X, ChevronRight, Award, Globe,
-  Calendar, ExternalLink
+  MapPin, Phone, Mail, Linkedin, User, X, Award, Globe, CheckCircle,
+  Calendar, ExternalLink, Shield, Zap
 } from 'lucide-react';
 
-// Enhanced template system with world-class designs
-interface WorldClassTemplate {
+// Professional template interface
+interface ProfessionalTemplate {
   id: string;
   name: string;
   description: string;
-  category: 'modern' | 'creative' | 'executive' | 'minimal' | 'bold';
+  category: 'modern' | 'creative' | 'executive' | 'minimal' | 'ats-optimized';
   features: string[];
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   estimatedTime: string;
@@ -20,6 +19,7 @@ interface WorldClassTemplate {
   isPopular?: boolean;
   isNew?: boolean;
   isPremium?: boolean;
+  isATSFriendly: boolean;
   layoutType: string;
   colorScheme: {
     primary: string;
@@ -29,633 +29,463 @@ interface WorldClassTemplate {
     background: string;
     surface: string;
   };
-  typography: {
-    headingFont: string;
-    bodyFont: string;
-    accentFont: string;
-  };
 }
 
-// Premium sample profiles with more realistic data
-const premiumProfiles = [
-  {
-    name: "Alexandra Chen",
-    title: "Senior Product Manager",
-    photo: "https://images.unsplash.com/photo-1494790108755-2616b9e10cf0?w=200&h=200&fit=crop&crop=face&auto=format&q=80",
-    contact: {
-      phone: "+1 (555) 123-4567",
-      email: "alexandra.chen@gmail.com",
-      address: "San Francisco, CA",
-      linkedin: "linkedin.com/in/alexandrachen",
-      website: "alexandrachen.com"
-    },
-    summary: "Strategic product leader with 8+ years driving user-centric innovation at scale. Led products serving 10M+ users with proven track record of increasing engagement by 200% and revenue by $50M annually.",
-    experience: [
-      {
-        position: "Senior Product Manager",
-        company: "Meta",
-        location: "Menlo Park, CA",
-        period: "Jan 2021 - Present",
-        achievements: [
-          "Led cross-functional team of 15+ engineers, designers, and analysts",
-          "Launched 3 major features increasing user engagement by 45%",
-          "Drove $25M ARR growth through strategic product initiatives",
-          "Reduced customer acquisition cost by 30% via product optimization"
-        ]
-      },
-      {
-        position: "Product Manager",
-        company: "Airbnb",
-        location: "San Francisco, CA", 
-        period: "Mar 2019 - Dec 2020",
-        achievements: [
-          "Managed host onboarding flow serving 500K+ new hosts annually",
-          "Improved conversion rates by 60% through data-driven A/B testing",
-          "Collaborated with international teams across 15+ countries"
-        ]
-      },
-      {
-        position: "Associate Product Manager",
-        company: "Google",
-        location: "Mountain View, CA",
-        period: "Jun 2018 - Feb 2019", 
-        achievements: [
-          "Shipped 5 consumer features reaching 100M+ users globally",
-          "Reduced load times by 40% through performance optimization"
-        ]
-      }
-    ],
-    skills: [
-      { name: "Product Strategy", level: 95, category: "Leadership" },
-      { name: "Data Analysis", level: 90, category: "Technical" },
-      { name: "User Research", level: 85, category: "Research" },
-      { name: "SQL", level: 80, category: "Technical" },
-      { name: "A/B Testing", level: 90, category: "Analytics" },
-      { name: "Agile/Scrum", level: 85, category: "Process" },
-      { name: "Cross-functional Leadership", level: 95, category: "Leadership" },
-      { name: "Market Research", level: 80, category: "Strategy" }
-    ],
-    education: [
-      {
-        degree: "MBA, Technology Management",
-        school: "Stanford Graduate School of Business",
-        year: "2018",
-        details: "Dean's List, Product Management Fellow"
-      },
-      {
-        degree: "BS, Computer Science",
-        school: "UC Berkeley",
-        year: "2016", 
-        details: "Summa Cum Laude, Phi Beta Kappa"
-      }
-    ],
-    certifications: [
-      "Certified Product Manager (CPM)",
-      "Google Analytics Certified",
-      "AWS Cloud Practitioner"
-    ]
+// Realistic sample profile
+const sampleProfile = {
+  name: "Sarah Mitchell",
+  title: "Senior Business Analyst",
+  initials: "SM",
+  contact: {
+    phone: "(555) 123-4567",
+    email: "sarah.mitchell@email.com",
+    address: "New York, NY",
+    linkedin: "linkedin.com/in/sarahmitchell"
   },
-  {
-    name: "Marcus Rodriguez",
-    title: "Creative Director & Brand Strategist", 
-    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face&auto=format&q=80",
-    contact: {
-      phone: "+1 (555) 987-6543",
-      email: "marcus.rodriguez@creative.co",
-      address: "New York, NY",
-      linkedin: "linkedin.com/in/marcusrodriguez",
-      website: "marcusdesigns.co"
+  summary: "Results-driven Business Analyst with 6+ years of experience optimizing business processes and driving data-driven decision making. Proven track record of reducing operational costs by 25% and improving efficiency across cross-functional teams.",
+  experience: [
+    {
+      position: "Senior Business Analyst",
+      company: "Goldman Sachs",
+      period: "2021 - Present",
+      achievements: [
+        "Led process optimization initiatives reducing operational costs by 25%",
+        "Managed cross-functional teams of 8+ members across 3 departments",
+        "Implemented automated reporting systems saving 40+ hours monthly"
+      ]
     },
-    summary: "Award-winning creative director with 10+ years crafting compelling brand narratives for Fortune 500 companies. Specialized in digital-first campaigns that drive measurable business impact and cultural resonance.",
-    experience: [
-      {
-        position: "Creative Director",
-        company: "Ogilvy & Mather",
-        location: "New York, NY",
-        period: "Mar 2020 - Present",
-        achievements: [
-          "Led creative vision for 20+ global brands including Nike, Coca-Cola",
-          "Won 5 Cannes Lions and 3 D&AD Pencils for breakthrough campaigns",
-          "Increased client retention rate by 40% through innovative solutions",
-          "Managed creative team of 25+ designers, copywriters, and strategists"
-        ]
-      },
-      {
-        position: "Senior Art Director",
-        company: "BBDO Worldwide",
-        location: "New York, NY",
-        period: "Jan 2018 - Feb 2020",
-        achievements: [
-          "Created integrated campaigns generating $100M+ in media value",
-          "Led digital transformation initiatives for traditional clients",
-          "Increased social engagement by 300% through viral content strategy"
-        ]
-      }
-    ],
-    skills: [
-      { name: "Brand Strategy", level: 95, category: "Strategy" },
-      { name: "Creative Direction", level: 95, category: "Creative" },
-      { name: "Adobe Creative Suite", level: 90, category: "Technical" },
-      { name: "Campaign Development", level: 90, category: "Marketing" },
-      { name: "Team Leadership", level: 85, category: "Leadership" },
-      { name: "Digital Marketing", level: 85, category: "Marketing" }
-    ],
-    education: [
-      {
-        degree: "MFA, Graphic Design",
-        school: "Parsons School of Design",
-        year: "2014",
-        details: "Outstanding Achievement Award"
-      }
-    ],
-    certifications: [
-      "Google Ads Certified",
-      "Facebook Blueprint Certified"
-    ]
-  }
-];
+    {
+      position: "Business Analyst",
+      company: "JPMorgan Chase", 
+      period: "2019 - 2021",
+      achievements: [
+        "Developed automated reporting systems improving accuracy by 35%",
+        "Collaborated with stakeholders to define business requirements",
+        "Led data analysis projects resulting in $2M cost savings"
+      ]
+    }
+  ],
+  skills: [
+    { name: "Business Analysis", level: 95 },
+    { name: "Data Analysis", level: 90 },
+    { name: "SQL", level: 85 },
+    { name: "Project Management", level: 88 },
+    { name: "Process Optimization", level: 92 },
+    { name: "Stakeholder Management", level: 90 }
+  ],
+  education: [
+    {
+      degree: "MBA, Finance",
+      school: "Wharton School",
+      year: "2019",
+      details: "Magna Cum Laude"
+    },
+    {
+      degree: "BS, Economics", 
+      school: "NYU Stern",
+      year: "2017"
+    }
+  ]
+};
 
-// World-class template definitions
-const worldClassTemplates: WorldClassTemplate[] = [
+// Professional template definitions with ATS focus
+const professionalTemplates: ProfessionalTemplate[] = [
   {
-    id: 'executive-sapphire',
-    name: 'Executive Sapphire',
-    description: 'Premium executive template with sophisticated navy design and elegant gold accents',
-    category: 'executive',
-    features: ['Premium Design', 'Executive Layout', 'Gold Accents', 'Photo Integration'],
-    difficulty: 'intermediate',
-    estimatedTime: '20 minutes',
+    id: 'ats-professional',
+    name: 'ATS Professional',
+    description: 'Clean, ATS-optimized template designed to pass through applicant tracking systems',
+    category: 'ats-optimized',
+    features: ['ATS Optimized', 'Clean Layout', 'Standard Fonts', 'Simple Structure'],
+    difficulty: 'beginner',
+    estimatedTime: '10 minutes',
     popularity: 98,
-    tags: ['executive', 'premium', 'sophisticated', 'corporate'],
+    tags: ['ats', 'professional', 'clean', 'optimized'],
     isPopular: true,
-    isPremium: true,
-    layoutType: 'executive-premium',
+    isATSFriendly: true,
+    layoutType: 'ats-single-column',
     colorScheme: {
-      primary: '#1e2a4a',
-      secondary: '#2c3e60',
-      accent: '#d4af37',
-      text: '#2c3e60',
+      primary: '#2563eb',
+      secondary: '#1e40af', 
+      accent: '#3b82f6',
+      text: '#1f2937',
       background: '#ffffff',
-      surface: '#f8f9fb'
-    },
-    typography: {
-      headingFont: 'Playfair Display',
-      bodyFont: 'Inter',
-      accentFont: 'Montserrat'
+      surface: '#f8fafc'
     }
   },
   {
-    id: 'modern-aurora',
-    name: 'Modern Aurora',
-    description: 'Contemporary design with gradient accents and clean typography for tech professionals',
-    category: 'modern',
-    features: ['Gradient Design', 'Modern Layout', 'Tech Optimized', 'ATS Friendly'],
-    difficulty: 'beginner',
-    estimatedTime: '15 minutes',
-    popularity: 94,
-    tags: ['modern', 'tech', 'gradient', 'contemporary'],
-    isPopular: true,
-    layoutType: 'modern-gradient',
-    colorScheme: {
-      primary: '#667eea',
-      secondary: '#764ba2',
-      accent: '#f093fb',
-      text: '#2d3748',
-      background: '#ffffff',
-      surface: '#f7fafc'
-    },
-    typography: {
-      headingFont: 'Inter',
-      bodyFont: 'Inter',
-      accentFont: 'Inter'
-    }
-  },
-  {
-    id: 'creative-prism',
-    name: 'Creative Prism',
-    description: 'Bold creative template with vibrant colors and asymmetric design for creative professionals',
-    category: 'creative',
-    features: ['Vibrant Colors', 'Asymmetric Layout', 'Portfolio Focus', 'Creative Sections'],
-    difficulty: 'advanced',
-    estimatedTime: '25 minutes',
-    popularity: 89,
-    tags: ['creative', 'colorful', 'asymmetric', 'portfolio'],
-    isNew: true,
-    layoutType: 'creative-asymmetric',
-    colorScheme: {
-      primary: '#e53e3e',
-      secondary: '#dd6b20',
-      accent: '#38b2ac',
-      text: '#2d3748',
-      background: '#ffffff',
-      surface: '#fff5f5'
-    },
-    typography: {
-      headingFont: 'Oswald',
-      bodyFont: 'Source Sans Pro',
-      accentFont: 'Poppins'
-    }
-  },
-  {
-    id: 'minimal-zen',
-    name: 'Minimal Zen',
-    description: 'Ultra-clean minimalist design focusing on typography and whitespace',
-    category: 'minimal',
-    features: ['Ultra Clean', 'Typography Focus', 'Whitespace Design', 'Elegant'],
-    difficulty: 'beginner',
-    estimatedTime: '12 minutes',
-    popularity: 91,
-    tags: ['minimal', 'clean', 'typography', 'elegant'],
-    layoutType: 'minimal-clean',
-    colorScheme: {
-      primary: '#2d3748',
-      secondary: '#4a5568',
-      accent: '#718096',
-      text: '#2d3748',
-      background: '#ffffff',
-      surface: '#fafafa'
-    },
-    typography: {
-      headingFont: 'Crimson Text',
-      bodyFont: 'Source Sans Pro',
-      accentFont: 'Lato'
-    }
-  },
-  {
-    id: 'bold-impact',
-    name: 'Bold Impact',
-    description: 'High-impact design with strong visual hierarchy for competitive industries',
-    category: 'bold',
-    features: ['High Impact', 'Strong Hierarchy', 'Competitive Edge', 'Results Focus'],
+    id: 'executive-premium',
+    name: 'Executive Premium',
+    description: 'Sophisticated executive template with professional styling and visual impact',
+    category: 'executive',
+    features: ['Executive Style', 'Professional Photo', 'Premium Design', 'Leadership Focus'],
     difficulty: 'intermediate',
     estimatedTime: '18 minutes',
-    popularity: 87,
-    tags: ['bold', 'impact', 'competitive', 'strong'],
-    isNew: true,
-    layoutType: 'bold-hierarchy',
+    popularity: 94,
+    tags: ['executive', 'premium', 'leadership', 'professional'],
+    isPremium: true,
+    isATSFriendly: false,
+    layoutType: 'executive-two-column',
     colorScheme: {
-      primary: '#1a202c',
-      secondary: '#2d3748',
-      accent: '#ed8936',
-      text: '#1a202c',
+      primary: '#1e293b',
+      secondary: '#334155',
+      accent: '#0ea5e9',
+      text: '#0f172a', 
       background: '#ffffff',
-      surface: '#f7fafc'
-    },
-    typography: {
-      headingFont: 'Montserrat',
-      bodyFont: 'Open Sans',
-      accentFont: 'Roboto'
+      surface: '#f1f5f9'
+    }
+  },
+  {
+    id: 'modern-tech',
+    name: 'Modern Tech',
+    description: 'Contemporary design perfect for technology and startup professionals',
+    category: 'modern',
+    features: ['Modern Design', 'Tech Optimized', 'Skills Focus', 'Project Showcase'],
+    difficulty: 'intermediate',
+    estimatedTime: '15 minutes',
+    popularity: 91,
+    tags: ['modern', 'tech', 'startup', 'skills'],
+    isNew: true,
+    isATSFriendly: true,
+    layoutType: 'modern-hybrid',
+    colorScheme: {
+      primary: '#059669',
+      secondary: '#047857',
+      accent: '#10b981',
+      text: '#1f2937',
+      background: '#ffffff',
+      surface: '#f0fdf4'
+    }
+  },
+  {
+    id: 'creative-professional',
+    name: 'Creative Professional',
+    description: 'Balanced creative design that maintains professional standards',
+    category: 'creative',
+    features: ['Creative Elements', 'Professional Balance', 'Visual Appeal', 'Brand Integration'],
+    difficulty: 'advanced',
+    estimatedTime: '22 minutes',
+    popularity: 86,
+    tags: ['creative', 'design', 'marketing', 'visual'],
+    isATSFriendly: false,
+    layoutType: 'creative-balanced',
+    colorScheme: {
+      primary: '#7c3aed',
+      secondary: '#6d28d9',
+      accent: '#a78bfa',
+      text: '#1f2937',
+      background: '#ffffff',
+      surface: '#faf5ff'
+    }
+  },
+  {
+    id: 'minimal-elegant',
+    name: 'Minimal Elegant',
+    description: 'Clean, minimal design focusing on content and readability',
+    category: 'minimal',
+    features: ['Minimal Design', 'Clean Typography', 'Content Focus', 'Elegant Spacing'],
+    difficulty: 'beginner',
+    estimatedTime: '12 minutes',
+    popularity: 89,
+    tags: ['minimal', 'clean', 'elegant', 'simple'],
+    isATSFriendly: true,
+    layoutType: 'minimal-single',
+    colorScheme: {
+      primary: '#374151',
+      secondary: '#4b5563',
+      accent: '#6b7280',
+      text: '#1f2937',
+      background: '#ffffff',
+      surface: '#f9fafb'
     }
   }
 ];
 
-// World-class preview components
-const ExecutiveSapphirePreview = ({ profile, template }) => (
-  <div className="w-full h-full bg-white shadow-2xl overflow-hidden" style={{ fontFamily: template.typography.bodyFont, fontSize: '9px', lineHeight: '1.4' }}>
-    {/* Header with photo and name */}
-    <div className="relative" style={{ background: `linear-gradient(135deg, ${template.colorScheme.primary} 0%, ${template.colorScheme.secondary} 100%)` }}>
-      <div className="flex items-center p-6 text-white">
-        <div className="w-20 h-20 rounded-full overflow-hidden mr-6 border-4" style={{ borderColor: template.colorScheme.accent }}>
-          <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
+// ATS-Optimized Preview Component
+const ATSProfessionalPreview = ({ profile, template }) => (
+  <div className="w-full h-full bg-white shadow-lg border border-gray-200 overflow-hidden" style={{ fontSize: '8px', lineHeight: '1.3' }}>
+    <div className="p-4 space-y-4">
+      {/* Header - ATS Friendly */}
+      <div className="text-center border-b border-gray-300 pb-3">
+        <h1 className="text-lg font-bold mb-1" style={{ color: template.colorScheme.primary }}>
+          {profile.name.toUpperCase()}
+        </h1>
+        <h2 className="text-sm font-semibold text-gray-700 mb-2">{profile.title}</h2>
+        <div className="text-xs text-gray-600 space-y-1">
+          <div>{profile.contact.phone} | {profile.contact.email}</div>
+          <div>{profile.contact.address} | {profile.contact.linkedin}</div>
         </div>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: template.typography.headingFont, color: template.colorScheme.accent }}>
-            {profile.name}
-          </h1>
-          <h2 className="text-lg opacity-90 mb-2">{profile.title}</h2>
-          <div className="flex items-center gap-4 text-xs opacity-75">
-            <span className="flex items-center gap-1">
-              <Phone className="w-3 h-3" />
-              {profile.contact.phone}
-            </span>
-            <span className="flex items-center gap-1">
-              <Mail className="w-3 h-3" />
-              {profile.contact.email}
-            </span>
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              {profile.contact.address}
-            </span>
+      </div>
+
+      {/* Professional Summary */}
+      <div>
+        <h3 className="text-sm font-bold mb-2" style={{ color: template.colorScheme.primary }}>
+          PROFESSIONAL SUMMARY
+        </h3>
+        <p className="text-xs leading-relaxed text-gray-700">{profile.summary}</p>
+      </div>
+
+      {/* Professional Experience */}
+      <div>
+        <h3 className="text-sm font-bold mb-2" style={{ color: template.colorScheme.primary }}>
+          PROFESSIONAL EXPERIENCE
+        </h3>
+        <div className="space-y-3">
+          {profile.experience.map((exp, idx) => (
+            <div key={idx}>
+              <div className="flex justify-between items-start mb-1">
+                <div>
+                  <h4 className="font-bold text-xs">{exp.position}</h4>
+                  <p className="text-xs font-semibold text-gray-700">{exp.company}</p>
+                </div>
+                <span className="text-xs text-gray-600">{exp.period}</span>
+              </div>
+              <ul className="text-xs text-gray-600 space-y-0.5 ml-3">
+                {exp.achievements.slice(0, 2).map((achievement, i) => (
+                  <li key={i} className="list-disc">• {achievement}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Skills - ATS Friendly List */}
+      <div>
+        <h3 className="text-sm font-bold mb-2" style={{ color: template.colorScheme.primary }}>
+          CORE COMPETENCIES
+        </h3>
+        <div className="text-xs text-gray-700">
+          {profile.skills.map(skill => skill.name).join(' • ')}
+        </div>
+      </div>
+
+      {/* Education */}
+      <div>
+        <h3 className="text-sm font-bold mb-2" style={{ color: template.colorScheme.primary }}>
+          EDUCATION
+        </h3>
+        <div className="space-y-1">
+          {profile.education.map((edu, idx) => (
+            <div key={idx} className="text-xs">
+              <div className="font-semibold">{edu.degree}</div>
+              <div className="text-gray-700">{edu.school}, {edu.year}</div>
+              {edu.details && <div className="text-gray-600">{edu.details}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Executive Two-Column Preview
+const ExecutivePremiumPreview = ({ profile, template }) => (
+  <div className="w-full h-full bg-white shadow-lg overflow-hidden" style={{ fontSize: '8px', lineHeight: '1.3' }}>
+    <div className="flex h-full">
+      {/* Left sidebar */}
+      <div className="w-1/3 p-3 text-white" style={{ backgroundColor: template.colorScheme.primary }}>
+        <div className="text-center mb-4">
+          <div className="w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-lg font-bold" 
+               style={{ backgroundColor: template.colorScheme.accent }}>
+            {profile.initials}
+          </div>
+          <h1 className="font-bold text-sm leading-tight">{profile.name}</h1>
+          <p className="text-xs opacity-90 mt-1">{profile.title}</p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold text-xs mb-2">CONTACT</h3>
+            <div className="text-xs space-y-1 opacity-90">
+              <div className="flex items-center gap-1">
+                <Phone className="w-2 h-2" />
+                <span>{profile.contact.phone}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Mail className="w-2 h-2" />
+                <span className="break-all">{profile.contact.email}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MapPin className="w-2 h-2" />
+                <span>{profile.contact.address}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-xs mb-2">SKILLS</h3>
+            <div className="space-y-2">
+              {profile.skills.slice(0, 6).map((skill, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span>{skill.name}</span>
+                    <span>{skill.level}%</span>
+                  </div>
+                  <div className="w-full bg-white/30 rounded-full h-1">
+                    <div 
+                      className="h-1 rounded-full" 
+                      style={{ backgroundColor: template.colorScheme.accent, width: `${skill.level}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-      <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-        <div className="w-full h-full border-4 rounded-full" style={{ borderColor: template.colorScheme.accent }}></div>
-      </div>
-    </div>
 
-    <div className="flex">
-      {/* Left column */}
-      <div className="w-2/3 p-6 space-y-6">
-        {/* Executive Summary */}
+      {/* Right content */}
+      <div className="flex-1 p-3 space-y-4">
         <div>
-          <h3 className="text-sm font-bold mb-3 flex items-center gap-2" 
-              style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-            <div className="w-1 h-4" style={{ backgroundColor: template.colorScheme.accent }}></div>
+          <h3 className="font-bold text-xs mb-2" style={{ color: template.colorScheme.primary }}>
             EXECUTIVE SUMMARY
           </h3>
           <p className="text-xs leading-relaxed text-gray-700">{profile.summary}</p>
         </div>
 
-        {/* Professional Experience */}
         <div>
-          <h3 className="text-sm font-bold mb-3 flex items-center gap-2" 
-              style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-            <div className="w-1 h-4" style={{ backgroundColor: template.colorScheme.accent }}></div>
+          <h3 className="font-bold text-xs mb-2" style={{ color: template.colorScheme.primary }}>
             PROFESSIONAL EXPERIENCE
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {profile.experience.map((exp, idx) => (
-              <div key={idx} className="relative pl-4">
-                <div className="absolute left-0 top-1 w-2 h-2 rounded-full" 
-                     style={{ backgroundColor: template.colorScheme.accent }}></div>
-                <div className="flex justify-between items-start mb-2">
+              <div key={idx}>
+                <div className="flex justify-between items-start mb-1">
                   <div>
-                    <h4 className="font-bold text-xs" style={{ color: template.colorScheme.primary }}>
-                      {exp.position}
-                    </h4>
+                    <h4 className="font-bold text-xs">{exp.position}</h4>
                     <p className="text-xs font-semibold" style={{ color: template.colorScheme.accent }}>
                       {exp.company}
                     </p>
-                    <p className="text-xs text-gray-600">{exp.location}</p>
                   </div>
-                  <span className="text-xs px-2 py-1 rounded" 
-                        style={{ backgroundColor: template.colorScheme.surface, color: template.colorScheme.primary }}>
-                    {exp.period}
-                  </span>
+                  <span className="text-xs text-gray-600">{exp.period}</span>
                 </div>
-                <ul className="text-xs text-gray-700 space-y-1">
-                  {exp.achievements.map((achievement, i) => (
-                    <li key={i} className="leading-relaxed">• {achievement}</li>
+                <ul className="text-xs text-gray-600 space-y-0.5">
+                  {exp.achievements.slice(0, 2).map((achievement, i) => (
+                    <li key={i}>• {achievement}</li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Right sidebar */}
-      <div className="w-1/3 p-6 space-y-6" style={{ backgroundColor: template.colorScheme.surface }}>
-        {/* Skills */}
         <div>
-          <h3 className="text-sm font-bold mb-3" 
-              style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-            CORE COMPETENCIES
-          </h3>
-          <div className="space-y-3">
-            {profile.skills.slice(0, 8).map((skill, idx) => (
-              <div key={idx}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-medium">{skill.name}</span>
-                  <span style={{ color: template.colorScheme.accent }}>{skill.level}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{ 
-                      background: `linear-gradient(90deg, ${template.colorScheme.accent} 0%, ${template.colorScheme.primary} 100%)`,
-                      width: `${skill.level}%`
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Education */}
-        <div>
-          <h3 className="text-sm font-bold mb-3" 
-              style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
+          <h3 className="font-bold text-xs mb-2" style={{ color: template.colorScheme.primary }}>
             EDUCATION
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-1">
             {profile.education.map((edu, idx) => (
-              <div key={idx} className="p-3 bg-white rounded-lg shadow-sm border-l-4" 
-                   style={{ borderColor: template.colorScheme.accent }}>
-                <h4 className="font-bold text-xs" style={{ color: template.colorScheme.primary }}>
-                  {edu.degree}
-                </h4>
-                <p className="text-xs text-gray-600">{edu.school}</p>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-500">{edu.year}</span>
-                  {edu.details && (
-                    <span className="text-xs px-2 py-1 rounded-full" 
-                          style={{ backgroundColor: template.colorScheme.accent, color: 'white' }}>
-                      {edu.details.split(',')[0]}
-                    </span>
-                  )}
-                </div>
+              <div key={idx} className="text-xs">
+                <div className="font-semibold">{edu.degree}</div>
+                <div className="text-gray-700">{edu.school} • {edu.year}</div>
               </div>
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+);
 
-        {/* Certifications */}
-        {profile.certifications && (
+// Modern Tech Preview
+const ModernTechPreview = ({ profile, template }) => (
+  <div className="w-full h-full bg-white shadow-lg overflow-hidden" style={{ fontSize: '8px', lineHeight: '1.3' }}>
+    <div className="h-2" style={{ background: `linear-gradient(90deg, ${template.colorScheme.primary}, ${template.colorScheme.accent})` }}></div>
+    
+    <div className="p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+             style={{ backgroundColor: template.colorScheme.primary }}>
+          {profile.initials}
+        </div>
+        <div className="flex-1">
+          <h1 className="text-lg font-bold" style={{ color: template.colorScheme.primary }}>
+            {profile.name}
+          </h1>
+          <h2 className="text-sm text-gray-700">{profile.title}</h2>
+          <div className="text-xs text-gray-600 mt-1">
+            {profile.contact.email} | {profile.contact.phone} | {profile.contact.address}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        {/* Main content */}
+        <div className="col-span-2 space-y-3">
           <div>
-            <h3 className="text-sm font-bold mb-3" 
-                style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-              CERTIFICATIONS
+            <h3 className="font-bold text-xs mb-2 flex items-center gap-2" style={{ color: template.colorScheme.primary }}>
+              <User className="w-3 h-3" />
+              PROFESSIONAL SUMMARY
+            </h3>
+            <p className="text-xs leading-relaxed text-gray-700">{profile.summary}</p>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-xs mb-2 flex items-center gap-2" style={{ color: template.colorScheme.primary }}>
+              <Award className="w-3 h-3" />
+              EXPERIENCE
             </h3>
             <div className="space-y-2">
-              {profile.certifications.map((cert, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <Award className="w-3 h-3" style={{ color: template.colorScheme.accent }} />
-                  <span className="text-xs text-gray-700">{cert}</span>
+              {profile.experience.map((exp, idx) => (
+                <div key={idx} className="border-l-2 pl-3" style={{ borderColor: template.colorScheme.accent }}>
+                  <div className="flex justify-between items-start mb-1">
+                    <div>
+                      <h4 className="font-bold text-xs">{exp.position}</h4>
+                      <p className="text-xs text-gray-700">{exp.company}</p>
+                    </div>
+                    <span className="text-xs px-2 py-1 rounded text-white" style={{ backgroundColor: template.colorScheme.primary }}>
+                      {exp.period}
+                    </span>
+                  </div>
+                  <ul className="text-xs text-gray-600 space-y-0.5">
+                    {exp.achievements.slice(0, 2).map((achievement, i) => (
+                      <li key={i}>• {achievement}</li>
+                    ))}
+                  </ul>
                 </div>
               ))}
             </div>
           </div>
-        )}
-
-        {/* Contact Links */}
-        <div>
-          <h3 className="text-sm font-bold mb-3" 
-              style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-            CONNECT
-          </h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Linkedin className="w-3 h-3" style={{ color: template.colorScheme.accent }} />
-              <span className="text-xs text-gray-700">{profile.contact.linkedin}</span>
-            </div>
-            {profile.contact.website && (
-              <div className="flex items-center gap-2">
-                <Globe className="w-3 h-3" style={{ color: template.colorScheme.accent }} />
-                <span className="text-xs text-gray-700">{profile.contact.website}</span>
-              </div>
-            )}
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
-);
 
-const ModernAuroraPreview = ({ profile, template }) => (
-  <div className="w-full h-full bg-white shadow-2xl overflow-hidden" style={{ fontFamily: template.typography.bodyFont, fontSize: '9px', lineHeight: '1.4' }}>
-    {/* Gradient header */}
-    <div className="relative h-16" style={{ 
-      background: `linear-gradient(135deg, ${template.colorScheme.primary} 0%, ${template.colorScheme.secondary} 100%)` 
-    }}>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10"></div>
-    </div>
-
-    <div className="relative -mt-8 mx-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-white shadow-lg">
-            <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold mb-1" 
-                style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-              {profile.name}
-            </h1>
-            <h2 className="text-sm font-medium mb-2" 
-                style={{ color: template.colorScheme.secondary }}>
-              {profile.title}
-            </h2>
-            <div className="flex flex-wrap gap-3 text-xs text-gray-600">
-              <span className="flex items-center gap-1">
-                <Mail className="w-3 h-3" />
-                {profile.contact.email}
-              </span>
-              <span className="flex items-center gap-1">
-                <Phone className="w-3 h-3" />
-                {profile.contact.phone}
-              </span>
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {profile.contact.address}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div className="flex mt-6 gap-6 px-6 pb-6">
-      {/* Main content */}
-      <div className="flex-1 space-y-6">
-        {/* Summary */}
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
-                 style={{ background: `linear-gradient(135deg, ${template.colorScheme.primary}, ${template.colorScheme.accent})` }}>
-              <User className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-sm font-bold" 
-                style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-              PROFILE OVERVIEW
+        {/* Sidebar */}
+        <div className="space-y-3">
+          <div className="p-3 rounded-lg" style={{ backgroundColor: template.colorScheme.surface }}>
+            <h3 className="font-bold text-xs mb-2" style={{ color: template.colorScheme.primary }}>
+              TECHNICAL SKILLS
             </h3>
-          </div>
-          <p className="text-xs leading-relaxed text-gray-700 pl-11">{profile.summary}</p>
-        </div>
-
-        {/* Experience */}
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" 
-                 style={{ background: `linear-gradient(135deg, ${template.colorScheme.secondary}, ${template.colorScheme.accent})` }}>
-              <Award className="w-4 h-4 text-white" />
-            </div>
-            <h3 className="text-sm font-bold" 
-                style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-              PROFESSIONAL EXPERIENCE
-            </h3>
-          </div>
-          <div className="pl-11 space-y-4">
-            {profile.experience.map((exp, idx) => (
-              <div key={idx} className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-100">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="font-bold text-xs mb-1" style={{ color: template.colorScheme.primary }}>
-                      {exp.position}
-                    </h4>
-                    <p className="text-xs font-semibold" style={{ color: template.colorScheme.secondary }}>
-                      {exp.company} • {exp.location}
-                    </p>
+            <div className="space-y-2">
+              {profile.skills.slice(0, 5).map((skill, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="font-medium">{skill.name}</span>
+                    <span>{skill.level}%</span>
                   </div>
-                  <span className="text-xs px-3 py-1 rounded-full text-white"
-                        style={{ background: `linear-gradient(135deg, ${template.colorScheme.primary}, ${template.colorScheme.accent})` }}>
-                    {exp.period}
-                  </span>
+                  <div className="w-full bg-gray-200 rounded-full h-1">
+                    <div 
+                      className="h-1 rounded-full" 
+                      style={{ backgroundColor: template.colorScheme.accent, width: `${skill.level}%` }}
+                    />
+                  </div>
                 </div>
-                <ul className="text-xs text-gray-700 space-y-1 mt-3">
-                  {exp.achievements.slice(0, 3).map((achievement, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
-                           style={{ backgroundColor: template.colorScheme.accent }}></div>
-                      <span className="leading-relaxed">{achievement}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Sidebar */}
-      <div className="w-80 space-y-6">
-        {/* Skills */}
-        <div className="bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-100">
-          <h3 className="text-sm font-bold mb-4" 
-              style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-            TECHNICAL EXPERTISE
-          </h3>
-          <div className="space-y-3">
-            {profile.skills.slice(0, 6).map((skill, idx) => (
-              <div key={idx}>
-                <div className="flex justify-between text-xs mb-2">
-                  <span className="font-medium">{skill.name}</span>
-                  <span style={{ color: template.colorScheme.primary }}>{skill.level}%</span>
-                </div>
-                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ 
-                      background: `linear-gradient(90deg, ${template.colorScheme.primary}, ${template.colorScheme.accent})`,
-                      width: `${skill.level}%`
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Education */}
-        <div className="bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-100">
-          <h3 className="text-sm font-bold mb-4" 
-              style={{ color: template.colorScheme.primary, fontFamily: template.typography.headingFont }}>
-            EDUCATION
-          </h3>
-          <div className="space-y-4">
-            {profile.education.map((edu, idx) => (
-              <div key={idx} className="relative">
-                <div className="absolute left-0 top-1 w-3 h-3 rounded-full border-2 border-white"
-                     style={{ backgroundColor: template.colorScheme.accent }}></div>
-                <div className="pl-5">
-                  <h4 className="font-bold text-xs" style={{ color: template.colorScheme.primary }}>
-                    {edu.degree}
-                  </h4>
+          <div className="p-3 rounded-lg" style={{ backgroundColor: template.colorScheme.surface }}>
+            <h3 className="font-bold text-xs mb-2" style={{ color: template.colorScheme.primary }}>
+              EDUCATION
+            </h3>
+            <div className="space-y-2">
+              {profile.education.map((edu, idx) => (
+                <div key={idx}>
+                  <h4 className="font-bold text-xs">{edu.degree}</h4>
                   <p className="text-xs text-gray-600">{edu.school}</p>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-gray-500">{edu.year}</span>
-                    {edu.details && (
-                      <span className="text-xs px-2 py-1 rounded-full" 
-                            style={{ backgroundColor: `${template.colorScheme.accent}20`, color: template.colorScheme.primary }}>
-                        {edu.details.split(',')[0]}
-                      </span>
-                    )}
-                  </div>
+                  <p className="text-xs text-gray-500">{edu.year}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -663,64 +493,124 @@ const ModernAuroraPreview = ({ profile, template }) => (
   </div>
 );
 
-// Template Card Component with enhanced previews
-const WorldClassTemplateCard = memo(({ template, profile, onSelect, onPreview }) => {
+// Preview Modal Component
+const PreviewModal = ({ template, isOpen, onClose, onSelect }) => {
+  if (!isOpen) return null;
+
+  const renderFullPreview = () => {
+    const props = { profile: sampleProfile, template };
+    
+    switch (template.layoutType) {
+      case 'ats-single-column':
+        return <ATSProfessionalPreview {...props} />;
+      case 'executive-two-column':
+        return <ExecutivePremiumPreview {...props} />;
+      case 'modern-hybrid':
+        return <ModernTechPreview {...props} />;
+      default:
+        return <ATSProfessionalPreview {...props} />;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              {template.name}
+              {template.isATSFriendly && (
+                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  ATS Friendly
+                </span>
+              )}
+            </h2>
+            <p className="text-gray-600">{template.description}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onSelect(template)}
+              className="px-6 py-2 rounded-lg font-medium flex items-center gap-2 text-white"
+              style={{ backgroundColor: template.colorScheme.primary }}
+            >
+              <Download className="w-4 h-4" />
+              Use This Template
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Preview Content */}
+        <div className="flex-1 overflow-auto p-6 bg-gray-100">
+          <div className="max-w-2xl mx-auto" style={{ aspectRatio: '8.5/11' }}>
+            {renderFullPreview()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Enhanced Template Card Component
+const ProfessionalTemplateCard = memo(({ template, onSelect, onPreview }) => {
   const [isHovered, setIsHovered] = useState(false);
   
   const renderPreview = () => {
-    const props = { profile, template };
+    const props = { profile: sampleProfile, template };
     
     switch (template.layoutType) {
-      case 'executive-premium':
-        return <ExecutiveSapphirePreview {...props} />;
-      case 'modern-gradient':
-        return <ModernAuroraPreview {...props} />;
+      case 'ats-single-column':
+        return <ATSProfessionalPreview {...props} />;
+      case 'executive-two-column':
+        return <ExecutivePremiumPreview {...props} />;
+      case 'modern-hybrid':
+        return <ModernTechPreview {...props} />;
       default:
-        return <ExecutiveSapphirePreview {...props} />;
+        return <ATSProfessionalPreview {...props} />;
     }
   };
 
   return (
     <div 
-      className={`group relative bg-white border-2 rounded-3xl overflow-hidden transition-all duration-500 cursor-pointer
-        hover:shadow-2xl hover:shadow-gray-200/60 hover:-translate-y-2 
-        ${isHovered ? 'transform -translate-y-2 shadow-2xl border-gray-300' : 'border-gray-100 shadow-lg'}`}
+      className={`group relative bg-white border-2 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer
+        hover:shadow-xl hover:-translate-y-2 
+        ${isHovered ? 'transform -translate-y-2 shadow-xl border-gray-300' : 'border-gray-200 shadow-md'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onSelect(template)}
     >
       {/* Template Preview */}
-      <div className="aspect-[3/4] bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
-        <div className="w-full h-full transform transition-all duration-500 group-hover:scale-110">
+      <div className="aspect-[3/4] bg-gray-50 relative overflow-hidden">
+        <div className="w-full h-full transform transition-transform duration-300 group-hover:scale-105">
           {renderPreview()}
         </div>
         
-        {/* Premium overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        
-        {/* Enhanced hover overlay */}
-        <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all duration-300 ${
+        {/* Hover Overlay */}
+        <div className={`absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300 ${
           isHovered ? 'opacity-100' : 'opacity-0'
         }`}>
-          <div className="flex space-x-4">
-            {onPreview && (
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPreview(template);
-                }}
-                className="bg-white/90 backdrop-blur text-gray-900 px-6 py-3 rounded-xl font-medium flex items-center space-x-2 hover:bg-white transition-all transform hover:scale-105 shadow-lg"
-              >
-                <Eye className="w-4 h-4" />
-                <span>Full Preview</span>
-              </button>
-            )}
+          <div className="flex space-x-3">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreview(template);
+              }}
+              className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
+            >
+              <Eye className="w-4 h-4" />
+              <span>Full Preview</span>
+            </button>
             <button 
               onClick={() => onSelect(template)}
-              className="px-6 py-3 rounded-xl font-medium flex items-center space-x-2 transition-all transform hover:scale-105 text-white shadow-lg"
-              style={{ 
-                background: `linear-gradient(135deg, ${template.colorScheme.primary}, ${template.colorScheme.accent})` 
-              }}
+              className="px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:opacity-90 transition-colors text-white"
+              style={{ backgroundColor: template.colorScheme.primary }}
             >
               <Download className="w-4 h-4" />
               <span>Use Template</span>
@@ -728,79 +618,73 @@ const WorldClassTemplateCard = memo(({ template, profile, onSelect, onPreview })
           </div>
         </div>
 
-        {/* Enhanced badges */}
-        <div className="absolute top-4 left-4 flex space-x-2">
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex space-x-2">
+          {template.isATSFriendly && (
+            <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center space-x-1">
+              <Shield className="w-3 h-3" />
+              <span>ATS</span>
+            </span>
+          )}
           {template.isPremium && (
-            <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900 text-xs px-3 py-2 rounded-full font-bold flex items-center space-x-1 shadow-lg">
+            <span className="bg-yellow-500 text-yellow-900 text-xs px-2 py-1 rounded-full font-medium flex items-center space-x-1">
               <Star className="w-3 h-3 fill-current" />
-              <span>PREMIUM</span>
+              <span>Premium</span>
             </span>
           )}
           {template.isPopular && !template.isPremium && (
-            <span className="bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs px-3 py-2 rounded-full font-bold flex items-center space-x-1 shadow-lg">
+            <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center space-x-1">
               <Sparkles className="w-3 h-3" />
-              <span>POPULAR</span>
+              <span>Popular</span>
             </span>
           )}
           {template.isNew && (
-            <span className="bg-gradient-to-r from-green-400 to-emerald-500 text-white text-xs px-3 py-2 rounded-full font-bold shadow-lg">
-              NEW
+            <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+              New
             </span>
           )}
         </div>
-
-        {/* Category indicator */}
-        <div className="absolute bottom-4 left-4">
-          <span className="bg-black/70 backdrop-blur text-white text-xs px-3 py-2 rounded-full font-medium capitalize shadow-lg">
-            {template.category}
-          </span>
-        </div>
       </div>
 
-      {/* Enhanced template info */}
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
+      {/* Template Info */}
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
-            <h3 className="font-bold text-lg text-gray-900 mb-2" style={{ fontFamily: template.typography.headingFont }}>
-              {template.name}
-            </h3>
-            <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
-              {template.description}
-            </p>
+            <h3 className="font-bold text-lg text-gray-900 mb-1">{template.name}</h3>
+            <p className="text-sm text-gray-600 line-clamp-2">{template.description}</p>
           </div>
         </div>
 
-        {/* Enhanced metadata */}
-        <div className="flex items-center justify-between text-sm mb-4">
+        {/* Features and Metadata */}
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-gray-500">
+            <span className="flex items-center gap-1 text-sm text-gray-500">
               <Clock className="w-4 h-4" />
               {template.estimatedTime}
             </span>
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 fill-current text-yellow-500" />
-              <span className="text-gray-700 font-medium">{(template.popularity / 10).toFixed(1)}</span>
+              <span className="text-sm font-medium">{(template.popularity / 10).toFixed(1)}</span>
             </div>
           </div>
-          <span className={`px-3 py-1.5 rounded-full font-medium text-xs ${
-            template.difficulty === 'beginner' ? 'bg-green-100 text-green-700 border border-green-200' :
-            template.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
-            'bg-red-100 text-red-700 border border-red-200'
+          <span className={`px-3 py-1 rounded-full font-medium text-xs ${
+            template.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
+            template.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
+            'bg-red-100 text-red-700'
           }`}>
             {template.difficulty}
           </span>
         </div>
 
-        {/* Enhanced features */}
+        {/* Features */}
         <div className="flex flex-wrap gap-2">
           {template.features.slice(0, 4).map((feature, index) => (
             <span
               key={index}
-              className="text-xs px-3 py-1.5 rounded-full font-medium border transition-colors hover:scale-105"
+              className="text-xs px-2 py-1 rounded-full font-medium"
               style={{ 
-                backgroundColor: `${template.colorScheme.primary}10`,
-                color: template.colorScheme.primary,
-                borderColor: `${template.colorScheme.primary}30`
+                backgroundColor: `${template.colorScheme.primary}15`,
+                color: template.colorScheme.primary
               }}
             >
               {feature}
@@ -813,13 +697,13 @@ const WorldClassTemplateCard = memo(({ template, profile, onSelect, onPreview })
 });
 
 // Main Gallery Component
-const WorldClassTemplateGallery = ({ onTemplateSelect, onBack }) => {
+const ProfessionalTemplateGallery = ({ onTemplateSelect, onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedProfile, setSelectedProfile] = useState(premiumProfiles[0]);
+  const [previewTemplate, setPreviewTemplate] = useState(null);
   
   const filteredTemplates = useMemo(() => {
-    let filtered = worldClassTemplates;
+    let filtered = professionalTemplates;
     
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(template => template.category === selectedCategory);
@@ -834,75 +718,62 @@ const WorldClassTemplateGallery = ({ onTemplateSelect, onBack }) => {
       );
     }
     
+    // Sort ATS-friendly templates first, then by popularity
     return filtered.sort((a, b) => {
-      // Sort by premium first, then popularity
-      if (a.isPremium && !b.isPremium) return -1;
-      if (!a.isPremium && b.isPremium) return 1;
+      if (a.isATSFriendly && !b.isATSFriendly) return -1;
+      if (!a.isATSFriendly && b.isATSFriendly) return 1;
       return b.popularity - a.popularity;
     });
   }, [searchQuery, selectedCategory]);
 
   const categories = [
-    { id: 'all', name: 'All Templates', count: worldClassTemplates.length },
-    { id: 'executive', name: 'Executive', count: worldClassTemplates.filter(t => t.category === 'executive').length },
-    { id: 'modern', name: 'Modern', count: worldClassTemplates.filter(t => t.category === 'modern').length },
-    { id: 'creative', name: 'Creative', count: worldClassTemplates.filter(t => t.category === 'creative').length },
-    { id: 'minimal', name: 'Minimal', count: worldClassTemplates.filter(t => t.category === 'minimal').length },
-    { id: 'bold', name: 'Bold', count: worldClassTemplates.filter(t => t.category === 'bold').length }
+    { id: 'all', name: 'All Templates', count: professionalTemplates.length },
+    { id: 'ats-optimized', name: 'ATS Optimized', count: professionalTemplates.filter(t => t.category === 'ats-optimized').length },
+    { id: 'executive', name: 'Executive', count: professionalTemplates.filter(t => t.category === 'executive').length },
+    { id: 'modern', name: 'Modern', count: professionalTemplates.filter(t => t.category === 'modern').length },
+    { id: 'creative', name: 'Creative', count: professionalTemplates.filter(t => t.category === 'creative').length },
+    { id: 'minimal', name: 'Minimal', count: professionalTemplates.filter(t => t.category === 'minimal').length }
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Enhanced Header */}
-      <div className="bg-white/80 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-20 shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-6 mb-8">
+      {/* Header */}
+      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center gap-4 mb-6">
             <button
               onClick={onBack}
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors font-medium bg-blue-50 px-4 py-2 rounded-xl hover:bg-blue-100"
             >
               <ChevronLeft className="w-4 h-4" />
-              Back to Dashboard
+              Back
             </button>
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">World-Class CV Templates</h1>
-              <p className="text-gray-600 text-lg">Professional templates designed to make you stand out</p>
+              <h1 className="text-3xl font-bold text-gray-900">Professional CV Templates</h1>
+              <p className="text-gray-600 mt-1">Choose from ATS-optimized and visually stunning templates</p>
             </div>
           </div>
 
-          <div className="flex flex-col xl:flex-row gap-6 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search templates by name, style, or industry..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur text-lg"
-              />
-            </div>
-            <select 
-              value={selectedProfile.name}
-              onChange={(e) => setSelectedProfile(premiumProfiles.find(p => p.name === e.target.value) || premiumProfiles[0])}
-              className="px-6 py-4 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur text-lg min-w-64"
-            >
-              {premiumProfiles.map(profile => (
-                <option key={profile.name} value={profile.name}>
-                  Preview as: {profile.name}
-                </option>
-              ))}
-            </select>
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search templates..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="flex gap-2 overflow-x-auto">
             {categories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-semibold whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-colors ${
                   selectedCategory === category.id
-                    ? 'bg-blue-600 text-white shadow-lg transform scale-105'
-                    : 'bg-white/70 text-gray-700 hover:bg-white hover:shadow-md border border-gray-200'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 <span>{category.name}</span>
@@ -919,22 +790,55 @@ const WorldClassTemplateGallery = ({ onTemplateSelect, onBack }) => {
         </div>
       </div>
 
-      {/* Main Content with enhanced spacing */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+      {/* ATS Notice */}
+      <div className="max-w-7xl mx-auto px-6 pt-6">
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-1">ATS Compatibility Guide</h3>
+              <p className="text-sm text-gray-700 mb-2">
+                Applicant Tracking Systems (ATS) scan resumes before human recruiters see them. Templates marked with 
+                <span className="inline-flex items-center gap-1 mx-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                  <Shield className="w-3 h-3" />
+                  ATS
+                </span> 
+                are optimized for maximum compatibility.
+              </p>
+              <p className="text-xs text-gray-600">
+                <strong>ATS-Friendly:</strong> Simple layouts, standard fonts, clear section headers • 
+                <strong>Creative:</strong> Visual appeal but may have parsing issues
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredTemplates.map((template) => (
-            <WorldClassTemplateCard
+            <ProfessionalTemplateCard
               key={template.id}
               template={template}
-              profile={selectedProfile}
               onSelect={onTemplateSelect}
-              onPreview={() => {}} // Can implement modal preview later
+              onPreview={setPreviewTemplate}
             />
           ))}
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {previewTemplate && (
+        <PreviewModal
+          template={previewTemplate}
+          isOpen={!!previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+          onSelect={onTemplateSelect}
+        />
+      )}
     </div>
   );
 };
 
-export default WorldClassTemplateGallery;
+export default ProfessionalTemplateGallery;
