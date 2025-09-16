@@ -98,3 +98,40 @@ export const getSuggestions = async (field: string, currentValue: string): Promi
     return [];
   }
 };
+
+export const chatWithAssistant = async (message: string, conversationHistory?: Array<{role: string; content: string}>): Promise<string> => {
+  const status = getServiceStatus();
+  if (!status.available) {
+    throw new Error(status.error || 'Chat assistant service is not available');
+  }
+
+  if (!openaiClient) {
+    throw new Error('OpenAI client not initialized');
+  }
+
+  try {
+    const messages = [
+      {
+        role: "system",
+        content: "You are a helpful CV writing assistant. Help users improve their resumes and provide career advice. Be concise, professional, and actionable in your responses."
+      },
+      ...(conversationHistory || []),
+      {
+        role: "user",
+        content: message
+      }
+    ];
+
+    const completion = await openaiClient.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: messages as any,
+      max_tokens: 300,
+      temperature: 0.7
+    });
+
+    return completion.choices[0]?.message?.content || 'I apologize, but I could not generate a response. Please try again.';
+  } catch (error) {
+    console.error('OpenAI chat error:', error);
+    throw new Error('Failed to get response from chat assistant. Please try again later.');
+  }
+};
