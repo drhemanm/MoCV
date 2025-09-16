@@ -6,7 +6,7 @@ import gamificationService from './services/gamificationService';
 
 // Import components (keeping your existing ones)
 import FlowStartScreen from './components/FlowStartScreen';
-import TemplateGallery from './components/TemplateGallery';
+import ProfessionalTemplateGallery from './components/TemplateGallery'; // Updated import
 import CVBuilder from './components/CVBuilder';
 import CVAnalyzer from './components/CVAnalyzer';
 import CVImprover from './components/CVImprover';
@@ -334,11 +334,8 @@ const App: React.FC = () => {
           )}
           
           {currentStep === 'templates' && (
-            <TemplateGallery
-              templates={templates}
-              isLoading={isLoading}
+            <ProfessionalTemplateGallery
               onTemplateSelect={handleTemplateSelect}
-              onTemplatePreview={setPreviewTemplate}
               onBack={navigateBack}
             />
           )}
