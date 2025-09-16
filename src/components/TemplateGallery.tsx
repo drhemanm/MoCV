@@ -1,10 +1,10 @@
-// Advanced TemplateGallery - Complete Fixed Version
+// Advanced TemplateGallery - With Preview Modal Functionality
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import { 
   Search, ChevronLeft, Check, Zap, Palette, Type, Layout, Eye, 
   Heart, Clock, Star, TrendingUp, Download, Filter, Sparkles,
   MapPin, Phone, Mail, Linkedin, Award, Briefcase, GraduationCap,
-  User, Code, Lightbulb, Target, BarChart3
+  User, Code, Lightbulb, Target, BarChart3, X, ChevronRight
 } from 'lucide-react';
 import { CVTemplate } from '../types';
 
@@ -49,7 +49,7 @@ interface EnhancedCVTemplate extends CVTemplate {
     }>;
     skills: Array<{
       name: string;
-      level: number; // 1-5 or percentage
+      level: number;
       category: 'technical' | 'soft' | 'language' | 'tool';
     }>;
     education: Array<{
@@ -64,7 +64,7 @@ interface EnhancedCVTemplate extends CVTemplate {
   secondaryColor: string;
 }
 
-// Realistic template data with actual CV content
+// Realistic template data
 const enhancedTemplates: EnhancedCVTemplate[] = [
   {
     id: 'professional-standard',
@@ -94,7 +94,7 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
       email: 'sarah.mitchell@email.com',
       phone: '(555) 123-4567',
       linkedin: 'linkedin.com/in/sarahmitchell',
-      summary: 'Results-driven Business Analyst with 6+ years of experience in financial services and process optimization.',
+      summary: 'Results-driven Business Analyst with 6+ years of experience in financial services and process optimization. Proven track record of leading cross-functional teams and delivering data-driven solutions.',
       experiences: [
         {
           role: 'Senior Business Analyst',
@@ -102,13 +102,27 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
           duration: '2021 - Present',
           achievements: [
             'Led process optimization initiatives that reduced operational costs by 25%',
-            'Managed cross-functional teams of 8+ members across 3 departments'
+            'Managed cross-functional teams of 8+ members across 3 departments',
+            'Implemented automated reporting systems saving 40+ hours monthly'
+          ]
+        },
+        {
+          role: 'Business Analyst',
+          company: 'JPMorgan Chase',
+          duration: '2019 - 2021',
+          achievements: [
+            'Developed automated reporting systems saving 40+ hours monthly',
+            'Collaborated with stakeholders to define business requirements',
+            'Improved data accuracy by 35% through process standardization'
           ]
         }
       ],
       skills: [
         { name: 'SQL', level: 90, category: 'technical' },
-        { name: 'Python', level: 85, category: 'technical' }
+        { name: 'Python', level: 85, category: 'technical' },
+        { name: 'Data Analysis', level: 95, category: 'technical' },
+        { name: 'Project Management', level: 88, category: 'soft' },
+        { name: 'Stakeholder Management', level: 92, category: 'soft' }
       ],
       education: [
         {
@@ -116,6 +130,12 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
           school: 'Wharton School',
           year: '2019',
           details: 'Magna Cum Laude, Beta Gamma Sigma'
+        },
+        {
+          degree: 'BS, Economics',
+          school: 'NYU Stern',
+          year: '2017',
+          details: 'Minor in Data Science'
         }
       ]
     }
@@ -148,7 +168,7 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
       email: 'alex.rivera@email.com',
       phone: '(555) 987-6543',
       linkedin: 'linkedin.com/in/alexrivera',
-      summary: 'Award-winning Creative Director with 8+ years creating compelling visual narratives for global brands.',
+      summary: 'Award-winning Creative Director with 8+ years creating compelling visual narratives for global brands. Passionate about innovative design solutions that drive engagement.',
       experiences: [
         {
           role: 'Creative Director',
@@ -156,13 +176,27 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
           duration: '2022 - Present',
           achievements: [
             'Led creative campaigns that increased client engagement by 150%',
-            'Managed creative team of 12 designers and copywriters'
+            'Managed creative team of 12 designers and copywriters',
+            'Won 3 Cannes Lions for innovative advertising campaigns'
+          ]
+        },
+        {
+          role: 'Senior Art Director',
+          company: 'BBDO Worldwide',
+          duration: '2020 - 2022',
+          achievements: [
+            'Created award-winning campaigns for Fortune 500 clients',
+            'Increased team creative output by 35% through process optimization',
+            'Launched visual identity for 5 major brand repositioning projects'
           ]
         }
       ],
       skills: [
         { name: 'Adobe Creative Suite', level: 95, category: 'technical' },
-        { name: 'Figma', level: 90, category: 'technical' }
+        { name: 'Figma', level: 90, category: 'technical' },
+        { name: 'Brand Strategy', level: 88, category: 'soft' },
+        { name: 'Team Leadership', level: 92, category: 'soft' },
+        { name: 'Campaign Development', level: 94, category: 'soft' }
       ],
       education: [
         {
@@ -202,7 +236,7 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
       email: 'david.kumar@email.com',
       phone: '(555) 345-6789',
       linkedin: 'linkedin.com/in/davidkumar',
-      summary: 'Passionate Full Stack Developer with expertise in React, Node.js, and cloud architecture.',
+      summary: 'Passionate Full Stack Developer with expertise in React, Node.js, and cloud architecture. Experienced in building scalable applications and leading technical teams.',
       experiences: [
         {
           role: 'Senior Full Stack Developer',
@@ -210,13 +244,27 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
           duration: '2022 - Present',
           achievements: [
             'Built payment processing features handling $2B+ in transactions',
-            'Optimized API performance reducing response time by 60%'
+            'Optimized API performance reducing response time by 60%',
+            'Led migration to microservices architecture'
+          ]
+        },
+        {
+          role: 'Software Engineer',
+          company: 'Shopify',
+          duration: '2020 - 2022',
+          achievements: [
+            'Developed e-commerce features used by 500k+ merchants',
+            'Implemented real-time data processing pipeline',
+            'Mentored 3 junior developers'
           ]
         }
       ],
       skills: [
         { name: 'React', level: 95, category: 'technical' },
-        { name: 'Node.js', level: 90, category: 'technical' }
+        { name: 'Node.js', level: 90, category: 'technical' },
+        { name: 'TypeScript', level: 88, category: 'technical' },
+        { name: 'AWS', level: 85, category: 'technical' },
+        { name: 'GraphQL', level: 82, category: 'technical' }
       ],
       education: [
         {
@@ -230,7 +278,7 @@ const enhancedTemplates: EnhancedCVTemplate[] = [
   }
 ];
 
-// Enhanced color scheme configuration
+// Color schemes
 const colorSchemes = [
   { id: 'blue', name: 'Professional Blue', color: '#2563eb', bg: 'bg-blue-50', text: 'text-blue-700', secondary: '#e0e7ff' },
   { id: 'black', name: 'Classic Black', color: '#1f2937', bg: 'bg-gray-50', text: 'text-gray-700', secondary: '#f9fafb' },
@@ -254,6 +302,256 @@ interface RealisticTemplateCardProps {
   renderPreview: (template: EnhancedCVTemplate) => React.ReactNode;
 }
 
+// Preview Modal Props
+interface PreviewModalProps {
+  template: EnhancedCVTemplate;
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectTemplate: (template: EnhancedCVTemplate) => void;
+  customization: TemplateCustomization;
+}
+
+// Full-size Preview Modal Component
+const PreviewModal: React.FC<PreviewModalProps> = ({ 
+  template, 
+  isOpen, 
+  onClose, 
+  onSelectTemplate,
+  customization 
+}) => {
+  if (!isOpen) return null;
+
+  const renderFullPreview = () => {
+    const { sampleData } = template;
+    const accentColor = customization.accentColor;
+    
+    return (
+      <div className="w-full max-w-4xl mx-auto bg-white shadow-2xl" style={{ aspectRatio: '8.5/11' }}>
+        {template.layoutType === 'two-column' ? (
+          // Professional Two-Column Layout
+          <div className="flex h-full">
+            {/* Main Content */}
+            <div className="flex-1 p-8">
+              {/* Header */}
+              <div className="mb-8">
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">{sampleData.name}</h1>
+                <h2 className="text-xl text-gray-600 mb-4">{sampleData.title}</h2>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    {sampleData.location}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Professional Summary */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold mb-3" style={{ color: accentColor }}>
+                  Professional Summary
+                </h3>
+                <p className="text-gray-700 leading-relaxed">{sampleData.summary}</p>
+              </div>
+              
+              {/* Experience */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: accentColor }}>
+                  Professional Experience
+                </h3>
+                <div className="space-y-6">
+                  {sampleData.experiences.map((exp, idx) => (
+                    <div key={idx}>
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-gray-900">{exp.role}</h4>
+                        <span className="text-sm text-gray-500">{exp.duration}</span>
+                      </div>
+                      <p className="text-gray-600 mb-2">{exp.company}</p>
+                      <ul className="list-disc list-inside text-gray-700 space-y-1">
+                        {exp.achievements.map((achievement, i) => (
+                          <li key={i}>{achievement}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Sidebar */}
+            <div className="w-1/3 p-8" style={{ backgroundColor: colorSchemes.find(s => s.id === customization.colorScheme)?.secondary || '#f8fafc' }}>
+              {/* Contact */}
+              <div className="mb-8">
+                <h3 className="font-semibold mb-4" style={{ color: accentColor }}>Contact</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-600" />
+                    <span>{sampleData.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-600" />
+                    <span>{sampleData.email}</span>
+                  </div>
+                  {sampleData.linkedin && (
+                    <div className="flex items-center gap-2">
+                      <Linkedin className="w-4 h-4 text-gray-600" />
+                      <span>{sampleData.linkedin}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Skills */}
+              <div className="mb-8">
+                <h3 className="font-semibold mb-4" style={{ color: accentColor }}>Skills</h3>
+                <div className="space-y-3">
+                  {sampleData.skills.map((skill, idx) => (
+                    <div key={idx}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium">{skill.name}</span>
+                        <span>{skill.level}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="h-2 rounded-full" 
+                          style={{ backgroundColor: accentColor, width: `${skill.level}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Education */}
+              <div>
+                <h3 className="font-semibold mb-4" style={{ color: accentColor }}>Education</h3>
+                <div className="space-y-4">
+                  {sampleData.education.map((edu, idx) => (
+                    <div key={idx}>
+                      <h4 className="font-semibold text-gray-900">{edu.degree}</h4>
+                      <p className="text-gray-600">{edu.school}</p>
+                      <p className="text-sm text-gray-500">{edu.year}</p>
+                      {edu.details && (
+                        <p className="text-sm text-gray-600 mt-1">{edu.details}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Single Column Layout for other templates
+          <div className="p-8">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">{sampleData.name}</h1>
+              <h2 className="text-xl text-gray-600 mb-4">{sampleData.title}</h2>
+              <div className="flex justify-center items-center gap-6 text-sm">
+                <span className="flex items-center gap-1">
+                  <Phone className="w-4 h-4" />
+                  {sampleData.phone}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Mail className="w-4 h-4" />
+                  {sampleData.email}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-4 h-4" />
+                  {sampleData.location}
+                </span>
+              </div>
+            </div>
+            
+            <hr className="mb-8" />
+            
+            {/* Summary */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-3" style={{ color: accentColor }}>
+                Professional Summary
+              </h3>
+              <p className="text-gray-700 leading-relaxed">{sampleData.summary}</p>
+            </div>
+            
+            {/* Experience */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-4" style={{ color: accentColor }}>
+                Experience
+              </h3>
+              <div className="space-y-6">
+                {sampleData.experiences.map((exp, idx) => (
+                  <div key={idx}>
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{exp.role}</h4>
+                        <p className="text-gray-600">{exp.company}</p>
+                      </div>
+                      <span className="text-sm text-gray-500">{exp.duration}</span>
+                    </div>
+                    <ul className="list-disc list-inside text-gray-700 space-y-1">
+                      {exp.achievements.map((achievement, i) => (
+                        <li key={i}>{achievement}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Skills */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-4" style={{ color: accentColor }}>Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {sampleData.skills.map((skill, idx) => (
+                  <span 
+                    key={idx} 
+                    className="px-3 py-1 rounded-full text-sm font-medium"
+                    style={{ backgroundColor: colorSchemes.find(s => s.id === customization.colorScheme)?.secondary || '#f1f5f9', color: accentColor }}
+                  >
+                    {skill.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">{template.name}</h2>
+            <p className="text-gray-600">{template.description}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onSelectTemplate(template)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Use This Template
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Preview Content */}
+        <div className="flex-1 overflow-auto p-6 bg-gray-100">
+          {renderFullPreview()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main TemplateGallery Component
 const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   templates: propTemplates,
@@ -265,9 +563,9 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [showCustomization, setShowCustomization] = useState<string | null>(null);
   const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [previewTemplate, setPreviewTemplate] = useState<EnhancedCVTemplate | null>(null);
   
   const [customization, setCustomization] = useState<TemplateCustomization>({
     colorScheme: 'blue',
@@ -317,15 +615,18 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   }, []);
 
   const handleTemplateSelect = useCallback((template: CVTemplate) => {
-    if (showCustomization === template.id) {
-      onTemplateSelect(template, customization);
-    } else {
-      setShowCustomization(template.id);
-      setSelectedTemplate(template.id);
-    }
-  }, [showCustomization, customization, onTemplateSelect]);
+    onTemplateSelect(template, customization);
+  }, [customization, onTemplateSelect]);
 
-  // Simple preview rendering
+  const handlePreview = useCallback((template: CVTemplate) => {
+    setPreviewTemplate(template as EnhancedCVTemplate);
+  }, []);
+
+  const closePreview = useCallback(() => {
+    setPreviewTemplate(null);
+  }, []);
+
+  // Simple card preview rendering
   const renderRealisticPreview = useCallback((template: EnhancedCVTemplate) => {
     const accentColor = customization.accentColor;
     
@@ -378,7 +679,7 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             </button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Choose your template</h1>
-              <p className="text-gray-600 mt-1">Professional templates with customization options</p>
+              <p className="text-gray-600 mt-1">Professional templates with preview and customization</p>
             </div>
           </div>
 
@@ -428,12 +729,12 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               key={template.id}
               template={template as EnhancedCVTemplate}
               isSelected={selectedTemplate === template.id}
-              isCustomizing={showCustomization === template.id}
+              isCustomizing={false}
               isHovered={hoveredTemplate === template.id}
               isFavorited={favorites.has(template.id)}
               customization={customization}
               onSelect={handleTemplateSelect}
-              onPreview={onTemplatePreview}
+              onPreview={handlePreview}
               onHover={setHoveredTemplate}
               onToggleFavorite={toggleFavorite}
               renderPreview={renderRealisticPreview}
@@ -441,6 +742,17 @@ const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {previewTemplate && (
+        <PreviewModal
+          template={previewTemplate}
+          isOpen={!!previewTemplate}
+          onClose={closePreview}
+          onSelectTemplate={handleTemplateSelect}
+          customization={customization}
+        />
+      )}
     </div>
   );
 };
@@ -504,6 +816,13 @@ const RealisticTemplateCard = memo<RealisticTemplateCardProps>(({
         }`}>
           <div className="flex space-x-3">
             <button 
+              onClick={handlePreviewClick}
+              className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors"
+            >
+              <Eye className="w-4 h-4" />
+              <span>Preview</span>
+            </button>
+            <button 
               onClick={handleCardClick}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 hover:bg-blue-700 transition-colors"
             >
@@ -540,7 +859,7 @@ const RealisticTemplateCard = memo<RealisticTemplateCardProps>(({
           <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
         </button>
 
-        {/* Layout Type Indicator - FIXED */}
+        {/* Layout Type Indicator */}
         <div className="absolute bottom-3 left-3">
           <span className="bg-black/70 text-white text-xs px-2 py-1 rounded-full font-medium backdrop-blur-sm">
             {template.layoutType?.replace('-', ' ') || 'template'}
@@ -589,20 +908,4 @@ const RealisticTemplateCard = memo<RealisticTemplateCardProps>(({
 
 RealisticTemplateCard.displayName = 'RealisticTemplateCard';
 
-// Utility functions
-const templateUtils = {
-  getTemplateById: (templates: EnhancedCVTemplate[], id: string): EnhancedCVTemplate | undefined => {
-    return templates.find(template => template.id === id);
-  }
-};
-
 export default TemplateGallery;
-
-export { 
-  enhancedTemplates, 
-  colorSchemes, 
-  templateUtils,
-  type EnhancedCVTemplate,
-  type TemplateCustomization,
-  type TemplateGalleryProps 
-};
