@@ -7,6 +7,9 @@ import gamificationService from './services/gamificationService';
 // Import the new configuration system
 import { config } from './config/environment';
 
+// Import the new ThemeProvider
+import { ThemeProvider, useStyleSystem } from './components/CVBuilder/StyleSystem/ThemeProvider';
+
 // Import components (keeping your existing ones)
 import FlowStartScreen from './components/FlowStartScreen';
 import ProfessionalTemplateGallery from './components/TemplateGallery'; // Updated import
@@ -87,7 +90,52 @@ interface ToastMessage {
   duration?: number;
 }
 
-const App: React.FC = () => {
+// Theme Test Component - Remove this after testing
+const ThemeTest: React.FC = () => {
+  const { currentTheme, setTheme, availableThemes } = useStyleSystem();
+  
+  return (
+    <div style={{ 
+      background: 'var(--cv-color-surface)', 
+      padding: 'var(--cv-space-md)', 
+      margin: 'var(--cv-space-sm)',
+      border: '1px solid var(--cv-color-border)',
+      borderRadius: 'var(--cv-rounded-md)',
+      boxShadow: 'var(--cv-shadow-sm)'
+    }}>
+      <h3 style={{ 
+        color: 'var(--cv-color-primary)', 
+        fontFamily: 'var(--cv-font-heading)',
+        fontSize: 'var(--cv-text-lg)',
+        fontWeight: 'var(--cv-font-semibold)',
+        marginBottom: 'var(--cv-space-sm)'
+      }}>
+        Current Theme: {currentTheme.name}
+      </h3>
+      <div style={{ display: 'flex', gap: 'var(--cv-space-xs)', flexWrap: 'wrap' }}>
+        {availableThemes.map(theme => (
+          <button 
+            key={theme.id} 
+            onClick={() => setTheme(theme.id)}
+            style={{ 
+              padding: 'var(--cv-space-sm)',
+              backgroundColor: theme.id === currentTheme.id ? 'var(--cv-color-primary)' : 'var(--cv-color-background)',
+              color: theme.id === currentTheme.id ? 'white' : 'var(--cv-color-text-primary)',
+              border: '1px solid var(--cv-color-border)',
+              borderRadius: 'var(--cv-rounded-md)',
+              cursor: 'pointer',
+              fontSize: 'var(--cv-text-sm)'
+            }}
+          >
+            {theme.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const AppContent: React.FC = () => {
   // Clean core state
   const [currentStep, setCurrentStep] = useState<AppStep>('start');
   const [isLoading, setIsLoading] = useState(false);
@@ -107,6 +155,9 @@ const App: React.FC = () => {
   const [gameData, setGameData] = useState<GameData>(gamificationService.getGameData());
   const [xpNotification, setXpNotification] = useState<any>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Access theme system
+  const { currentTheme } = useStyleSystem();
 
   // Initialize configuration and log startup info
   useEffect(() => {
@@ -128,9 +179,10 @@ const App: React.FC = () => {
       console.log('AI Features:', config.isAIEnabled ? '✅ Enabled' : '❌ Disabled');
       console.log('Firebase:', config.isFirebaseEnabled ? '✅ Enabled' : '❌ Disabled');
       console.log('Debug Mode:', config.app.debugMode ? '✅ On' : '❌ Off');
+      console.log('Current Theme:', currentTheme.name);
       console.groupEnd();
     }
-  }, []);
+  }, [currentTheme]);
 
   // Toast management
   const addToast = useCallback((message: string, type: ToastMessage['type'] = 'info', duration = 5000) => {
@@ -355,202 +407,304 @@ const App: React.FC = () => {
   }, [navigateToStep, addToast, handleError]);
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen flex flex-col">
-        {/* Clean Header with version info in development */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <button 
-                onClick={() => navigateToStep('start')}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+    <div className="min-h-screen flex flex-col">
+      {/* Clean Header with version info in development */}
+      <header 
+        className="sticky top-0 z-40 border-b"
+        style={{
+          backgroundColor: 'var(--cv-color-background)',
+          borderBottomColor: 'var(--cv-color-border)'
+        }}
+      >
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={() => navigateToStep('start')}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(to right, ${currentTheme.colors.primary}, ${currentTheme.colors.accent})`
+                }}
               >
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">M</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold text-gray-900">MoCV.mu</span>
-                  {config.isDevelopment && (
-                    <span className="text-xs text-gray-500">v{config.app.version} - {config.app.environment}</span>
-                  )}
-                </div>
-              </button>
-              
-              <div className="flex items-center gap-3">
-                {/* AI Status Indicator */}
+                <span className="text-white font-bold text-sm">M</span>
+              </div>
+              <div className="flex flex-col">
+                <span 
+                  className="text-xl font-bold"
+                  style={{ 
+                    color: 'var(--cv-color-text-primary)',
+                    fontFamily: 'var(--cv-font-heading)'
+                  }}
+                >
+                  MoCV.mu
+                </span>
+                {config.isDevelopment && (
+                  <span 
+                    className="text-xs"
+                    style={{ color: 'var(--cv-color-text-muted)' }}
+                  >
+                    v{config.app.version} - {config.app.environment}
+                  </span>
+                )}
+              </div>
+            </button>
+            
+            <div className="flex items-center gap-3">
+              {/* Theme & AI Status Indicator */}
+              <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${config.isAIEnabled ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                  <span className="text-xs text-gray-600">
-                    AI {config.isAIEnabled ? 'On' : 'Off'}
+                  <div 
+                    className="w-2 h-2 rounded-full" 
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  ></div>
+                  <span 
+                    className="text-xs"
+                    style={{ color: 'var(--cv-color-text-secondary)' }}
+                  >
+                    {currentTheme.name}
                   </span>
                 </div>
                 
-                <button
-                  onClick={() => navigateToStep('start')}
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  Home
-                </button>
-                <button
-                  onClick={handleMyCVs}
-                  className="text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  My CVs
-                </button>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className={`w-2 h-2 rounded-full`} 
+                    style={{ backgroundColor: config.isAIEnabled ? currentTheme.colors.success : currentTheme.colors.secondary }}
+                  ></div>
+                  <span 
+                    className="text-xs"
+                    style={{ color: 'var(--cv-color-text-secondary)' }}
+                  >
+                    AI {config.isAIEnabled ? 'On' : 'Off'}
+                  </span>
+                </div>
               </div>
+              
+              <button
+                onClick={() => navigateToStep('start')}
+                className="transition-colors"
+                style={{ 
+                  color: 'var(--cv-color-text-secondary)',
+                  fontFamily: 'var(--cv-font-body)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--cv-color-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--cv-color-text-secondary)';
+                }}
+              >
+                Home
+              </button>
+              <button
+                onClick={handleMyCVs}
+                className="transition-colors"
+                style={{ 
+                  color: 'var(--cv-color-text-secondary)',
+                  fontFamily: 'var(--cv-font-body)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--cv-color-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--cv-color-text-secondary)';
+                }}
+              >
+                My CVs
+              </button>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Loading Overlay */}
-        {isLoading && <LoadingSpinner />}
+      {/* Loading Overlay */}
+      {isLoading && <LoadingSpinner />}
 
-        {/* Enhanced Error Display */}
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-400 p-4 mx-4 mt-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-              <div className="flex-1">
-                <p className="text-red-800">{error}</p>
-                {config.isDevelopment && (
-                  <p className="text-red-600 text-sm mt-1">
-                    Check the console for more details (Development Mode)
-                  </p>
-                )}
-                <button 
-                  onClick={clearError}
-                  className="text-red-600 hover:text-red-800 text-sm underline mt-1"
+      {/* Theme Test Component - REMOVE THIS AFTER TESTING */}
+      {config.isDevelopment && (
+        <div className="mx-4 mt-4">
+          <ThemeTest />
+        </div>
+      )}
+
+      {/* Enhanced Error Display */}
+      {error && (
+        <div 
+          className="border-l-4 p-4 mx-4 mt-4"
+          style={{
+            backgroundColor: 'var(--cv-color-background)',
+            borderLeftColor: 'var(--cv-color-error)',
+            border: '1px solid var(--cv-color-border)'
+          }}
+        >
+          <div className="flex items-center">
+            <AlertCircle 
+              className="h-5 w-5 mr-2" 
+              style={{ color: 'var(--cv-color-error)' }}
+            />
+            <div className="flex-1">
+              <p style={{ color: 'var(--cv-color-error)' }}>{error}</p>
+              {config.isDevelopment && (
+                <p 
+                  className="text-sm mt-1"
+                  style={{ color: 'var(--cv-color-text-muted)' }}
                 >
-                  Dismiss
-                </button>
-              </div>
+                  Check the console for more details (Development Mode)
+                </p>
+              )}
+              <button 
+                onClick={clearError}
+                className="text-sm underline mt-1 hover:opacity-80"
+                style={{ color: 'var(--cv-color-error)' }}
+              >
+                Dismiss
+              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* CLEAN MAIN CONTENT - Enhanced with config awareness */}
+      <main className="flex-1">
+        {currentStep === 'start' && (
+          <FlowStartScreen
+            gameData={gameData}
+            onImproveCV={handleImproveCV}
+            onCreateNew={handleCreateNew}
+            onAnalyzeVsJob={handleAnalyzeVsJob}
+            onInterviewPrep={handleInterviewPrep}
+            onMyCVs={handleMyCVs}
+          />
         )}
-
-        {/* CLEAN MAIN CONTENT - Enhanced with config awareness */}
-        <main className="flex-1">
-          {currentStep === 'start' && (
-            <FlowStartScreen
-              gameData={gameData}
-              onImproveCV={handleImproveCV}
-              onCreateNew={handleCreateNew}
-              onAnalyzeVsJob={handleAnalyzeVsJob}
-              onInterviewPrep={handleInterviewPrep}
-              onMyCVs={handleMyCVs}
-            />
-          )}
-          
-          {currentStep === 'templates' && (
-            <ProfessionalTemplateGallery
-              onTemplateSelect={handleTemplateSelect}
-              onBack={navigateBack}
-            />
-          )}
-          
-          {currentStep === 'cv-builder' && selectedTemplate && (
-            <CVBuilder
-              selectedTemplate={selectedTemplate}
-              onBack={navigateBack}
-              onChangeTemplate={() => navigateToStep('templates')}
-            />
-          )}
-          
-          {currentStep === 'my-cvs' && (
-            <MyCVsDashboard
-              onBack={navigateBack}
-              onEditCV={handleEditCV}
-              onCreateNew={handleCreateNew}
-            />
-          )}
-
-          {currentStep === 'analyzer' && (
-            <CVAnalyzer
-              onAnalysisComplete={handleAnalysisComplete}
-              onCreateNew={handleCreateNew}
-              onBack={navigateBack}
-            />
-          )}
-
-          {currentStep === 'job-analyzer' && (
-            <JobDescriptionAnalyzer
-              onAnalysisComplete={handleAnalysisComplete}
-              onBack={navigateBack}
-            />
-          )}
-
-          {currentStep === 'interview-prep' && (
-            <InterviewPrep
-              onBack={navigateBack}
-            />
-          )}
-
-          {currentStep === 'improver' && cvAnalysis && (
-            <CVImprover
-              analysis={cvAnalysis}
-              originalCV={analyzedCVText}
-              onBack={navigateBack}
-              onCreateNew={handleCreateNew}
-            />
-          )}
-
-          {/* Template Preview Modal */}
-          {previewTemplate && (
-            <TemplatePreview
-              templateName={previewTemplate.name}
-              markdownUrl={previewTemplate.markdownUrl}
-              onClose={() => setPreviewTemplate(null)}
-              onUseTemplate={() => {
-                handleTemplateSelect(previewTemplate);
-                setPreviewTemplate(null);
-              }}
-            />
-          )}
-        </main>
-
-        <Footer />
-
-        {/* Chat Assistant with AI awareness */}
-        <ChatAssistant 
-          isOpen={isChatOpen} 
-          onToggle={() => setIsChatOpen(!isChatOpen)}
-        />
         
-        {/* XP Notification */}
-        {xpNotification && (
-          <XPNotification
-            xpGain={xpNotification.xpGain}
-            reason={xpNotification.reason}
-            levelUp={xpNotification.levelUp}
-            newLevel={xpNotification.newLevel}
-            achievements={xpNotification.achievements}
-            onClose={() => setXpNotification(null)}
+        {currentStep === 'templates' && (
+          <ProfessionalTemplateGallery
+            onTemplateSelect={handleTemplateSelect}
+            onBack={navigateBack}
+          />
+        )}
+        
+        {currentStep === 'cv-builder' && selectedTemplate && (
+          <CVBuilder
+            selectedTemplate={selectedTemplate}
+            onBack={navigateBack}
+            onChangeTemplate={() => navigateToStep('templates')}
+          />
+        )}
+        
+        {currentStep === 'my-cvs' && (
+          <MyCVsDashboard
+            onBack={navigateBack}
+            onEditCV={handleEditCV}
+            onCreateNew={handleCreateNew}
           />
         )}
 
-        {/* Toast Notifications */}
-        <div className="fixed bottom-4 right-4 z-50 space-y-2">
-          {toasts.map(toast => (
-            <Toast
-              key={toast.id}
-              type={toast.type}
-              message={toast.message}
-              onClose={() => removeToast(toast.id)}
-            />
-          ))}
-        </div>
-
-        {/* Development Tools Panel (only in development) */}
-        {config.isDevelopment && config.app.debugMode && (
-          <div className="fixed bottom-4 left-4 bg-gray-900 text-white p-3 rounded-lg text-xs z-50">
-            <div className="font-bold mb-1">🛠️ Dev Tools</div>
-            <div>Step: {currentStep}</div>
-            <div>AI: {config.isAIEnabled ? '✅' : '❌'}</div>
-            <div>Templates: {templates.length}</div>
-          </div>
+        {currentStep === 'analyzer' && (
+          <CVAnalyzer
+            onAnalysisComplete={handleAnalysisComplete}
+            onCreateNew={handleCreateNew}
+            onBack={navigateBack}
+          />
         )}
+
+        {currentStep === 'job-analyzer' && (
+          <JobDescriptionAnalyzer
+            onAnalysisComplete={handleAnalysisComplete}
+            onBack={navigateBack}
+          />
+        )}
+
+        {currentStep === 'interview-prep' && (
+          <InterviewPrep
+            onBack={navigateBack}
+          />
+        )}
+
+        {currentStep === 'improver' && cvAnalysis && (
+          <CVImprover
+            analysis={cvAnalysis}
+            originalCV={analyzedCVText}
+            onBack={navigateBack}
+            onCreateNew={handleCreateNew}
+          />
+        )}
+
+        {/* Template Preview Modal */}
+        {previewTemplate && (
+          <TemplatePreview
+            templateName={previewTemplate.name}
+            markdownUrl={previewTemplate.markdownUrl}
+            onClose={() => setPreviewTemplate(null)}
+            onUseTemplate={() => {
+              handleTemplateSelect(previewTemplate);
+              setPreviewTemplate(null);
+            }}
+          />
+        )}
+      </main>
+
+      <Footer />
+
+      {/* Chat Assistant with AI awareness */}
+      <ChatAssistant 
+        isOpen={isChatOpen} 
+        onToggle={() => setIsChatOpen(!isChatOpen)}
+      />
+      
+      {/* XP Notification */}
+      {xpNotification && (
+        <XPNotification
+          xpGain={xpNotification.xpGain}
+          reason={xpNotification.reason}
+          levelUp={xpNotification.levelUp}
+          newLevel={xpNotification.newLevel}
+          achievements={xpNotification.achievements}
+          onClose={() => setXpNotification(null)}
+        />
+      )}
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            type={toast.type}
+            message={toast.message}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
       </div>
-    </ErrorBoundary>
+
+      {/* Development Tools Panel (only in development) */}
+      {config.isDevelopment && config.app.debugMode && (
+        <div 
+          className="fixed bottom-4 left-4 p-3 rounded-lg text-xs z-50"
+          style={{
+            backgroundColor: 'var(--cv-color-text-primary)',
+            color: 'var(--cv-color-background)',
+            boxShadow: 'var(--cv-shadow-lg)'
+          }}
+        >
+          <div className="font-bold mb-1">🛠️ Dev Tools</div>
+          <div>Step: {currentStep}</div>
+          <div>AI: {config.isAIEnabled ? '✅' : '❌'}</div>
+          <div>Theme: {currentTheme.name}</div>
+          <div>Templates: {templates.length}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ThemeProvider defaultThemeId="professional" persistTheme={true}>
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 };
 
