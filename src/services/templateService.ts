@@ -846,5 +846,6 @@ export class TemplateService {
 export const fetchTemplateContent = TemplateService.fetchTemplateContent.bind(TemplateService);
 export const getTemplateContentByType = TemplateService.getTemplateContentByType.bind(TemplateService);
 export const getTemplatePreviewContent = TemplateService.getTemplatePreviewContent.bind(TemplateService);
+export const fetchCVTemplates = TemplateService.getAllTemplates.bind(TemplateService);
 
 export default TemplateService;
