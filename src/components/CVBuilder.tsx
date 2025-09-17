@@ -882,12 +882,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
         </div>
       ) : (
         /* Edit Mode - Form Interface */
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex gap-8">
             {/* Steps Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="w-80 flex-shrink-0">
               <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Build Your CV</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">CV Sections</h2>
                 <nav className="space-y-2">
                   {steps.map((step, index) => {
                     const StepIcon = step.icon;
@@ -923,8 +923,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
               </div>
             </div>
 
-            {/* Main Content */}
-            <div className="lg:col-span-3">
+            {/* Main Content - Full Width */}
+            <div className="flex-1">
               <div className="bg-white rounded-lg shadow-sm">
                 {/* Step Header */}
                 <div className="border-b border-gray-200 px-6 py-4">
