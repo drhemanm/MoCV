@@ -376,6 +376,334 @@ export class TemplateService {
   }
 
   /**
+   * Fetch template content from API or local storage
+   */
+  static async fetchTemplateContent(templateId: string): Promise<any> {
+    try {
+      const template = await this.getTemplate(templateId);
+      if (!template) throw new Error('Template not found');
+
+      // In production, this would fetch the actual template content/HTML
+      // For now, return mock template structure
+      return {
+        templateId,
+        html: `<div class="cv-template cv-template-${templateId}">
+          <!-- Template HTML content would go here -->
+          <div class="cv-header">Header Section</div>
+          <div class="cv-content">Content Sections</div>
+        </div>`,
+        css: `/* Template CSS for ${templateId} */
+          .cv-template-${templateId} { 
+            font-family: Inter, sans-serif;
+            max-width: 210mm;
+            margin: 0 auto;
+          }`,
+        metadata: {
+          template,
+          lastFetched: new Date().toISOString()
+        }
+      };
+    } catch (error) {
+      console.error('Failed to fetch template content:', error);
+      throw new Error(`Failed to fetch template content for ${templateId}`);
+    }
+  }
+
+  /**
+   * Get template content by type/format
+   */
+  static async getTemplateContentByType(
+    templateId: string, 
+    contentType: 'html' | 'pdf' | 'docx' | 'json' = 'html'
+  ): Promise<any> {
+    try {
+      const template = await this.getTemplate(templateId);
+      if (!template) throw new Error('Template not found');
+
+      switch (contentType) {
+        case 'html':
+          return {
+            type: 'html',
+            content: `<!DOCTYPE html>
+              <html>
+                <head>
+                  <title>CV Template - ${template.name}</title>
+                  <style>
+                    /* Template styles */
+                    body { font-family: ${template.layout.typography}, sans-serif; }
+                    .cv-container { max-width: 210mm; margin: 0 auto; padding: 20mm; }
+                  </style>
+                </head>
+                <body>
+                  <div class="cv-container">
+                    <!-- Template content -->
+                    <h1>CV Template: ${template.name}</h1>
+                    <p>This is a ${template.category} template</p>
+                  </div>
+                </body>
+              </html>`,
+            template
+          };
+
+        case 'json':
+          return {
+            type: 'json',
+            content: {
+              templateId,
+              template,
+              structure: {
+                sections: template.layout.sections,
+                columns: template.layout.columns,
+                colorScheme: template.layout.colorScheme
+              },
+              customization: await this.getDefaultCustomization(templateId)
+            }
+          };
+
+        case 'pdf':
+          return {
+            type: 'pdf',
+            content: null, // PDF generation would happen elsewhere
+            template,
+            message: 'PDF generation requires additional processing'
+          };
+
+        case 'docx':
+          return {
+            type: 'docx',
+            content: null, // DOCX generation would happen elsewhere  
+            template,
+            message: 'DOCX generation requires additional processing'
+          };
+
+        default:
+          throw new Error(`Unsupported content type: ${contentType}`);
+      }
+    } catch (error) {
+      console.error('Failed to get template content by type:', error);
+      throw new Error(`Failed to get ${contentType} content for template ${templateId}`);
+    }
+  }
+
+  /**
+   * Get template content for preview rendering
+   */
+  static async getTemplatePreviewContent(
+    templateId: string,
+    sampleData?: any
+  ): Promise<{
+    html: string;
+    css: string;
+    data: any;
+  }> {
+    try {
+      const template = await this.getTemplate(templateId);
+      if (!template) throw new Error('Template not found');
+
+      const defaultData = sampleData || this.getDefaultSampleData();
+      
+      return {
+        html: this.generateTemplateHTML(template, defaultData),
+        css: this.generateTemplateCSS(template),
+        data: defaultData
+      };
+    } catch (error) {
+      console.error('Failed to get template preview content:', error);
+      throw new Error(`Failed to generate preview content for ${templateId}`);
+    }
+  }
+
+  /**
+   * Generate HTML for template preview
+   */
+  private static generateTemplateHTML(template: CVTemplate, data: any): string {
+    return `
+      <div class="cv-template" data-template="${template.id}">
+        <header class="cv-header">
+          <h1>${data.name || 'John Doe'}</h1>
+          <p class="cv-title">${data.title || 'Professional Title'}</p>
+          <div class="cv-contact">
+            <span>${data.email || 'john@example.com'}</span>
+            <span>${data.phone || '+1 (555) 123-4567'}</span>
+          </div>
+        </header>
+        
+        <main class="cv-content">
+          <section class="cv-section">
+            <h2>Professional Summary</h2>
+            <p>${data.summary || 'Professional summary content goes here...'}</p>
+          </section>
+          
+          <section class="cv-section">
+            <h2>Work Experience</h2>
+            <div class="cv-experience">
+              <h3>Senior Position</h3>
+              <p class="cv-company">Company Name • 2020-Present</p>
+              <ul>
+                <li>Achievement or responsibility example</li>
+                <li>Another key accomplishment</li>
+              </ul>
+            </div>
+          </section>
+          
+          <section class="cv-section">
+            <h2>Education</h2>
+            <div class="cv-education">
+              <h3>Degree Name</h3>
+              <p>University Name • Year</p>
+            </div>
+          </section>
+          
+          <section class="cv-section">
+            <h2>Skills</h2>
+            <div class="cv-skills">
+              <span class="cv-skill">Skill 1</span>
+              <span class="cv-skill">Skill 2</span>
+              <span class="cv-skill">Skill 3</span>
+            </div>
+          </section>
+        </main>
+      </div>
+    `;
+  }
+
+  /**
+   * Generate CSS for template preview
+   */
+  private static generateTemplateCSS(template: CVTemplate): string {
+    return `
+      .cv-template {
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 20mm;
+        font-family: ${template.layout.typography}, sans-serif;
+        background: white;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      }
+      
+      .cv-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #eee;
+      }
+      
+      .cv-header h1 {
+        font-size: 2.5em;
+        margin: 0;
+        color: #333;
+      }
+      
+      .cv-title {
+        font-size: 1.2em;
+        color: #666;
+        margin: 10px 0;
+      }
+      
+      .cv-contact {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+      
+      .cv-section {
+        margin-bottom: 25px;
+      }
+      
+      .cv-section h2 {
+        color: #2563eb;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+      }
+      
+      .cv-experience,
+      .cv-education {
+        margin-bottom: 20px;
+      }
+      
+      .cv-skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      
+      .cv-skill {
+        background: #f3f4f6;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 0.9em;
+      }
+      
+      .cv-company {
+        color: #6b7280;
+        font-style: italic;
+        margin: 5px 0;
+      }
+      
+      ${template.category === 'creative' ? `
+        .cv-template { 
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+        .cv-header { border-bottom-color: rgba(255,255,255,0.3); }
+        .cv-section h2 { color: #fbbf24; }
+      ` : ''}
+      
+      ${template.category === 'minimal' ? `
+        .cv-template { 
+          font-family: 'Helvetica Neue', sans-serif;
+          padding: 15mm;
+        }
+        .cv-header h1 { font-weight: 300; }
+        .cv-section h2 { 
+          font-weight: 400; 
+          color: #111;
+          border: none;
+        }
+      ` : ''}
+    `;
+  }
+
+  /**
+   * Get default sample data for preview
+   */
+  private static getDefaultSampleData(): any {
+    return {
+      name: 'Alex Johnson',
+      title: 'Senior Software Engineer',
+      email: 'alex.johnson@email.com',
+      phone: '+1 (555) 123-4567',
+      location: 'San Francisco, CA',
+      summary: 'Experienced software engineer with 8+ years developing scalable web applications. Passionate about clean code, user experience, and mentoring junior developers.',
+      experience: [
+        {
+          title: 'Senior Software Engineer',
+          company: 'Tech Solutions Inc.',
+          period: '2020 - Present',
+          achievements: [
+            'Led development of microservices architecture reducing load times by 40%',
+            'Mentored 5 junior developers and established code review processes',
+            'Implemented CI/CD pipelines improving deployment efficiency by 60%'
+          ]
+        }
+      ],
+      education: [
+        {
+          degree: 'Bachelor of Science in Computer Science',
+          school: 'University of California, Berkeley',
+          year: '2016'
+        }
+      ],
+      skills: [
+        'JavaScript', 'React', 'Node.js', 'Python', 'AWS', 
+        'Docker', 'MongoDB', 'PostgreSQL', 'Git', 'Agile'
+      ]
+    };
+  }
+
+  /**
    * Get default templates (mock data)
    */
   private static getDefaultTemplates(): CVTemplate[] {
