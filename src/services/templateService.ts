@@ -842,4 +842,9 @@ export class TemplateService {
   }
 }
 
+// Export specific functions for easier importing
+export const fetchTemplateContent = TemplateService.fetchTemplateContent.bind(TemplateService);
+export const getTemplateContentByType = TemplateService.getTemplateContentByType.bind(TemplateService);
+export const getTemplatePreviewContent = TemplateService.getTemplatePreviewContent.bind(TemplateService);
+
 export default TemplateService;
