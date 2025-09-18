@@ -1,4 +1,5 @@
 // src/components/CVBuilder.tsx - Section 1: World-Class CV Builder Setup
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   ArrowLeft, ArrowRight, Save, Download, Eye, CheckCircle, Loader, 
