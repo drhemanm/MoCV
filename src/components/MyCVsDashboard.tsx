@@ -1,4 +1,4 @@
-// src/components/MyCVsDashboard.tsx - PART 1 OF 3
+// src/components/MyCVsDashboard.tsx - Section 1: Imports, Setup, and Functions
 import React, { useState, useEffect } from 'react';
 import { Save, Download, Eye, ArrowLeft, Plus, Trash2, Star, Zap, User, Briefcase, GraduationCap, Award, Globe, FileText, Target, Lightbulb, Upload, Brain } from 'lucide-react';
 import { CVTemplate } from '../types';
@@ -8,7 +8,7 @@ import LTRInput from './LTRInput';
 import AIEnhanceButton from './AIEnhanceButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
 import { AIInsightsPanel } from './AIInsightsPanel';
-import { PDFService } from '../services/pdfService';
+import { PDFService } from '../services/pdfService'; // Updated import
 import gamificationService from '../services/gamificationService';
 
 interface CVBuilderProps {
@@ -187,15 +187,43 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
     }
   };
 
+  // Updated PDF generation function using our new PDF service
   const handleDownloadPDF = async () => {
     setIsGeneratingPDF(true);
     try {
-      const pdfBytes = await generateCVPDF(cvData, selectedTemplate?.id || 'classic-ats');
-      const filename = `${cvData.personalInfo.fullName || 'CV'}.pdf`.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      downloadPDF(pdfBytes, filename);
+      // Validate required fields
+      if (!cvData.personalInfo.fullName || !cvData.personalInfo.email) {
+        alert('Please fill in at least your full name and email before generating PDF.');
+        return;
+      }
+
+      // Use our new PDF service
+      const pdfService = new PDFService();
+      const pdfBytes = await pdfService.generateCV(cvData);
+      
+      // Create download link
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const safeName = (cvData.personalInfo.fullName || 'CV').replace(/[^a-z0-9]/gi, '_');
+      const filename = `${safeName}_${timestamp}.pdf`;
+      
+      // Download the file
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up
+      URL.revokeObjectURL(url);
       
       // Award XP for PDF generation
       gamificationService.trackCVCreation();
+      
     } catch (error) {
       console.error('PDF generation error:', error);
       alert('Failed to generate PDF. Please try again.');
@@ -343,10 +371,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
     { id: 'projects', name: 'Projects', icon: <Target className="h-5 w-5" /> },
     { id: 'certifications', name: 'Certifications', icon: <Award className="h-5 w-5" /> }
   ];
-
-// END OF PART 1 - Continue with Part 2
-// PART 2 OF 3 - Add this directly after Part 1
-
   const renderPersonalInfo = () => (
     <div className="space-y-6">
       {/* Profile Picture Upload */}
@@ -564,7 +588,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
         />
         <p className="text-sm text-gray-500 mt-2">
-          💡 Include your years of experience, key skills, and what you're looking for in your next role.
+          Include your years of experience, key skills, and what you're looking for in your next role.
         </p>
       </div>
     </div>
@@ -714,7 +738,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
                 <p className="text-sm text-gray-500 mt-2">
-                  💡 Use bullet points and include quantifiable achievements (numbers, percentages, dollar amounts).
+                  Use bullet points and include quantifiable achievements (numbers, percentages, dollar amounts).
                 </p>
               </div>
             </div>
@@ -1119,9 +1143,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
     }
   };
 
-// END OF PART 2 - Continue with Part 3
-// PART 3 OF 3 - Add this directly after Part 2
-
   return (
     <div className="min-h-screen bg-gray-50 overflow-hidden" dir="ltr">
       {/* Header */}
@@ -1276,7 +1297,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
               <div className="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
                 <div className="bg-gray-50 rounded-lg p-4 min-h-96">
                   <div className="bg-white rounded border p-6 shadow-sm text-sm">
-                    {/* CV Preview Content */}
                     <div className="space-y-4">
                       {/* Header */}
                       <div className="text-center border-b pb-4">
@@ -1356,76 +1376,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ targetMarket, selectedTemplate, o
                                 +{cvData.experience.length - 2} more experience{cvData.experience.length > 3 ? 's' : ''}
                               </div>
                             )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Skills */}
-                      {cvData.skills && cvData.skills.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Skills</h3>
-                          <div className="flex flex-wrap gap-1">
-                            {cvData.skills.slice(0, 8).map((skill: any, index: number) => (
-                              <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                                {skill.name}
-                              </span>
-                            ))}
-                            {cvData.skills.length > 8 && (
-                              <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
-                                +{cvData.skills.length - 8} more
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Education */}
-                      {cvData.education && cvData.education.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Education</h3>
-                          <div className="space-y-2">
-                            {cvData.education.slice(0, 2).map((edu: any, index: number) => (
-                              <div key={index}>
-                                <h4 className="text-xs font-semibold text-gray-900">{edu.degree || 'Degree'}</h4>
-                                <p className="text-xs text-blue-600">{edu.school || 'School Name'}</p>
-                                <p className="text-xs text-gray-500">
-                                  {edu.graduationDate || 'Graduation Date'} {edu.location && `• ${edu.location}`}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Projects */}
-                      {cvData.projects && cvData.projects.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Projects</h3>
-                          <div className="space-y-2">
-                            {cvData.projects.slice(0, 2).map((project: any, index: number) => (
-                              <div key={index}>
-                                <h4 className="text-xs font-semibold text-gray-900">{project.name || 'Project Name'}</h4>
-                                <p className="text-xs text-gray-700 leading-relaxed">
-                                  {project.description ? project.description.substring(0, 100) + '...' : 'Project description'}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Certifications */}
-                      {cvData.certifications && cvData.certifications.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Certifications</h3>
-                          <div className="space-y-1">
-                            {cvData.certifications.slice(0, 3).map((cert: any, index: number) => (
-                              <div key={index} className="text-xs">
-                                <span className="font-medium text-gray-900">{cert.name || 'Certification'}</span>
-                                {cert.issuer && <span className="text-gray-600"> - {cert.issuer}</span>}
-                                {cert.date && <span className="text-gray-500"> ({cert.date})</span>}
-                              </div>
-                            ))}
                           </div>
                         </div>
                       )}
