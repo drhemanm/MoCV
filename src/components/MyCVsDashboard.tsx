@@ -8,7 +8,7 @@ import LTRInput from './LTRInput';
 import AIEnhanceButton from './AIEnhanceButton';
 import AISuggestionsPanel from './AISuggestionsPanel';
 import { AIInsightsPanel } from './AIInsightsPanel';
-import { generateCVPDF, downloadPDF } from '../services/pdfGenerationService';
+import { PDFService } from '../services/pdfService';
 import gamificationService from '../services/gamificationService';
 
 interface CVBuilderProps {
