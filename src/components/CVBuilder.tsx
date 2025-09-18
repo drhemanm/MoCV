@@ -408,6 +408,364 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     const currentStepData = steps[currentStep];
 
     switch (currentStepData.id) {
+      case 'personal':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Personal Information</h2>
+                <p className="text-gray-600">Your basic contact details</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={cvData.personalInfo.fullName}
+                    onChange={(e) => setCvData(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, fullName: e.target.value }
+                    }))}
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Professional Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={cvData.personalInfo.title}
+                    onChange={(e) => setCvData(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, title: e.target.value }
+                    }))}
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="Software Developer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={cvData.personalInfo.email}
+                    onChange={(e) => setCvData(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, email: e.target.value }
+                    }))}
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="john@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone *
+                  </label>
+                  <input
+                    type="tel"
+                    value={cvData.personalInfo.phone}
+                    onChange={(e) => setCvData(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, phone: e.target.value }
+                    }))}
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="+230 123 4567"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={cvData.personalInfo.location}
+                    onChange={(e) => setCvData(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, location: e.target.value }
+                    }))}
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="Port Louis, Mauritius"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    LinkedIn
+                  </label>
+                  <input
+                    type="url"
+                    value={cvData.personalInfo.linkedin}
+                    onChange={(e) => setCvData(prev => ({
+                      ...prev,
+                      personalInfo: { ...prev.personalInfo, linkedin: e.target.value }
+                    }))}
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="https://linkedin.com/in/johndoe"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'summary':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Professional Summary</h2>
+                <p className="text-gray-600">Write a compelling summary of your background</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Professional Summary *
+                </label>
+                <RichTextEditor 
+                  value={cvData.summary}
+                  onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
+                  placeholder="Write a compelling 2-3 sentence summary that highlights your experience and value proposition..."
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'projects':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+                <p className="text-gray-600">Showcase your notable projects</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Project Name *
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="E-commerce Platform"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Project Link
+                  </label>
+                  <input
+                    type="url"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="https://github.com/username/project"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Technologies Used
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="React, Node.js, MongoDB, Express"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                  </label>
+                  <RichTextEditor 
+                    value=""
+                    onChange={() => {}}
+                    placeholder="Describe your project, your role, technologies used, and the impact..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <Plus className="h-4 w-4" />
+                Add project
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
+                <Sparkles className="h-4 w-4" />
+                AI Suggestions
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
+
+      case 'certifications':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Certifications</h2>
+                <p className="text-gray-600">Add your professional certifications</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Certification Name *
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="AWS Certified Solutions Architect"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Issuing Organization *
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="Amazon Web Services"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Issue Date *
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Month</option>
+                          {months.map((month, index) => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Year</option>
+                          {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expiry Date (Optional)
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Month</option>
+                          {months.map((month, index) => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Year</option>
+                          {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <Plus className="h-4 w-4" />
+                Add certification
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
+                <Sparkles className="h-4 w-4" />
+                AI Suggestions
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
+
       case 'skills':
         return (
           <div className="space-y-6">
