@@ -1,4 +1,4 @@
-// src/components/CVBuilder.tsx
+// src/components/CVBuilder.tsx - SECTION 1: Imports, Interfaces & State
 import React, { useState, useEffect, useRef } from 'react';
 import {
   User, FileText, Briefcase, GraduationCap, Code2, Target, Award, Users,
@@ -109,21 +109,17 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
   });
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
-  // Months for dropdowns
+  // Constants and helper data
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Years for dropdowns (current year + 10 years back and forward)
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
 
-  // Skill levels
   const skillLevels = [
     'Beginner',
     'Intermediate', 
@@ -132,13 +128,11 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     'Native/Fluent'
   ];
 
-  // Pre-defined skills for suggestions
   const skillSuggestions = {
-    technical: ['JavaScript', 'Python', 'React', 'Node.js', 'HTML/CSS', 'SQL', 'Git'],
-    soft: ['Communication', 'Teamwork', 'Problem Solving', 'Time Management', 'Adaptability', 'Leadership', 'Critical Thinking']
+    soft: ['Communication', 'Teamwork', 'Problem Solving', 'Time Management', 'Adaptability', 'Leadership']
   };
 
-  // Form steps configuration
+  // Form steps configuration - LEFT PANE NAVIGATION
   const steps = [
     {
       id: 'personal',
@@ -211,6 +205,23 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     return () => clearTimeout(timer);
   }, [cvData]);
 
+  // Navigation functions
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const goToStep = (stepIndex: number) => {
+    setCurrentStep(stepIndex);
+  };
+
   // Rich text editor component
   const RichTextEditor = ({ value, onChange, placeholder }: { 
     value: string; 
@@ -260,7 +271,19 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     </div>
   );
 
-  // Experience functions
+  // CRUD functions for different sections
+  const addSkill = (skillName: string = '') => {
+    const newSkill = {
+      id: `skill_${Date.now()}`,
+      name: skillName,
+      level: ''
+    };
+    setCvData(prev => ({
+      ...prev,
+      skills: [...prev.skills, newSkill]
+    }));
+  };
+
   const addExperience = () => {
     const newExp = {
       id: `exp_${Date.now()}`,
@@ -278,23 +301,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     }));
   };
 
-  const updateExperience = (id: string, field: string, value: any) => {
-    setCvData(prev => ({
-      ...prev,
-      experience: prev.experience.map(exp =>
-        exp.id === id ? { ...exp, [field]: value } : exp
-      )
-    }));
-  };
-
-  const removeExperience = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      experience: prev.experience.filter(exp => exp.id !== id)
-    }));
-  };
-
-  // Education functions
   const addEducation = () => {
     const newEdu = {
       id: `edu_${Date.now()}`,
@@ -312,52 +318,34 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     }));
   };
 
-  const updateEducation = (id: string, field: string, value: any) => {
-    setCvData(prev => ({
-      ...prev,
-      education: prev.education.map(edu =>
-        edu.id === id ? { ...edu, [field]: value } : edu
-      )
-    }));
-  };
-
-  const removeEducation = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      education: prev.education.filter(edu => edu.id !== id)
-    }));
-  };
-
-  // Skills functions
-  const addSkill = (skillName: string = '') => {
-    const newSkill = {
-      id: `skill_${Date.now()}`,
-      name: skillName,
-      level: ''
+  const addProject = () => {
+    const newProject = {
+      id: `proj_${Date.now()}`,
+      name: '',
+      description: '',
+      technologies: [],
+      link: ''
     };
     setCvData(prev => ({
       ...prev,
-      skills: [...prev.skills, newSkill]
+      projects: [...prev.projects, newProject]
     }));
   };
 
-  const updateSkill = (id: string, field: string, value: any) => {
+  const addCertification = () => {
+    const newCert = {
+      id: `cert_${Date.now()}`,
+      name: '',
+      issuer: '',
+      date: '',
+      expiryDate: ''
+    };
     setCvData(prev => ({
       ...prev,
-      skills: prev.skills.map(skill =>
-        skill.id === id ? { ...skill, [field]: value } : skill
-      )
+      certifications: [...prev.certifications, newCert]
     }));
   };
 
-  const removeSkill = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      skills: prev.skills.filter(skill => skill.id !== id)
-    }));
-  };
-
-  // References functions
   const addReference = () => {
     const newRef = {
       id: `ref_${Date.now()}`,
@@ -373,45 +361,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       references: [...prev.references, newRef]
     }));
   };
-
-  const updateReference = (id: string, field: string, value: string) => {
-    setCvData(prev => ({
-      ...prev,
-      references: prev.references.map(ref =>
-        ref.id === id ? { ...ref, [field]: value } : ref
-      )
-    }));
-  };
-
-  const removeReference = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      references: prev.references.filter(ref => ref.id !== id)
-    }));
-  };
-
-  // Toggle section expansion
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId);
-      } else {
-        newSet.add(sectionId);
-      }
-      return newSet;
-    });
-  };
-
-  // Render different sections based on current step
-  const renderSectionContent = () => {
+  // RIGHT PANE CONTENT - Form for current section
+  const renderCurrentStepContent = () => {
     const currentStepData = steps[currentStep];
 
     switch (currentStepData.id) {
       case 'personal':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Personal Information</h2>
                 <p className="text-gray-600">Your basic contact details</p>
@@ -526,7 +484,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       case 'summary':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Professional Summary</h2>
                 <p className="text-gray-600">Write a compelling summary of your background</p>
@@ -556,314 +514,10 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
           </div>
         );
 
-      case 'projects':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
-                <p className="text-gray-600">Showcase your notable projects</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                  <MoreVertical className="h-5 w-5" />
-                </button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                  <ChevronUp className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project Name *
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                    placeholder="E-commerce Platform"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project Link
-                  </label>
-                  <input
-                    type="url"
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                    placeholder="https://github.com/username/project"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Technologies Used
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                    placeholder="React, Node.js, MongoDB, Express"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description *
-                  </label>
-                  <RichTextEditor 
-                    value=""
-                    onChange={() => {}}
-                    placeholder="Describe your project, your role, technologies used, and the impact..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
-                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
-                  <Trash2 className="h-5 w-5" />
-                </button>
-                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Done
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <Plus className="h-4 w-4" />
-                Add project
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
-                <Sparkles className="h-4 w-4" />
-                AI Suggestions
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        );
-
-      case 'certifications':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Certifications</h2>
-                <p className="text-gray-600">Add your professional certifications</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                  <MoreVertical className="h-5 w-5" />
-                </button>
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                  <ChevronUp className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Certification Name *
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                      placeholder="AWS Certified Solutions Architect"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Issuing Organization *
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                      placeholder="Amazon Web Services"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Issue Date *
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
-                          <option value="">Month</option>
-                          {months.map((month, index) => (
-                            <option key={month} value={month}>{month}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                      </div>
-                      <div className="relative">
-                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
-                          <option value="">Year</option>
-                          {years.map(year => (
-                            <option key={year} value={year}>{year}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Expiry Date (Optional)
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
-                          <option value="">Month</option>
-                          {months.map((month, index) => (
-                            <option key={month} value={month}>{month}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                      </div>
-                      <div className="relative">
-                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
-                          <option value="">Year</option>
-                          {years.map(year => (
-                            <option key={year} value={year}>{year}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
-                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
-                  <Trash2 className="h-5 w-5" />
-                </button>
-                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Done
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <Plus className="h-4 w-4" />
-                Add certification
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
-                <Sparkles className="h-4 w-4" />
-                AI Suggestions
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        );
-
-      case 'skills':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Skills</h2>
-                <p className="text-gray-600">Add your technical and soft skills</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                  <MoreVertical className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => toggleSection('skills')}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
-                >
-                  <ChevronUp className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Skills Form */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Skill
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                    placeholder="Enter skill name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Level
-                  </label>
-                  <div className="relative">
-                    <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
-                      <option value="">Make a choice</option>
-                      {skillLevels.map(level => (
-                        <option key={level} value={level}>{level}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
-                  <Trash2 className="h-5 w-5" />
-                </button>
-                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Done
-                </button>
-              </div>
-            </div>
-
-            {/* Skill Suggestions */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="flex flex-wrap gap-3">
-                {skillSuggestions.soft.map(skill => (
-                  <button
-                    key={skill}
-                    onClick={() => addSkill(skill)}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {skill}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => addSkill()}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <Plus className="h-4 w-4" />
-                Add skill
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
-                <Sparkles className="h-4 w-4" />
-                AI Suggestions
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        );
-
       case 'experience':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Employment</h2>
                 <p className="text-gray-600">Add your work experience</p>
@@ -872,16 +526,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                   <MoreVertical className="h-5 w-5" />
                 </button>
-                <button
-                  onClick={() => toggleSection('experience')}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
-                >
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                   <ChevronUp className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            {/* Experience Form */}
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <div className="space-y-6">
                 <div>
@@ -1007,7 +657,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       case 'education':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Education</h2>
                 <p className="text-gray-600">Add your educational background</p>
@@ -1016,16 +666,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                   <MoreVertical className="h-5 w-5" />
                 </button>
-                <button
-                  onClick={() => toggleSection('education')}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
-                >
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                   <ChevronUp className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            {/* Education Form */}
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <div className="space-y-6">
                 <div>
@@ -1148,10 +794,311 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
           </div>
         );
 
+      case 'skills':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Skills</h2>
+                <p className="text-gray-600">Add your technical and soft skills</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Skills Form */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Skill
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="Enter skill name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Level
+                  </label>
+                  <div className="relative">
+                    <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                      <option value="">Make a choice</option>
+                      {skillLevels.map(level => (
+                        <option key={level} value={level}>{level}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+
+            {/* Skill Suggestions */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex flex-wrap gap-3">
+                {skillSuggestions.soft.map(skill => (
+                  <button
+                    key={skill}
+                    onClick={() => addSkill(skill)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {skill}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => addSkill()}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <Plus className="h-4 w-4" />
+                Add skill
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
+                <Sparkles className="h-4 w-4" />
+                AI Suggestions
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
+
+      case 'projects':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+                <p className="text-gray-600">Showcase your notable projects</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Project Name *
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="E-commerce Platform"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Project Link
+                  </label>
+                  <input
+                    type="url"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="https://github.com/username/project"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Technologies Used
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="React, Node.js, MongoDB, Express"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                  </label>
+                  <RichTextEditor 
+                    value=""
+                    onChange={() => {}}
+                    placeholder="Describe your project, your role, technologies used, and the impact..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <Plus className="h-4 w-4" />
+                Add project
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
+                <Sparkles className="h-4 w-4" />
+                AI Suggestions
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
+
+      case 'certifications':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Certifications</h2>
+                <p className="text-gray-600">Add your professional certifications</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Certification Name *
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="AWS Certified Solutions Architect"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Issuing Organization *
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="Amazon Web Services"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Issue Date *
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Month</option>
+                          {months.map((month, index) => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Year</option>
+                          {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expiry Date (Optional)
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Month</option>
+                          {months.map((month, index) => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Year</option>
+                          {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <Plus className="h-4 w-4" />
+                Add certification
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
+                <Sparkles className="h-4 w-4" />
+                AI Suggestions
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
+
       case 'references':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">References</h2>
                 <p className="text-gray-600">Add professional references</p>
@@ -1160,16 +1107,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                   <MoreVertical className="h-5 w-5" />
                 </button>
-                <button
-                  onClick={() => toggleSection('references')}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
-                >
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                   <ChevronUp className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            {/* Reference Form */}
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
@@ -1258,7 +1201,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
               </div>
             </div>
 
-            {/* Bottom Actions */}
             <div className="flex items-center justify-between">
               <button
                 onClick={addReference}
@@ -1277,15 +1219,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
         );
 
       default:
-        return (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Section Coming Soon</h3>
-            <p className="text-gray-600">This section is under development.</p>
-          </div>
-        );
+        return <div>Section not found</div>;
     }
   };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1314,7 +1250,10 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 )}
               </div>
 
-              <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+              <button 
+                onClick={() => onComplete && onComplete(cvData)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
                 <Download className="h-4 w-4" />
                 Generate CV
               </button>
@@ -1323,8 +1262,190 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderSectionContent()}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex gap-8">
+          
+          {/* LEFT PANE - Section Navigation */}
+          <div className="w-80 flex-shrink-0">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">CV Sections</h2>
+              
+              <div className="space-y-2">
+                {steps.map((step, index) => {
+                  const Icon = step.icon;
+                  const isCompleted = (() => {
+                    switch (step.id) {
+                      case 'personal':
+                        return cvData.personalInfo.fullName && cvData.personalInfo.email && cvData.personalInfo.phone;
+                      case 'summary':
+                        return cvData.summary && cvData.summary.length >= 50;
+                      case 'experience':
+                        return cvData.experience.length > 0;
+                      case 'education':
+                        return cvData.education.length > 0;
+                      case 'skills':
+                        return cvData.skills.length >= 3;
+                      case 'projects':
+                        return true; // Optional section
+                      case 'certifications':
+                        return true; // Optional section
+                      case 'references':
+                        return true; // Optional section
+                      default:
+                        return false;
+                    }
+                  })();
+                  const isActive = currentStep === index;
+
+                  return (
+                    <button
+                      key={step.id}
+                      onClick={() => goToStep(index)}
+                      className={`w-full text-left p-4 rounded-lg border transition-all ${
+                        isActive
+                          ? 'border-blue-500 bg-blue-50'
+                          : isCompleted
+                          ? 'border-green-200 bg-green-50 hover:bg-green-100'
+                          : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-full ${
+                          isActive
+                            ? 'bg-blue-100 text-blue-600'
+                            : isCompleted
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className={`font-medium ${
+                            isActive
+                              ? 'text-blue-900'
+                              : isCompleted
+                              ? 'text-green-900'
+                              : 'text-gray-900'
+                          }`}>
+                            {step.title}
+                            {step.required && <span className="text-red-500 ml-1">*</span>}
+                          </h3>
+                          <p className={`text-sm ${
+                            isActive
+                              ? 'text-blue-600'
+                              : isCompleted
+                              ? 'text-green-600'
+                              : 'text-gray-600'
+                          }`}>
+                            {step.description}
+                          </p>
+                          {isCompleted && !isActive && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                              <span className="text-xs text-green-600">Complete</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Progress
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {Math.round(((currentStep + 1) / steps.length) * 100)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setCvData({
+                      personalInfo: {
+                        fullName: '',
+                        title: '',
+                        email: '',
+                        phone: '',
+                        location: '',
+                        linkedin: '',
+                        website: ''
+                      },
+                      summary: '',
+                      experience: [],
+                      education: [],
+                      skills: [],
+                      projects: [],
+                      certifications: [],
+                      references: []
+                    });
+                    setCurrentStep(0);
+                    localStorage.removeItem('mocv_draft');
+                  }}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Reset Form
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT PANE - Form Content */}
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="p-8">
+                {/* Current Step Content */}
+                {renderCurrentStepContent()}
+
+                {/* Navigation buttons */}
+                <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                  <button
+                    onClick={prevStep}
+                    disabled={currentStep === 0}
+                    className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${
+                      currentStep === 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+
+                  {currentStep === steps.length - 1 ? (
+                    <button
+                      onClick={() => onComplete && onComplete(cvData)}
+                      className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <Download className="h-4 w-4" />
+                      Complete CV
+                    </button>
+                  ) : (
+                    <button
+                      onClick={nextStep}
+                      className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Next
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
