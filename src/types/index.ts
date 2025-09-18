@@ -1,4 +1,4 @@
-// src/types/index.ts - Simplified without target market complexity
+// src/types/index.ts - Corrected for CV Builder compatibility
 
 // Core CV Template (no market dependencies)
 export interface CVTemplate {
@@ -23,17 +23,7 @@ export interface TargetMarket {
   description: string;
 }
 
-// CV Data Structure (clean, no market assumptions)
-export interface CVData {
-  personalInfo: PersonalInfo;
-  professionalSummary: string;
-  experiences: Experience[];
-  education: Education[];
-  skills: Skill[];
-  projects: Project[];
-  certifications: Certification[];
-}
-
+// Personal Info - Enhanced for CV Builder
 export interface PersonalInfo {
   fullName: string;
   title: string;
@@ -42,8 +32,12 @@ export interface PersonalInfo {
   location: string;
   linkedin: string;
   website: string;
+  github: string;        // Added for CV Builder
+  portfolio: string;     // Added for CV Builder
+  photo: string;         // Added for CV Builder
 }
 
+// Experience - Enhanced for CV Builder
 export interface Experience {
   id: string;
   title: string;
@@ -54,8 +48,12 @@ export interface Experience {
   current: boolean;
   description: string;
   achievements: string[];
+  skills: string[];      // Added for CV Builder
+  companyUrl?: string;   // Added for CV Builder
+  salary?: string;       // Added for CV Builder
 }
 
+// Education - Enhanced for CV Builder
 export interface Education {
   id: string;
   degree: string;
@@ -64,15 +62,21 @@ export interface Education {
   graduationDate: string;
   gpa?: string;
   honors?: string[];
+  courses?: string[];    // Added for CV Builder
+  thesis?: string;       // Added for CV Builder
 }
 
+// Skill - Enhanced for CV Builder
 export interface Skill {
   id: string;
   name: string;
   level: number;
-  category: string;
+  category: 'Technical' | 'Soft Skills' | 'Languages' | 'Tools' | 'Frameworks';
+  endorsed?: boolean;         // Added for CV Builder
+  yearsOfExperience?: number; // Added for CV Builder
 }
 
+// Project - Enhanced for CV Builder
 export interface Project {
   id: string;
   name: string;
@@ -82,8 +86,12 @@ export interface Project {
   github?: string;
   startDate?: string;
   endDate?: string;
+  status: 'Completed' | 'In Progress' | 'Planned';  // Added for CV Builder
+  teamSize?: number;      // Added for CV Builder
+  role?: string;          // Added for CV Builder
 }
 
+// Certification - Enhanced for CV Builder
 export interface Certification {
   id: string;
   name: string;
@@ -91,6 +99,43 @@ export interface Certification {
   date: string;
   expiryDate?: string;
   credentialId?: string;
+  verificationUrl?: string;  // Added for CV Builder
+  skills?: string[];         // Added for CV Builder
+}
+
+// Reference - New for CV Builder
+export interface Reference {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  email: string;
+  phone: string;
+  relationship: string;
+  permissionGranted: boolean;
+}
+
+// Additional Section - New for CV Builder
+export interface AdditionalSection {
+  id: string;
+  title: string;
+  content: string;
+  type: 'text' | 'list' | 'achievements' | 'awards';
+  icon?: string;
+}
+
+// CV Data Structure - CORRECTED naming for CV Builder compatibility
+export interface CVData {
+  id?: string;                    // Added for CV Builder
+  personalInfo: PersonalInfo;
+  summary: string;                // CHANGED from 'professionalSummary' to 'summary'
+  experience: Experience[];       // CHANGED from 'experiences' to 'experience'
+  education: Education[];
+  skills: Skill[];
+  projects: Project[];
+  certifications: Certification[];
+  references: Reference[];        // Added for CV Builder
+  additionalSections: AdditionalSection[];  // Added for CV Builder
 }
 
 // CV Analysis (simplified)
