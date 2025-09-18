@@ -1,9 +1,9 @@
-// src/components/AppRouter.tsx
+// src/components/AppRouter.tsx - Updated for new CV Builder
 import React, { useState, useEffect } from 'react';
 import MainDashboard from './MainDashboard';
 import TemplateGallery from './TemplateGallery';
 import CVBuilder from './CVBuilder';
-import { CVTemplate, TargetMarket, GameData } from '../types';
+import { CVTemplate, TargetMarket, GameData, CVData } from '../types';  // Added CVData import
 import gamificationService from '../services/gamificationService';
 
 type AppView = 
@@ -21,6 +21,7 @@ const AppRouter: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<CVTemplate | null>(null);
   const [selectedMarket, setSelectedMarket] = useState<TargetMarket | null>(null);
   const [editingCVId, setEditingCVId] = useState<string | null>(null);
+  const [editingCVData, setEditingCVData] = useState<CVData | null>(null); // Added for CV editing
   const [gameData, setGameData] = useState<GameData | null>(null);
 
   useEffect(() => {
@@ -36,10 +37,12 @@ const AppRouter: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  // Navigation handlers that bridge your dashboard with our new components
+  // Navigation handlers
   const handleCreateNew = () => {
+    // Clear any editing data when creating new
+    setEditingCVId(null);
+    setEditingCVData(null);
     setCurrentView('templates');
-    // Award XP for starting CV creation process
     gamificationService.trackProfileCompletion();
   };
 
@@ -62,7 +65,6 @@ const AppRouter: React.FC = () => {
   const handleTemplateSelect = (template: CVTemplate) => {
     setSelectedTemplate(template);
     setCurrentView('cv-builder');
-    // Award XP for template selection
     gamificationService.trackTemplateSelection();
   };
 
@@ -71,6 +73,7 @@ const AppRouter: React.FC = () => {
     setSelectedTemplate(null);
     setSelectedMarket(null);
     setEditingCVId(null);
+    setEditingCVData(null);
   };
 
   const handleBackToTemplates = () => {
@@ -78,12 +81,18 @@ const AppRouter: React.FC = () => {
     setSelectedTemplate(null);
   };
 
+  // Enhanced CV editing handler
   const handleEditCV = (cvId: string) => {
     setEditingCVId(cvId);
-    // Load the CV data and template
+    
+    // Load the CV data from storage
     const savedCVs = JSON.parse(localStorage.getItem('mocv_saved_cvs') || '[]');
     const cv = savedCVs.find((c: any) => c.id === cvId);
+    
     if (cv) {
+      // Set the CV data for editing
+      setEditingCVData(cv.cvData);
+      
       // Set template for editing
       const template: CVTemplate = {
         id: cv.templateId || 'classic-ats',
@@ -100,6 +109,17 @@ const AppRouter: React.FC = () => {
         tags: []
       };
       setSelectedTemplate(template);
+      
+      // Set target market if available
+      if (cv.targetMarket) {
+        const market: TargetMarket = {
+          id: cv.targetMarket.toLowerCase(),
+          name: cv.targetMarket,
+          description: `${cv.targetMarket} job market`
+        };
+        setSelectedMarket(market);
+      }
+      
       setCurrentView('cv-builder');
     }
   };
@@ -109,35 +129,32 @@ const AppRouter: React.FC = () => {
     {
       id: 'mauritius',
       name: 'Mauritius',
-      description: 'Local Mauritian job market',
-      icon: '🇲🇺',
-      color: 'blue',
-      industries: ['Finance', 'Tourism', 'Technology', 'Manufacturing'],
-      skillFocus: ['Multilingual', 'Customer Service', 'Financial Services'],
-      salaryRange: 'Rs 25,000 - Rs 80,000',
-      popularRoles: ['Financial Analyst', 'Software Developer', 'Hotel Manager']
+      description: 'Local Mauritian job market'
     },
     {
       id: 'usa',
       name: 'United States',
-      description: 'US job market with ATS optimization',
-      icon: '🇺🇸',
-      color: 'red',
-      industries: ['Technology', 'Healthcare', 'Finance', 'Education'],
-      skillFocus: ['Innovation', 'Leadership', 'Technical Skills'],
-      salaryRange: '$50,000 - $150,000',
-      popularRoles: ['Software Engineer', 'Data Scientist', 'Product Manager']
+      description: 'US job market with ATS optimization'
     },
     {
       id: 'uk',
       name: 'United Kingdom',
-      description: 'UK market focusing on experience and qualifications',
-      icon: '🇬🇧',
-      color: 'purple',
-      industries: ['Financial Services', 'Technology', 'Healthcare', 'Creative'],
-      skillFocus: ['Professional Development', 'Analytical Skills', 'Communication'],
-      salaryRange: '£30,000 - £80,000',
-      popularRoles: ['Business Analyst', 'Marketing Manager', 'Operations Manager']
+      description: 'UK market focusing on experience and qualifications'
+    },
+    {
+      id: 'canada',
+      name: 'Canada',
+      description: 'Canadian job market with multicultural focus'
+    },
+    {
+      id: 'australia',
+      name: 'Australia',
+      description: 'Australian market with work-life balance focus'
+    },
+    {
+      id: 'global',
+      name: 'Global',
+      description: 'International remote opportunities'
     }
   ];
 
@@ -156,10 +173,10 @@ const AppRouter: React.FC = () => {
       case 'cv-builder':
         return (
           <CVBuilder
-            targetMarket={selectedMarket}
-            selectedTemplate={selectedTemplate}
             onBack={handleBackToTemplates}
-            onChangeTemplate={handleBackToTemplates}
+            targetMarket={selectedMarket?.name || 'Global'}
+            selectedTemplate={selectedTemplate}
+            initialData={editingCVData || undefined} // Pass editing data if available
           />
         );
 
@@ -186,10 +203,8 @@ const AppRouter: React.FC = () => {
               level: 1,
               xp: 0,
               xpToNextLevel: 100,
-              totalXP: 0,
               achievements: [],
-              streaks: { daily: 0, weekly: 0 },
-              stats: { cvsCreated: 0, templatesUsed: 0, analysisCompleted: 0, interviewsPrepped: 0 }
+              stats: { cvsCreated: 0, downloadsTotal: 0 }
             }}
             onCreateNew={handleCreateNew}
             onImproveCV={handleImproveCV}
@@ -299,13 +314,8 @@ const MarketSelectorView: React.FC<{ onBack: () => void; markets: TargetMarket[]
       <div className="grid md:grid-cols-3 gap-6">
         {markets.map(market => (
           <div key={market.id} className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-            <div className="text-4xl mb-4">{market.icon}</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">{market.name}</h3>
             <p className="text-gray-600 mb-4">{market.description}</p>
-            <div className="space-y-2 text-sm">
-              <div><strong>Salary Range:</strong> {market.salaryRange}</div>
-              <div><strong>Top Industries:</strong> {market.industries.slice(0, 2).join(', ')}</div>
-            </div>
           </div>
         ))}
       </div>
