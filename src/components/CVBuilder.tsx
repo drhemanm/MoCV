@@ -1,4 +1,4 @@
-// src/components/CVBuilder.tsx - Section 1: World-Class CV Builder Setup
+// src/components/CVBuilder.tsx - Section 1: World-Class CV Builder Setup with PDF Generation
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
@@ -342,7 +342,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     }
   }, [cvData]);
 
-  // Enhanced PDF generation
+  // WORKING PDF GENERATION using pdf-lib
   const handleGeneratePDF = useCallback(async () => {
     // Validate required fields
     const errors = validateCV(cvData);
@@ -356,17 +356,385 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     setPdfGenerated(false);
 
     try {
-      // Simulate PDF generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create a new PDF document
+      const pdfDoc = await PDFDocument.create();
+      let currentPage = pdfDoc.addPage([595, 842]); // A4 size
+      const { width, height } = currentPage.getSize();
       
-      // Create a simple text file as placeholder
-      const content = `CV - ${cvData.personalInfo.fullName}\n\nPersonal Info:\nName: ${cvData.personalInfo.fullName}\nEmail: ${cvData.personalInfo.email}\nPhone: ${cvData.personalInfo.phone}\n\nSummary:\n${cvData.summary}\n\nExperience:\n${cvData.experience.map(exp => `${exp.title} at ${exp.company}`).join('\n')}`;
+      // Load fonts
+      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       
-      const blob = new Blob([content], { type: 'text/plain' });
+      let yPosition = height - 50;
+      const margin = 50;
+      const maxWidth = width - (margin * 2);
+      const lineHeight = 14;
+
+      // Helper function to add text with wrapping
+      const addText = (text: string, x: number, y: number, options: {
+        font?: any;
+        size?: number;
+        color?: any;
+        maxWidth?: number;
+        page?: any;
+      } = {}) => {
+        const {
+          font = helveticaFont,
+          size = 10,
+          color = rgb(0, 0, 0),
+          maxWidth: textMaxWidth = maxWidth,
+          page = currentPage
+        } = options;
+
+        // Simple word wrapping
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+
+        for (const word of words) {
+          const testLine = currentLine + (currentLine ? ' ' : '') + word;
+          const textWidth = font.widthOfTextAtSize(testLine, size);
+          
+          if (textWidth <= textMaxWidth) {
+            currentLine = testLine;
+          } else {
+            if (currentLine) lines.push(currentLine);
+            currentLine = word;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+
+        // Draw the lines
+        lines.forEach((line, index) => {
+          page.drawText(line, {
+            x,
+            y: y - (index * lineHeight),
+            size,
+            font,
+            color
+          });
+        });
+
+        return y - (lines.length * lineHeight);
+      };
+
+      // Helper to check if we need a new page
+      const checkNewPage = (neededSpace: number) => {
+        if (yPosition - neededSpace < 50) {
+          currentPage = pdfDoc.addPage([595, 842]);
+          yPosition = height - 50;
+          return currentPage;
+        }
+        return currentPage;
+      };
+
+      // HEADER with blue background
+      currentPage.drawRectangle({
+        x: 0,
+        y: height - 80,
+        width: width,
+        height: 80,
+        color: rgb(0.16, 0.38, 1), // Blue color
+      });
+
+      // Name and title in white
+      yPosition = addText(
+        cvData.personalInfo.fullName || 'Your Name',
+        margin,
+        height - 30,
+        { font: helveticaBold, size: 18, color: rgb(1, 1, 1) }
+      );
+
+      yPosition = addText(
+        cvData.personalInfo.title || 'Professional Title',
+        margin,
+        yPosition - 5,
+        { font: helveticaFont, size: 12, color: rgb(1, 1, 1) }
+      );
+
+      // Contact info
+      const contactInfo = [];
+      if (cvData.personalInfo.email) contactInfo.push(`Email: ${cvData.personalInfo.email}`);
+      if (cvData.personalInfo.phone) contactInfo.push(`Phone: ${cvData.personalInfo.phone}`);
+      if (cvData.personalInfo.location) contactInfo.push(`Location: ${cvData.personalInfo.location}`);
+
+      if (contactInfo.length > 0) {
+        yPosition = addText(
+          contactInfo.join(' | '),
+          margin,
+          yPosition - 3,
+          { font: helveticaFont, size: 9, color: rgb(1, 1, 1) }
+        );
+      }
+
+      yPosition = height - 100; // Reset position after header
+
+      // PROFESSIONAL SUMMARY
+      if (cvData.summary && cvData.summary.trim()) {
+        checkNewPage(40);
+        
+        // Section header background
+        currentPage.drawRectangle({
+          x: margin - 5,
+          y: yPosition - 5,
+          width: maxWidth + 10,
+          height: 20,
+          color: rgb(0.94, 0.94, 0.94), // Light gray
+        });
+
+        yPosition = addText(
+          'PROFESSIONAL SUMMARY',
+          margin,
+          yPosition + 8,
+          { font: helveticaBold, size: 12, page: currentPage }
+        );
+
+        yPosition = addText(
+          cvData.summary,
+          margin,
+          yPosition - 10,
+          { font: helveticaFont, size: 10, page: currentPage }
+        );
+
+        yPosition -= 20;
+      }
+
+      // WORK EXPERIENCE
+      if (cvData.experience && cvData.experience.length > 0) {
+        checkNewPage(60);
+
+        // Section header
+        currentPage.drawRectangle({
+          x: margin - 5,
+          y: yPosition - 5,
+          width: maxWidth + 10,
+          height: 20,
+          color: rgb(0.94, 0.94, 0.94),
+        });
+
+        yPosition = addText(
+          'WORK EXPERIENCE',
+          margin,
+          yPosition + 8,
+          { font: helveticaBold, size: 12, page: currentPage }
+        );
+
+        yPosition -= 25;
+
+        cvData.experience.forEach((exp, index) => {
+          checkNewPage(50);
+
+          // Job title and company
+          const jobHeader = `${exp.title || 'Job Title'}${exp.company ? ` at ${exp.company}` : ''}`;
+          yPosition = addText(
+            jobHeader,
+            margin,
+            yPosition,
+            { font: helveticaBold, size: 11, page: currentPage }
+          );
+
+          // Dates and location
+          const dateLocation = [];
+          if (exp.startDate || exp.endDate) {
+            const endDate = exp.current ? 'Present' : exp.endDate || '';
+            dateLocation.push(`${exp.startDate || 'Start'} - ${endDate}`);
+          }
+          if (exp.location) dateLocation.push(exp.location);
+
+          if (dateLocation.length > 0) {
+            yPosition = addText(
+              dateLocation.join(' | '),
+              margin,
+              yPosition - 5,
+              { font: helveticaFont, size: 9, color: rgb(0.4, 0.4, 0.4), page: currentPage }
+            );
+          }
+
+          // Description
+          if (exp.description) {
+            yPosition = addText(
+              exp.description,
+              margin,
+              yPosition - 8,
+              { font: helveticaFont, size: 10, page: currentPage }
+            );
+          }
+
+          if (index < cvData.experience.length - 1) yPosition -= 15;
+        });
+
+        yPosition -= 20;
+      }
+
+      // EDUCATION
+      if (cvData.education && cvData.education.length > 0) {
+        checkNewPage(40);
+
+        currentPage.drawRectangle({
+          x: margin - 5,
+          y: yPosition - 5,
+          width: maxWidth + 10,
+          height: 20,
+          color: rgb(0.94, 0.94, 0.94),
+        });
+
+        yPosition = addText(
+          'EDUCATION',
+          margin,
+          yPosition + 8,
+          { font: helveticaBold, size: 12, page: currentPage }
+        );
+
+        yPosition -= 25;
+
+        cvData.education.forEach((edu, index) => {
+          checkNewPage(30);
+
+          const eduHeader = `${edu.degree || 'Degree'}${edu.school ? ` - ${edu.school}` : ''}`;
+          yPosition = addText(
+            eduHeader,
+            margin,
+            yPosition,
+            { font: helveticaBold, size: 10, page: currentPage }
+          );
+
+          const eduDetails = [];
+          if (edu.graduationDate) eduDetails.push(edu.graduationDate);
+          if (edu.location) eduDetails.push(edu.location);
+          if (edu.gpa) eduDetails.push(`GPA: ${edu.gpa}`);
+
+          if (eduDetails.length > 0) {
+            yPosition = addText(
+              eduDetails.join(' | '),
+              margin,
+              yPosition - 5,
+              { font: helveticaFont, size: 9, color: rgb(0.4, 0.4, 0.4), page: currentPage }
+            );
+          }
+
+          if (index < cvData.education.length - 1) yPosition -= 15;
+        });
+
+        yPosition -= 20;
+      }
+
+      // SKILLS
+      if (cvData.skills && cvData.skills.length > 0) {
+        checkNewPage(30);
+
+        currentPage.drawRectangle({
+          x: margin - 5,
+          y: yPosition - 5,
+          width: maxWidth + 10,
+          height: 20,
+          color: rgb(0.94, 0.94, 0.94),
+        });
+
+        yPosition = addText(
+          'SKILLS',
+          margin,
+          yPosition + 8,
+          { font: helveticaBold, size: 12, page: currentPage }
+        );
+
+        yPosition -= 20;
+
+        // Group skills by category
+        const skillsByCategory = cvData.skills.reduce((acc, skill) => {
+          const category = skill.category || 'Technical';
+          if (!acc[category]) acc[category] = [];
+          acc[category].push(skill.name);
+          return acc;
+        }, {} as Record<string, string[]>);
+
+        Object.entries(skillsByCategory).forEach(([category, skills]) => {
+          checkNewPage(25);
+          
+          yPosition = addText(
+            `${category}:`,
+            margin,
+            yPosition,
+            { font: helveticaBold, size: 10, page: currentPage }
+          );
+
+          yPosition = addText(
+            skills.join(', '),
+            margin + 5,
+            yPosition - 5,
+            { font: helveticaFont, size: 10, page: currentPage }
+          );
+
+          yPosition -= 10;
+        });
+      }
+
+      // PROJECTS (if any)
+      if (cvData.projects && cvData.projects.length > 0) {
+        checkNewPage(30);
+
+        currentPage.drawRectangle({
+          x: margin - 5,
+          y: yPosition - 5,
+          width: maxWidth + 10,
+          height: 20,
+          color: rgb(0.94, 0.94, 0.94),
+        });
+
+        yPosition = addText(
+          'PROJECTS',
+          margin,
+          yPosition + 8,
+          { font: helveticaBold, size: 12, page: currentPage }
+        );
+
+        yPosition -= 25;
+
+        cvData.projects.forEach((project, index) => {
+          checkNewPage(25);
+
+          yPosition = addText(
+            project.name || 'Project Name',
+            margin,
+            yPosition,
+            { font: helveticaBold, size: 11, page: currentPage }
+          );
+
+          if (project.description) {
+            yPosition = addText(
+              project.description,
+              margin,
+              yPosition - 5,
+              { font: helveticaFont, size: 10, page: currentPage }
+            );
+          }
+
+          const projectDetails = [];
+          if (project.status) projectDetails.push(`Status: ${project.status}`);
+          if (project.github) projectDetails.push(`GitHub: ${project.github}`);
+          if (project.link) projectDetails.push(`Demo: ${project.link}`);
+
+          if (projectDetails.length > 0) {
+            yPosition = addText(
+              projectDetails.join(' | '),
+              margin,
+              yPosition - 3,
+              { font: helveticaFont, size: 9, color: rgb(0.4, 0.4, 0.4), page: currentPage }
+            );
+          }
+
+          if (index < cvData.projects.length - 1) yPosition -= 15;
+        });
+      }
+
+      // Generate the PDF
+      const pdfBytes = await pdfDoc.save();
+      
+      // Create download
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       
       const timestamp = new Date().toISOString().slice(0, 10);
-      const filename = `${cvData.personalInfo.fullName.replace(/\s+/g, '_')}_CV_${timestamp}.txt`;
+      const filename = `${(cvData.personalInfo.fullName || 'CV').replace(/\s+/g, '_')}_${timestamp}.pdf`;
       
       const a = document.createElement('a');
       a.href = url;
@@ -377,7 +745,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       URL.revokeObjectURL(url);
       
       setPdfGenerated(true);
-      showSuccessNotification('CV file generated successfully!');
+      showSuccessNotification('CV PDF generated successfully!');
       
     } catch (error) {
       console.error('PDF generation error:', error);
