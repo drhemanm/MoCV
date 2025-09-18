@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+coverage
+.env
+.env.local
+.env.production
+*.min.js
+*.min.css
+public/mockServiceWorker.js
+.vercel
