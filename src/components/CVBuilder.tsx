@@ -1,4 +1,4 @@
-// src/components/CVBuilder.tsx - SECTION 1: Imports and Setup
+// src/components/CVBuilder.tsx - COMPLETE VERSION WITH PDF - SECTION 1
 import React, { useState, useEffect, useRef } from 'react';
 import {
   User, FileText, Briefcase, GraduationCap, Code2, Target, Award,
@@ -6,6 +6,7 @@ import {
   Settings, Sparkles, Bot, RotateCcw, CheckCircle, AlertCircle,
   Calendar, MapPin, ExternalLink, Mail, Phone, Globe
 } from 'lucide-react';
+import { generateCVPDF } from '../services/pdfService';
 
 // Types and Interfaces
 interface CVBuilderProps {
@@ -123,6 +124,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
@@ -181,6 +183,35 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       }));
     }
   }, [initialData]);
+
+  // PDF Download Handler
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      const pdfBytes = await generateCVPDF(cvData);
+      
+      // Create blob and download
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${cvData.personalInfo.fullName.replace(/\s+/g, '_')}_CV.pdf` || 'CV.pdf';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   // Validation functions
   const validateEmail = (email: string): boolean => {
@@ -1543,6 +1574,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
+              <button
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF || !cvData.personalInfo.fullName}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="h-4 w-4" />
+                {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
+              </button>
+              
               <button
                 onClick={handleSave}
                 disabled={isSaving}
