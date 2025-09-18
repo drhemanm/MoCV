@@ -1,3 +1,4 @@
+import CVLibrary from './components/CVLibrary';
 import React, { useState, useEffect, useCallback } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { CVTemplate, CVAnalysis, GameData } from './types';
