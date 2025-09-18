@@ -1,5 +1,5 @@
-// src/components/CVBuilder.tsx - SECTION 1: Imports, Interfaces & State (FIXED VERSION)
-import React, { useState, useEffect, useRef } from 'react';
+// src/components/CVBuilder.tsx - SECTION 1: Imports, Interfaces & State
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   User, FileText, Briefcase, GraduationCap, Code2, Target, Award, Users,
   Plus, Trash2, Eye, Download, Save, ArrowLeft, ArrowRight, MoreVertical,
@@ -80,6 +80,154 @@ interface CVData {
   }>;
 }
 
+// Optimized Description Input Component - FIXED PERFORMANCE ISSUES
+const OptimizedDescriptionInput = ({ 
+  value, 
+  onChange, 
+  placeholder = "Describe your experience, achievements, and responsibilities..." 
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) => {
+  const [localValue, setLocalValue] = useState(value || '');
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Debounced update to parent - prevents lag
+  const debouncedOnChange = useCallback((text: string) => {
+    // Update immediately for responsive typing
+    setLocalValue(text);
+    
+    // Debounce the parent update to prevent excessive re-renders
+    const timeoutId = setTimeout(() => {
+      onChange(text);
+    }, 300); // 300ms delay
+    
+    return () => clearTimeout(timeoutId);
+  }, [onChange]);
+
+  // Handle text changes
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    debouncedOnChange(newValue);
+  }, [debouncedOnChange]);
+
+  // Format text functions
+  const formatText = useCallback((format: string) => {
+    const textarea = document.getElementById('description-textarea-' + Math.random().toString(36).substr(2, 9));
+    if (!textarea) return;
+    
+    const start = (textarea as HTMLTextAreaElement).selectionStart;
+    const end = (textarea as HTMLTextAreaElement).selectionEnd;
+    const selectedText = localValue.substring(start, end);
+    
+    let formattedText = '';
+    
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText || 'bold text'}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText || 'italic text'}*`;
+        break;
+      case 'underline':
+        formattedText = `_${selectedText || 'underlined text'}_`;
+        break;
+      case 'bullet':
+        const lines = (selectedText || 'List item').split('\n');
+        formattedText = lines.map(line => `• ${line.trim()}`).join('\n');
+        break;
+      default:
+        formattedText = selectedText;
+    }
+    
+    const newText = localValue.substring(0, start) + formattedText + localValue.substring(end);
+    setLocalValue(newText);
+    debouncedOnChange(newText);
+    
+    // Restore focus and cursor position
+    setTimeout(() => {
+      textarea.focus();
+      (textarea as HTMLTextAreaElement).setSelectionRange(
+        start + formattedText.length, 
+        start + formattedText.length
+      );
+    }, 0);
+  }, [localValue, debouncedOnChange]);
+
+  // Sync with parent value if it changes externally
+  useEffect(() => {
+    if (value !== localValue && !isFocused) {
+      setLocalValue(value || '');
+    }
+  }, [value, localValue, isFocused]);
+
+  const textareaId = `description-textarea-${Math.random().toString(36).substr(2, 9)}`;
+
+  return (
+    <div className="border border-gray-300 rounded-lg overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex items-center gap-1 p-2 bg-gray-50 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => formatText('bold')}
+          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+          title="Bold"
+        >
+          <Bold className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => formatText('italic')}
+          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+          title="Italic"
+        >
+          <Italic className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => formatText('underline')}
+          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+          title="Underline"
+        >
+          <Underline className="h-4 w-4" />
+        </button>
+        <div className="w-px h-6 bg-gray-300 mx-1" />
+        <button
+          type="button"
+          onClick={() => formatText('bullet')}
+          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+          title="Bullet List"
+        >
+          <List className="h-4 w-4" />
+        </button>
+        <div className="ml-auto text-xs text-gray-500">
+          {localValue.length} characters
+        </div>
+      </div>
+
+      {/* Text Area */}
+      <textarea
+        id={textareaId}
+        value={localValue}
+        onChange={handleTextChange}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        placeholder={placeholder}
+        className="w-full px-4 py-3 border-0 focus:ring-0 focus:outline-none resize-none bg-white"
+        rows={6}
+        style={{ minHeight: '120px' }}
+      />
+
+      {/* Helper text */}
+      <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500">
+        Use the toolbar buttons to format text, or type naturally. 
+        Use bullet points (•) to highlight achievements.
+      </div>
+    </div>
+  );
+};
+
 const CVBuilder: React.FC<CVBuilderProps> = ({
   targetMarket,
   template,
@@ -87,7 +235,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
   onBack,
   initialData
 }) => {
-  // State management
+  // Main state management
   const [currentStep, setCurrentStep] = useState(0);
   const [cvData, setCvData] = useState<CVData>({
     personalInfo: {
@@ -111,7 +259,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  // FIXED: Add individual form state management
+  // Individual form state management - FIXED PERFORMANCE
   const [currentExperience, setCurrentExperience] = useState({
     id: `exp_${Date.now()}`,
     position: '',
@@ -187,7 +335,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     soft: ['Communication', 'Teamwork', 'Problem Solving', 'Time Management', 'Adaptability', 'Leadership']
   };
 
-  // Form steps configuration - LEFT PANE NAVIGATION
+  // Form steps configuration
   const steps = [
     {
       id: 'personal',
@@ -246,96 +394,64 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       required: false
     }
   ];
+  // src/components/CVBuilder.tsx - SECTION 2: Auto-save, Navigation & Helper Functions
 
-  // Auto-save functionality
+  // Auto-save functionality with debouncing
   useEffect(() => {
     const timer = setTimeout(() => {
       if (cvData.personalInfo.fullName || cvData.summary) {
         setAutoSaveStatus('saving');
-        localStorage.setItem('mocv_draft', JSON.stringify(cvData));
-        setTimeout(() => setAutoSaveStatus('saved'), 1000);
+        try {
+          localStorage.setItem('mocv_draft', JSON.stringify(cvData));
+          setTimeout(() => setAutoSaveStatus('saved'), 1000);
+        } catch (error) {
+          console.error('Failed to save draft:', error);
+          setAutoSaveStatus('error');
+        }
       }
     }, 2000);
 
     return () => clearTimeout(timer);
   }, [cvData]);
 
+  // Load initial data from localStorage or props
+  useEffect(() => {
+    if (initialData) {
+      setCvData(initialData);
+    } else {
+      try {
+        const savedDraft = localStorage.getItem('mocv_draft');
+        if (savedDraft) {
+          const parsedDraft = JSON.parse(savedDraft);
+          setCvData(parsedDraft);
+        }
+      } catch (error) {
+        console.error('Failed to load saved draft:', error);
+      }
+    }
+  }, [initialData]);
+
   // Navigation functions
-  const nextStep = () => {
+  const nextStep = useCallback(() => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
-  };
+  }, [currentStep, steps.length]);
 
-  const prevStep = () => {
+  const prevStep = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
-  };
+  }, [currentStep]);
 
-  const goToStep = (stepIndex: number) => {
-    setCurrentStep(stepIndex);
-  };
+  const goToStep = useCallback((stepIndex: number) => {
+    if (stepIndex >= 0 && stepIndex < steps.length) {
+      setCurrentStep(stepIndex);
+    }
+  }, [steps.length]);
 
-  // FIXED: Updated Rich text editor component with proper state handling
-  const RichTextEditor = ({ value, onChange, placeholder }: { 
-    value: string; 
-    onChange: (value: string) => void; 
-    placeholder: string;
-  }) => {
-    const [isFocused, setIsFocused] = useState(false);
-    
-    return (
-      <div className="border border-gray-300 rounded-lg">
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder={placeholder}
-          className={`w-full px-4 py-3 border-0 rounded-t-lg focus:ring-0 focus:outline-none resize-none transition-colors ${
-            isFocused ? 'bg-white' : 'bg-gray-50'
-          }`}
-          rows={4}
-        />
-        <div className="border-t border-gray-200 px-4 py-2 bg-gray-50 rounded-b-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button type="button" className="p-1 text-gray-600 hover:text-gray-800 rounded">
-                <Bold className="h-4 w-4" />
-              </button>
-              <button type="button" className="p-1 text-gray-600 hover:text-gray-800 rounded">
-                <Italic className="h-4 w-4" />
-              </button>
-              <button type="button" className="p-1 text-gray-600 hover:text-gray-800 rounded">
-                <Underline className="h-4 w-4" />
-              </button>
-              <button type="button" className="p-1 text-gray-600 hover:text-gray-800 rounded">
-                <Link className="h-4 w-4" />
-              </button>
-              <button type="button" className="p-1 text-gray-600 hover:text-gray-800 rounded">
-                <List className="h-4 w-4" />
-              </button>
-              <button type="button" className="p-1 text-gray-600 hover:text-gray-800 rounded">
-                <ListOrdered className="h-4 w-4" />
-              </button>
-              <button type="button" className="p-1 text-gray-600 hover:text-gray-800 rounded flex items-center gap-1">
-                <AlignLeft className="h-4 w-4" />
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </div>
-            <button type="button" className="flex items-center gap-2 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-50">
-              <Sparkles className="h-4 w-4" />
-              AI Suggestions
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // UPDATED: Helper functions for form management
-  const resetCurrentExperience = () => {
+  // Reset functions for form states - OPTIMIZED WITH CALLBACKS
+  const resetCurrentExperience = useCallback(() => {
     setCurrentExperience({
       id: `exp_${Date.now()}`,
       position: '',
@@ -346,9 +462,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       present: false,
       description: ''
     });
-  };
+  }, []);
 
-  const resetCurrentEducation = () => {
+  const resetCurrentEducation = useCallback(() => {
     setCurrentEducation({
       id: `edu_${Date.now()}`,
       degree: '',
@@ -359,9 +475,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       present: false,
       description: ''
     });
-  };
+  }, []);
 
-  const resetCurrentProject = () => {
+  const resetCurrentProject = useCallback(() => {
     setCurrentProject({
       id: `proj_${Date.now()}`,
       name: '',
@@ -369,9 +485,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       technologies: [],
       link: ''
     });
-  };
+  }, []);
 
-  const resetCurrentCertification = () => {
+  const resetCurrentCertification = useCallback(() => {
     setCurrentCertification({
       id: `cert_${Date.now()}`,
       name: '',
@@ -379,9 +495,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       date: '',
       expiryDate: ''
     });
-  };
+  }, []);
 
-  const resetCurrentReference = () => {
+  const resetCurrentReference = useCallback(() => {
     setCurrentReference({
       id: `ref_${Date.now()}`,
       name: '',
@@ -391,29 +507,306 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       phone: '',
       relationship: ''
     });
-  };
+  }, []);
 
-  const resetCurrentSkill = () => {
+  const resetCurrentSkill = useCallback(() => {
     setCurrentSkill({
       id: `skill_${Date.now()}`,
       name: '',
       level: ''
     });
-  };
+  }, []);
 
-  // CRUD functions for different sections
-  const addSkill = (skillName: string = '') => {
-    const newSkill = {
-      id: `skill_${Date.now()}`,
-      name: skillName,
-      level: ''
-    };
+  // CRUD functions for different sections - OPTIMIZED
+  const addExperience = useCallback(() => {
+    if (currentExperience.position.trim()) {
+      setCvData(prev => ({
+        ...prev,
+        experience: [...prev.experience, currentExperience]
+      }));
+      resetCurrentExperience();
+    }
+  }, [currentExperience, resetCurrentExperience]);
+
+  const removeExperience = useCallback((id: string) => {
     setCvData(prev => ({
       ...prev,
-      skills: [...prev.skills, newSkill]
+      experience: prev.experience.filter(exp => exp.id !== id)
     }));
-  };
-  // RIGHT PANE CONTENT - Form for current section (FIXED VERSION)
+  }, []);
+
+  const addEducation = useCallback(() => {
+    if (currentEducation.degree.trim()) {
+      setCvData(prev => ({
+        ...prev,
+        education: [...prev.education, currentEducation]
+      }));
+      resetCurrentEducation();
+    }
+  }, [currentEducation, resetCurrentEducation]);
+
+  const removeEducation = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      education: prev.education.filter(edu => edu.id !== id)
+    }));
+  }, []);
+
+  const addProject = useCallback(() => {
+    if (currentProject.name.trim()) {
+      setCvData(prev => ({
+        ...prev,
+        projects: [...prev.projects, currentProject]
+      }));
+      resetCurrentProject();
+    }
+  }, [currentProject, resetCurrentProject]);
+
+  const removeProject = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      projects: prev.projects.filter(proj => proj.id !== id)
+    }));
+  }, []);
+
+  const addCertification = useCallback(() => {
+    if (currentCertification.name.trim() && currentCertification.issuer.trim()) {
+      setCvData(prev => ({
+        ...prev,
+        certifications: [...prev.certifications, currentCertification]
+      }));
+      resetCurrentCertification();
+    }
+  }, [currentCertification, resetCurrentCertification]);
+
+  const removeCertification = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      certifications: prev.certifications.filter(cert => cert.id !== id)
+    }));
+  }, []);
+
+  const addReference = useCallback(() => {
+    if (currentReference.name.trim()) {
+      setCvData(prev => ({
+        ...prev,
+        references: [...prev.references, currentReference]
+      }));
+      resetCurrentReference();
+    }
+  }, [currentReference, resetCurrentReference]);
+
+  const removeReference = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      references: prev.references.filter(ref => ref.id !== id)
+    }));
+  }, []);
+
+  const addSkill = useCallback((skillName: string = '') => {
+    if (currentSkill.name.trim()) {
+      setCvData(prev => ({
+        ...prev,
+        skills: [...prev.skills, currentSkill]
+      }));
+      resetCurrentSkill();
+    } else if (skillName.trim()) {
+      const newSkill = {
+        id: `skill_${Date.now()}`,
+        name: skillName,
+        level: ''
+      };
+      setCvData(prev => ({
+        ...prev,
+        skills: [...prev.skills, newSkill]
+      }));
+    }
+  }, [currentSkill, resetCurrentSkill]);
+
+  const removeSkill = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill.id !== id)
+    }));
+  }, []);
+
+  // Validation functions
+  const validateCurrentStep = useCallback(() => {
+    const currentStepData = steps[currentStep];
+    const errors: ValidationErrors = {};
+
+    switch (currentStepData.id) {
+      case 'personal':
+        if (!cvData.personalInfo.fullName.trim()) {
+          errors.fullName = 'Full name is required';
+        }
+        if (!cvData.personalInfo.email.trim()) {
+          errors.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cvData.personalInfo.email)) {
+          errors.email = 'Please enter a valid email address';
+        }
+        if (!cvData.personalInfo.phone.trim()) {
+          errors.phone = 'Phone number is required';
+        }
+        break;
+      case 'summary':
+        if (!cvData.summary.trim()) {
+          errors.summary = 'Professional summary is required';
+        } else if (cvData.summary.length < 50) {
+          errors.summary = 'Summary should be at least 50 characters long';
+        }
+        break;
+      case 'experience':
+        if (cvData.experience.length === 0) {
+          errors.experience = 'At least one work experience entry is required';
+        }
+        break;
+      case 'education':
+        if (cvData.education.length === 0) {
+          errors.education = 'At least one education entry is required';
+        }
+        break;
+      case 'skills':
+        if (cvData.skills.length < 3) {
+          errors.skills = 'Please add at least 3 skills';
+        }
+        break;
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [currentStep, cvData, steps]);
+
+  // Completion check function
+  const isStepComplete = useCallback((stepId: string) => {
+    switch (stepId) {
+      case 'personal':
+        return cvData.personalInfo.fullName && cvData.personalInfo.email && cvData.personalInfo.phone;
+      case 'summary':
+        return cvData.summary && cvData.summary.length >= 50;
+      case 'experience':
+        return cvData.experience.length > 0;
+      case 'education':
+        return cvData.education.length > 0;
+      case 'skills':
+        return cvData.skills.length >= 3;
+      case 'projects':
+        return cvData.projects.length > 0 || true; // Optional section
+      case 'certifications':
+        return cvData.certifications.length > 0 || true; // Optional section
+      case 'references':
+        return cvData.references.length > 0 || true; // Optional section
+      default:
+        return false;
+    }
+  }, [cvData]);
+
+  // Progress calculation
+  const getProgress = useCallback(() => {
+    const requiredSteps = steps.filter(step => step.required);
+    const completedRequired = requiredSteps.filter(step => isStepComplete(step.id)).length;
+    const optionalSteps = steps.filter(step => !step.required);
+    const completedOptional = optionalSteps.filter(step => 
+      step.id === 'projects' ? cvData.projects.length > 0 :
+      step.id === 'certifications' ? cvData.certifications.length > 0 :
+      step.id === 'references' ? cvData.references.length > 0 : false
+    ).length;
+
+    return {
+      required: completedRequired,
+      totalRequired: requiredSteps.length,
+      optional: completedOptional,
+      totalOptional: optionalSteps.length,
+      overall: Math.round(((completedRequired + completedOptional) / steps.length) * 100)
+    };
+  }, [steps, isStepComplete, cvData]);
+
+  // Handle form reset
+  const handleResetForm = useCallback(() => {
+    const confirmReset = window.confirm('Are you sure you want to reset all form data? This action cannot be undone.');
+    if (confirmReset) {
+      setCvData({
+        personalInfo: {
+          fullName: '',
+          title: '',
+          email: '',
+          phone: '',
+          location: '',
+          linkedin: '',
+          website: ''
+        },
+        summary: '',
+        experience: [],
+        education: [],
+        skills: [],
+        projects: [],
+        certifications: [],
+        references: []
+      });
+      
+      // Reset all current form states
+      resetCurrentExperience();
+      resetCurrentEducation();
+      resetCurrentProject();
+      resetCurrentCertification();
+      resetCurrentReference();
+      resetCurrentSkill();
+      setCurrentStep(0);
+      setValidationErrors({});
+      localStorage.removeItem('mocv_draft');
+      setAutoSaveStatus('idle');
+    }
+  }, [
+    resetCurrentExperience,
+    resetCurrentEducation,
+    resetCurrentProject,
+    resetCurrentCertification,
+    resetCurrentReference,
+    resetCurrentSkill
+  ]);
+
+  // Handle final completion
+  const handleComplete = useCallback(() => {
+    const requiredComplete = [
+      cvData.personalInfo.fullName && cvData.personalInfo.email && cvData.personalInfo.phone,
+      cvData.summary && cvData.summary.length >= 50,
+      cvData.experience.length > 0,
+      cvData.education.length > 0,
+      cvData.skills.length >= 3
+    ].every(Boolean);
+
+    if (!requiredComplete) {
+      alert('Please complete all required sections before generating your CV.');
+      return;
+    }
+
+    // Clear the draft from localStorage since we're completing
+    localStorage.removeItem('mocv_draft');
+    onComplete && onComplete(cvData);
+  }, [cvData, onComplete]);
+  // src/components/CVBuilder.tsx - SECTION 3: Form Rendering Functions (Personal, Summary, Experience, Education)
+
+  // Optimized change handlers with useCallback
+  const handlePersonalInfoChange = useCallback((field: string, value: string) => {
+    setCvData(prev => ({
+      ...prev,
+      personalInfo: { ...prev.personalInfo, [field]: value }
+    }));
+  }, []);
+
+  const handleSummaryChange = useCallback((value: string) => {
+    setCvData(prev => ({ ...prev, summary: value }));
+  }, []);
+
+  const handleExperienceDescriptionChange = useCallback((value: string) => {
+    setCurrentExperience(prev => ({ ...prev, description: value }));
+  }, []);
+
+  const handleEducationDescriptionChange = useCallback((value: string) => {
+    setCurrentEducation(prev => ({ ...prev, description: value }));
+  }, []);
+
+  // Form rendering function for current step
   const renderCurrentStepContent = () => {
     const currentStepData = steps[currentStep];
 
@@ -445,13 +838,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   <input
                     type="text"
                     value={cvData.personalInfo.fullName}
-                    onChange={(e) => setCvData(prev => ({
-                      ...prev,
-                      personalInfo: { ...prev.personalInfo, fullName: e.target.value }
-                    }))}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    onChange={(e) => handlePersonalInfoChange('fullName', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all ${
+                      validationErrors.fullName ? 'ring-2 ring-red-500' : ''
+                    }`}
                     placeholder="John Doe"
                   />
+                  {validationErrors.fullName && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.fullName}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -460,10 +855,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   <input
                     type="text"
                     value={cvData.personalInfo.title}
-                    onChange={(e) => setCvData(prev => ({
-                      ...prev,
-                      personalInfo: { ...prev.personalInfo, title: e.target.value }
-                    }))}
+                    onChange={(e) => handlePersonalInfoChange('title', e.target.value)}
                     className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
                     placeholder="Software Developer"
                   />
@@ -475,13 +867,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   <input
                     type="email"
                     value={cvData.personalInfo.email}
-                    onChange={(e) => setCvData(prev => ({
-                      ...prev,
-                      personalInfo: { ...prev.personalInfo, email: e.target.value }
-                    }))}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    onChange={(e) => handlePersonalInfoChange('email', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all ${
+                      validationErrors.email ? 'ring-2 ring-red-500' : ''
+                    }`}
                     placeholder="john@example.com"
                   />
+                  {validationErrors.email && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -490,13 +884,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   <input
                     type="tel"
                     value={cvData.personalInfo.phone}
-                    onChange={(e) => setCvData(prev => ({
-                      ...prev,
-                      personalInfo: { ...prev.personalInfo, phone: e.target.value }
-                    }))}
-                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    onChange={(e) => handlePersonalInfoChange('phone', e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all ${
+                      validationErrors.phone ? 'ring-2 ring-red-500' : ''
+                    }`}
                     placeholder="+230 123 4567"
                   />
+                  {validationErrors.phone && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.phone}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -505,10 +901,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   <input
                     type="text"
                     value={cvData.personalInfo.location}
-                    onChange={(e) => setCvData(prev => ({
-                      ...prev,
-                      personalInfo: { ...prev.personalInfo, location: e.target.value }
-                    }))}
+                    onChange={(e) => handlePersonalInfoChange('location', e.target.value)}
                     className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
                     placeholder="Port Louis, Mauritius"
                   />
@@ -520,10 +913,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   <input
                     type="url"
                     value={cvData.personalInfo.linkedin}
-                    onChange={(e) => setCvData(prev => ({
-                      ...prev,
-                      personalInfo: { ...prev.personalInfo, linkedin: e.target.value }
-                    }))}
+                    onChange={(e) => handlePersonalInfoChange('linkedin', e.target.value)}
                     className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
                     placeholder="https://linkedin.com/in/johndoe"
                   />
@@ -556,11 +946,14 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Professional Summary *
                 </label>
-                <RichTextEditor 
+                <OptimizedDescriptionInput 
                   value={cvData.summary}
-                  onChange={(value) => setCvData(prev => ({ ...prev, summary: value }))}
+                  onChange={handleSummaryChange}
                   placeholder="Write a compelling 2-3 sentence summary that highlights your experience and value proposition..."
                 />
+                {validationErrors.summary && (
+                  <p className="mt-2 text-sm text-red-600">{validationErrors.summary}</p>
+                )}
               </div>
             </div>
           </div>
@@ -598,12 +991,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                           {exp.startDate.month && exp.startDate.year ? `${exp.startDate.month} ${exp.startDate.year}` : 'Start'} - 
                           {exp.present ? ' Present' : (exp.endDate.month && exp.endDate.year ? ` ${exp.endDate.month} ${exp.endDate.year}` : ' End')}
                         </p>
+                        {exp.description && (
+                          <p className="text-sm text-gray-600 mt-2">{exp.description.substring(0, 100)}...</p>
+                        )}
                       </div>
                       <button
-                        onClick={() => setCvData(prev => ({
-                          ...prev,
-                          experience: prev.experience.filter(e => e.id !== exp.id)
-                        }))}
+                        onClick={() => removeExperience(exp.id)}
                         className="p-1 text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -611,6 +1004,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {validationErrors.experience && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-red-600">{validationErrors.experience}</p>
               </div>
             )}
 
@@ -763,12 +1162,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    Description *
                   </label>
-                  <RichTextEditor 
+                  <OptimizedDescriptionInput 
                     value={currentExperience.description}
-                    onChange={(value) => setCurrentExperience(prev => ({ ...prev, description: value }))}
-                    placeholder="Start typing here..."
+                    onChange={handleExperienceDescriptionChange}
+                    placeholder="• Developed and maintained web applications using React and Node.js
+• Collaborated with cross-functional teams to deliver high-quality software solutions
+• Implemented automated testing strategies that reduced bugs by 40%
+• Mentored junior developers and conducted code reviews"
                   />
                 </div>
               </div>
@@ -783,13 +1185,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 </button>
                 <button 
                   type="button"
-                  onClick={() => {
-                    setCvData(prev => ({
-                      ...prev,
-                      experience: [...prev.experience, currentExperience]
-                    }));
-                    resetCurrentExperience();
-                  }}
+                  onClick={addExperience}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Done
@@ -831,12 +1227,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                           {edu.startDate.month && edu.startDate.year ? `${edu.startDate.month} ${edu.startDate.year}` : 'Start'} - 
                           {edu.present ? ' Present' : (edu.endDate.month && edu.endDate.year ? ` ${edu.endDate.month} ${edu.endDate.year}` : ' End')}
                         </p>
+                        {edu.description && (
+                          <p className="text-sm text-gray-600 mt-2">{edu.description.substring(0, 100)}...</p>
+                        )}
                       </div>
                       <button
-                        onClick={() => setCvData(prev => ({
-                          ...prev,
-                          education: prev.education.filter(e => e.id !== edu.id)
-                        }))}
+                        onClick={() => removeEducation(edu.id)}
                         className="p-1 text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -844,6 +1240,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {validationErrors.education && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-red-600">{validationErrors.education}</p>
               </div>
             )}
 
@@ -998,10 +1400,10 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description
                   </label>
-                  <RichTextEditor 
+                  <OptimizedDescriptionInput 
                     value={currentEducation.description}
-                    onChange={(value) => setCurrentEducation(prev => ({ ...prev, description: value }))}
-                    placeholder="Start typing here..."
+                    onChange={handleEducationDescriptionChange}
+                    placeholder="Relevant coursework, achievements, GPA, honors, activities..."
                   />
                 </div>
               </div>
@@ -1016,13 +1418,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 </button>
                 <button 
                   type="button"
-                  onClick={() => {
-                    setCvData(prev => ({
-                      ...prev,
-                      education: [...prev.education, currentEducation]
-                    }));
-                    resetCurrentEducation();
-                  }}
+                  onClick={addEducation}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Done
@@ -1031,7 +1427,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
             </div>
           </div>
         );
-		case 'skills':
+		// src/components/CVBuilder.tsx - SECTION 4: Skills, Projects, Certifications, References & Main Component Structure
+
+      case 'skills':
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-8">
@@ -1062,10 +1460,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                           <p className="text-sm text-gray-600">Level: {skill.level || 'Not set'}</p>
                         </div>
                         <button
-                          onClick={() => setCvData(prev => ({
-                            ...prev,
-                            skills: prev.skills.filter(s => s.id !== skill.id)
-                          }))}
+                          onClick={() => removeSkill(skill.id)}
                           className="p-1 text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1074,6 +1469,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {validationErrors.skills && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-red-600">{validationErrors.skills}</p>
               </div>
             )}
 
@@ -1122,15 +1523,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 </button>
                 <button 
                   type="button"
-                  onClick={() => {
-                    if (currentSkill.name.trim()) {
-                      setCvData(prev => ({
-                        ...prev,
-                        skills: [...prev.skills, currentSkill]
-                      }));
-                      resetCurrentSkill();
-                    }
-                  }}
+                  onClick={addSkill}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Done
@@ -1152,22 +1545,6 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={resetCurrentSkill}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <Plus className="h-4 w-4" />
-                Add skill
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
-                <Sparkles className="h-4 w-4" />
-                AI Suggestions
-                <RotateCcw className="h-4 w-4" />
-              </button>
             </div>
           </div>
         );
@@ -1205,12 +1582,23 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                           </a>
                         )}
                         <p className="text-sm text-gray-600 mt-1">{project.description.substring(0, 100)}...</p>
+                        {project.technologies.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {project.technologies.slice(0, 3).map((tech, index) => (
+                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                                {tech}
+                              </span>
+                            ))}
+                            {project.technologies.length > 3 && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                +{project.technologies.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <button
-                        onClick={() => setCvData(prev => ({
-                          ...prev,
-                          projects: prev.projects.filter(p => p.id !== project.id)
-                        }))}
+                        onClick={() => removeProject(project.id)}
                         className="p-1 text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1269,7 +1657,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description *
                   </label>
-                  <RichTextEditor 
+                  <OptimizedDescriptionInput 
                     value={currentProject.description}
                     onChange={(value) => setCurrentProject(prev => ({ ...prev, description: value }))}
                     placeholder="Describe your project, your role, technologies used, and the impact..."
@@ -1287,35 +1675,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 </button>
                 <button 
                   type="button"
-                  onClick={() => {
-                    if (currentProject.name.trim()) {
-                      setCvData(prev => ({
-                        ...prev,
-                        projects: [...prev.projects, currentProject]
-                      }));
-                      resetCurrentProject();
-                    }
-                  }}
+                  onClick={addProject}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Done
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <button 
-                onClick={resetCurrentProject}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <Plus className="h-4 w-4" />
-                Add project
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
-                <Sparkles className="h-4 w-4" />
-                AI Suggestions
-                <RotateCcw className="h-4 w-4" />
-              </button>
             </div>
           </div>
         );
@@ -1348,13 +1713,10 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                       <div>
                         <h4 className="font-medium text-gray-900">{cert.name || 'Certification'}</h4>
                         <p className="text-sm text-gray-600">{cert.issuer || 'Issuer'}</p>
-                        <p className="text-sm text-gray-500">{cert.date || 'Date'}</p>
+                        <p className="text-sm text-gray-500">{cert.date || 'Date'}{cert.expiryDate && ` - ${cert.expiryDate}`}</p>
                       </div>
                       <button
-                        onClick={() => setCvData(prev => ({
-                          ...prev,
-                          certifications: prev.certifications.filter(c => c.id !== cert.id)
-                        }))}
+                        onClick={() => removeCertification(cert.id)}
                         className="p-1 text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1430,35 +1792,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 </button>
                 <button 
                   type="button"
-                  onClick={() => {
-                    if (currentCertification.name.trim() && currentCertification.issuer.trim()) {
-                      setCvData(prev => ({
-                        ...prev,
-                        certifications: [...prev.certifications, currentCertification]
-                      }));
-                      resetCurrentCertification();
-                    }
-                  }}
+                  onClick={addCertification}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Done
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <button 
-                onClick={resetCurrentCertification}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <Plus className="h-4 w-4" />
-                Add certification
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
-                <Sparkles className="h-4 w-4" />
-                AI Suggestions
-                <RotateCcw className="h-4 w-4" />
-              </button>
             </div>
           </div>
         );
@@ -1495,10 +1834,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                         <p className="text-sm text-gray-500">Relationship: {ref.relationship || 'Not specified'}</p>
                       </div>
                       <button
-                        onClick={() => setCvData(prev => ({
-                          ...prev,
-                          references: prev.references.filter(r => r.id !== ref.id)
-                        }))}
+                        onClick={() => removeReference(ref.id)}
                         className="p-1 text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1611,35 +1947,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 </button>
                 <button 
                   type="button"
-                  onClick={() => {
-                    if (currentReference.name.trim()) {
-                      setCvData(prev => ({
-                        ...prev,
-                        references: [...prev.references, currentReference]
-                      }));
-                      resetCurrentReference();
-                    }
-                  }}
+                  onClick={addReference}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Done
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <button
-                onClick={resetCurrentReference}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <Plus className="h-4 w-4" />
-                Add reference
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
-                <Sparkles className="h-4 w-4" />
-                AI Suggestions
-                <RotateCcw className="h-4 w-4" />
-              </button>
             </div>
           </div>
         );
@@ -1648,6 +1961,10 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
         return <div>Section not found</div>;
     }
   };
+
+  // Calculate progress for display
+  const progress = getProgress();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1689,7 +2006,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
               </div>
 
               <button 
-                onClick={() => onComplete && onComplete(cvData)}
+                onClick={handleComplete}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Download className="h-4 w-4" />
@@ -1711,28 +2028,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
               <div className="space-y-2">
                 {steps.map((step, index) => {
                   const Icon = step.icon;
-                  const isCompleted = (() => {
-                    switch (step.id) {
-                      case 'personal':
-                        return cvData.personalInfo.fullName && cvData.personalInfo.email && cvData.personalInfo.phone;
-                      case 'summary':
-                        return cvData.summary && cvData.summary.length >= 50;
-                      case 'experience':
-                        return cvData.experience.length > 0;
-                      case 'education':
-                        return cvData.education.length > 0;
-                      case 'skills':
-                        return cvData.skills.length >= 3;
-                      case 'projects':
-                        return cvData.projects.length > 0 || true; // Optional section
-                      case 'certifications':
-                        return cvData.certifications.length > 0 || true; // Optional section
-                      case 'references':
-                        return cvData.references.length > 0 || true; // Optional section
-                      default:
-                        return false;
-                    }
-                  })();
+                  const isCompleted = isStepComplete(step.id);
                   const isActive = currentStep === index;
 
                   return (
@@ -1796,13 +2092,13 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                     Progress
                   </span>
                   <span className="text-sm text-gray-500">
-                    {Math.round(((currentStep + 1) / steps.length) * 100)}%
+                    {progress.overall}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+                    style={{ width: `${progress.overall}%` }}
                   />
                 </div>
                 
@@ -1810,61 +2106,18 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 <div className="mt-3 text-xs text-gray-600 space-y-1">
                   <div className="flex justify-between">
                     <span>Required sections:</span>
-                    <span>{steps.filter(s => s.required).reduce((acc, step) => {
-                      const isComplete = (() => {
-                        switch (step.id) {
-                          case 'personal': return cvData.personalInfo.fullName && cvData.personalInfo.email && cvData.personalInfo.phone;
-                          case 'summary': return cvData.summary && cvData.summary.length >= 50;
-                          case 'experience': return cvData.experience.length > 0;
-                          case 'education': return cvData.education.length > 0;
-                          case 'skills': return cvData.skills.length >= 3;
-                          default: return false;
-                        }
-                      })();
-                      return acc + (isComplete ? 1 : 0);
-                    }, 0)}/{steps.filter(s => s.required).length}</span>
+                    <span>{progress.required}/{progress.totalRequired}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Optional sections:</span>
-                    <span>{[cvData.projects.length > 0, cvData.certifications.length > 0, cvData.references.length > 0].filter(Boolean).length}/3</span>
+                    <span>{progress.optional}/{progress.totalOptional}</span>
                   </div>
                 </div>
               </div>
 
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => {
-                    const confirmReset = window.confirm('Are you sure you want to reset all form data? This action cannot be undone.');
-                    if (confirmReset) {
-                      setCvData({
-                        personalInfo: {
-                          fullName: '',
-                          title: '',
-                          email: '',
-                          phone: '',
-                          location: '',
-                          linkedin: '',
-                          website: ''
-                        },
-                        summary: '',
-                        experience: [],
-                        education: [],
-                        skills: [],
-                        projects: [],
-                        certifications: [],
-                        references: []
-                      });
-                      // Reset all current form states
-                      resetCurrentExperience();
-                      resetCurrentEducation();
-                      resetCurrentProject();
-                      resetCurrentCertification();
-                      resetCurrentReference();
-                      resetCurrentSkill();
-                      setCurrentStep(0);
-                      localStorage.removeItem('mocv_draft');
-                    }
-                  }}
+                  onClick={handleResetForm}
                   className="flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm w-full justify-center p-2 hover:bg-gray-50 rounded-lg"
                 >
                   <RotateCcw className="h-4 w-4" />
@@ -1904,23 +2157,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
 
                     {currentStep === steps.length - 1 ? (
                       <button
-                        onClick={() => {
-                          // Final validation check
-                          const requiredComplete = [
-                            cvData.personalInfo.fullName && cvData.personalInfo.email && cvData.personalInfo.phone,
-                            cvData.summary && cvData.summary.length >= 50,
-                            cvData.experience.length > 0,
-                            cvData.education.length > 0,
-                            cvData.skills.length >= 3
-                          ].every(Boolean);
-
-                          if (!requiredComplete) {
-                            alert('Please complete all required sections before generating your CV.');
-                            return;
-                          }
-
-                          onComplete && onComplete(cvData);
-                        }}
+                        onClick={handleComplete}
                         className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       >
                         <Download className="h-4 w-4" />
