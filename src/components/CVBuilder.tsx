@@ -1,24 +1,144 @@
-// src/components/CVBuilder.tsx - Section 1
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle, Download, FileText, Loader } from 'lucide-react';
-import { CVData } from '../types';
+// src/components/CVBuilder.tsx - Section 1: World-Class CV Builder Setup
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+  ArrowLeft, ArrowRight, Save, Download, Eye, CheckCircle, Loader, 
+  User, FileText, Briefcase, GraduationCap, Star, Target, Award, 
+  Plus, Trash2, Upload, Lightbulb, Brain, RefreshCw, Settings,
+  AlertCircle, Info, Zap, Camera, Link, Globe, MapPin, Phone, Mail
+} from 'lucide-react';
 import { PDFService } from '../services/pdfService';
 
+// Enhanced interfaces for world-class experience
 interface CVBuilderProps {
   onBack: () => void;
-  targetMarket: string;
+  targetMarket?: string;
+  selectedTemplate?: any;
+  initialData?: Partial<CVData>;
 }
 
-const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
-  // State for current step
-  const [currentStep, setCurrentStep] = useState(0);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'saving' | 'saved' | 'error'>('saved');
+interface CVData {
+  id?: string;
+  personalInfo: PersonalInfo;
+  summary: string;
+  experience: Experience[];
+  education: Education[];
+  skills: Skill[];
+  projects: Project[];
+  certifications: Certification[];
+  references: Reference[];
+  additionalSections: AdditionalSection[];
+}
 
-  // PDF Generation state
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [pdfGenerated, setPdfGenerated] = useState(false);
+interface PersonalInfo {
+  fullName: string;
+  title: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedin: string;
+  website: string;
+  github: string;
+  portfolio: string;
+  photo: string;
+}
 
-  // CV Data state
+interface Experience {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  current: boolean;
+  description: string;
+  achievements: string[];
+  skills: string[];
+  companyUrl?: string;
+  salary?: string;
+}
+
+interface Education {
+  id: string;
+  degree: string;
+  school: string;
+  location: string;
+  graduationDate: string;
+  gpa?: string;
+  honors?: string[];
+  courses?: string[];
+  thesis?: string;
+}
+
+interface Skill {
+  id: string;
+  name: string;
+  level: number;
+  category: 'Technical' | 'Soft Skills' | 'Languages' | 'Tools' | 'Frameworks';
+  endorsed?: boolean;
+  yearsOfExperience?: number;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  technologies: string[];
+  link?: string;
+  github?: string;
+  startDate?: string;
+  endDate?: string;
+  status: 'Completed' | 'In Progress' | 'Planned';
+  teamSize?: number;
+  role?: string;
+}
+
+interface Certification {
+  id: string;
+  name: string;
+  issuer: string;
+  date: string;
+  expiryDate?: string;
+  credentialId?: string;
+  verificationUrl?: string;
+  skills?: string[];
+}
+
+interface Reference {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  email: string;
+  phone: string;
+  relationship: string;
+  permissionGranted: boolean;
+}
+
+interface AdditionalSection {
+  id: string;
+  title: string;
+  content: string;
+  type: 'text' | 'list' | 'achievements' | 'awards';
+  icon?: string;
+}
+
+interface ValidationErrors {
+  [key: string]: string[];
+}
+
+interface AutoSaveStatus {
+  status: 'idle' | 'saving' | 'saved' | 'error';
+  lastSaved?: Date;
+  message?: string;
+}
+
+const CVBuilder: React.FC<CVBuilderProps> = ({ 
+  onBack, 
+  targetMarket = 'Global', 
+  selectedTemplate,
+  initialData 
+}) => {
+  // Enhanced state management for world-class experience
   const [cvData, setCvData] = useState<CVData>({
     personalInfo: {
       fullName: '',
@@ -28,6 +148,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
       location: '',
       linkedin: '',
       website: '',
+      github: '',
+      portfolio: '',
+      photo: ''
     },
     summary: '',
     experience: [],
@@ -36,41 +159,283 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
     projects: [],
     certifications: [],
     references: [],
+    additionalSections: [],
+    ...initialData
   });
 
-  // Steps configuration
-  const steps = [
-    { id: 'personal', title: 'Personal Info', description: 'Basic information and contact details' },
-    { id: 'summary', title: 'Summary', description: 'Professional summary or objective' },
-    { id: 'experience', title: 'Experience', description: 'Work experience and achievements' },
-    { id: 'education', title: 'Education', description: 'Educational background' },
-    { id: 'skills', title: 'Skills', description: 'Technical and soft skills' },
-    { id: 'projects', title: 'Projects', description: 'Notable projects (optional)' },
-    { id: 'certifications', title: 'Certifications', description: 'Professional certifications (optional)' },
-    { id: 'references', title: 'References', description: 'Professional references (optional)' },
-  ];
+  // Advanced state for enhanced UX
+  const [currentStep, setCurrentStep] = useState(0);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>({ status: 'idle' });
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [pdfGenerated, setPdfGenerated] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop' | 'print'>('desktop');
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
 
-  // Auto-save functionality
-  useEffect(() => {
-    const saveTimer = setTimeout(() => {
-      setAutoSaveStatus('saving');
-      localStorage.setItem('cvBuilderData', JSON.stringify(cvData));
-      setTimeout(() => setAutoSaveStatus('saved'), 500);
-    }, 1000);
+  // World-class sections configuration
+  const sections = useMemo(() => [
+    { 
+      id: 'personal', 
+      title: 'Personal Info', 
+      icon: <User className="h-5 w-5" />,
+      description: 'Your contact details and professional identity',
+      required: true,
+      estimatedTime: '2 min'
+    },
+    { 
+      id: 'summary', 
+      title: 'Professional Summary', 
+      icon: <FileText className="h-5 w-5" />,
+      description: 'A compelling overview of your career',
+      required: true,
+      estimatedTime: '3 min'
+    },
+    { 
+      id: 'experience', 
+      title: 'Work Experience', 
+      icon: <Briefcase className="h-5 w-5" />,
+      description: 'Your professional journey and achievements',
+      required: true,
+      estimatedTime: '5 min'
+    },
+    { 
+      id: 'education', 
+      title: 'Education', 
+      icon: <GraduationCap className="h-5 w-5" />,
+      description: 'Academic background and qualifications',
+      required: true,
+      estimatedTime: '2 min'
+    },
+    { 
+      id: 'skills', 
+      title: 'Skills & Expertise', 
+      icon: <Star className="h-5 w-5" />,
+      description: 'Technical and soft skills portfolio',
+      required: true,
+      estimatedTime: '3 min'
+    },
+    { 
+      id: 'projects', 
+      title: 'Projects', 
+      icon: <Target className="h-5 w-5" />,
+      description: 'Showcase your best work and initiatives',
+      required: false,
+      estimatedTime: '4 min'
+    },
+    { 
+      id: 'certifications', 
+      title: 'Certifications', 
+      icon: <Award className="h-5 w-5" />,
+      description: 'Professional certifications and credentials',
+      required: false,
+      estimatedTime: '2 min'
+    },
+    { 
+      id: 'references', 
+      title: 'References', 
+      icon: <User className="h-5 w-5" />,
+      description: 'Professional references and recommendations',
+      required: false,
+      estimatedTime: '3 min'
+    }
+  ], []);
 
-    return () => clearTimeout(saveTimer);
+  // Calculate completion percentage
+  const calculateCompletion = useCallback(() => {
+    let totalPoints = 0;
+    let earnedPoints = 0;
+
+    // Personal info (25 points)
+    totalPoints += 25;
+    if (cvData.personalInfo.fullName) earnedPoints += 5;
+    if (cvData.personalInfo.email) earnedPoints += 5;
+    if (cvData.personalInfo.phone) earnedPoints += 5;
+    if (cvData.personalInfo.title) earnedPoints += 5;
+    if (cvData.personalInfo.location) earnedPoints += 5;
+
+    // Summary (15 points)
+    totalPoints += 15;
+    if (cvData.summary && cvData.summary.length > 50) earnedPoints += 15;
+
+    // Experience (25 points)
+    totalPoints += 25;
+    if (cvData.experience.length > 0) earnedPoints += 10;
+    if (cvData.experience.some(exp => exp.description)) earnedPoints += 15;
+
+    // Education (15 points)
+    totalPoints += 15;
+    if (cvData.education.length > 0) earnedPoints += 15;
+
+    // Skills (10 points)
+    totalPoints += 10;
+    if (cvData.skills.length >= 3) earnedPoints += 10;
+
+    // Optional sections (10 points)
+    totalPoints += 10;
+    if (cvData.projects.length > 0) earnedPoints += 3;
+    if (cvData.certifications.length > 0) earnedPoints += 3;
+    if (cvData.references.length > 0) earnedPoints += 4;
+
+    return Math.round((earnedPoints / totalPoints) * 100);
   }, [cvData]);
 
-  // Load saved data on component mount
+  // Update completion percentage when data changes
+  useEffect(() => {
+    setCompletionPercentage(calculateCompletion());
+  }, [calculateCompletion]);
+
+  // Enhanced auto-save with debouncing
+  useEffect(() => {
+    const saveTimer = setTimeout(() => {
+      if (unsavedChanges) {
+        handleAutoSave();
+      }
+    }, 2000);
+
+    return () => clearTimeout(saveTimer);
+  }, [cvData, unsavedChanges]);
+
+  // Load saved data on mount
   useEffect(() => {
     const savedData = localStorage.getItem('cvBuilderData');
-    if (savedData) {
-      setCvData(JSON.parse(savedData));
+    if (savedData && !initialData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setCvData(parsed);
+      } catch (error) {
+        console.error('Error loading saved data:', error);
+      }
     }
-  }, []);
+  }, [initialData]);
+
+  // Mark changes as unsaved when data changes
+  useEffect(() => {
+    setUnsavedChanges(true);
+  }, [cvData]);
+
+  // Enhanced auto-save function
+  const handleAutoSave = useCallback(async () => {
+    setAutoSaveStatus({ status: 'saving' });
+    
+    try {
+      // Save to localStorage
+      localStorage.setItem('cvBuilderData', JSON.stringify(cvData));
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setAutoSaveStatus({ 
+        status: 'saved', 
+        lastSaved: new Date(),
+        message: 'All changes saved'
+      });
+      setUnsavedChanges(false);
+      
+    } catch (error) {
+      setAutoSaveStatus({ 
+        status: 'error', 
+        message: 'Failed to save changes'
+      });
+      console.error('Auto-save failed:', error);
+    }
+  }, [cvData]);
+
+  // Enhanced PDF generation
+  const handleGeneratePDF = useCallback(async () => {
+    // Validate required fields
+    const errors = validateCV(cvData);
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setShowValidation(true);
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    setPdfGenerated(false);
+
+    try {
+      const pdfService = new PDFService();
+      const pdfBytes = await pdfService.generateCV(cvData);
+      
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `${cvData.personalInfo.fullName.replace(/\s+/g, '_')}_CV_${timestamp}.pdf`;
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      setPdfGenerated(true);
+      
+      // Show success notification
+      showSuccessNotification('CV PDF generated successfully!');
+      
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      showErrorNotification('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  }, [cvData]);
+
+  // Validation function
+  const validateCV = (data: CVData): ValidationErrors => {
+    const errors: ValidationErrors = {};
+    
+    // Personal info validation
+    if (!data.personalInfo.fullName.trim()) {
+      errors.personalInfo = (errors.personalInfo || []).concat('Full name is required');
+    }
+    if (!data.personalInfo.email.trim()) {
+      errors.personalInfo = (errors.personalInfo || []).concat('Email is required');
+    }
+    if (data.personalInfo.email && !isValidEmail(data.personalInfo.email)) {
+      errors.personalInfo = (errors.personalInfo || []).concat('Invalid email format');
+    }
+    
+    // Summary validation
+    if (!data.summary.trim()) {
+      errors.summary = ['Professional summary is required'];
+    } else if (data.summary.length < 50) {
+      errors.summary = ['Summary should be at least 50 characters'];
+    }
+    
+    // Experience validation
+    if (data.experience.length === 0) {
+      errors.experience = ['At least one work experience is required'];
+    }
+    
+    return errors;
+  };
+
+  // Utility functions
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const showSuccessNotification = (message: string) => {
+    // Implementation for success notification
+    console.log('Success:', message);
+  };
+
+  const showErrorNotification = (message: string) => {
+    // Implementation for error notification
+    console.log('Error:', message);
+  };
+
   // Navigation functions
   const nextStep = () => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep < sections.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -81,79 +446,89 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
     }
   };
 
-  // PDF Generation function
-  const handleGeneratePDF = async () => {
-    try {
-      setIsGeneratingPDF(true);
-      
-      // Validate required fields
-      if (!cvData.personalInfo.fullName || !cvData.personalInfo.email) {
-        alert('Please fill in at least your full name and email before generating PDF.');
-        return;
-      }
-
-      // Create PDF service instance
-      const pdfService = new PDFService();
-      
-      // Generate PDF
-      const pdfBytes = await pdfService.generateCV(cvData);
-      
-      // Create download link
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create filename with timestamp
-      const timestamp = new Date().toISOString().slice(0, 10);
-      const filename = `${cvData.personalInfo.fullName.replace(/\s+/g, '_')}_CV_${timestamp}.pdf`;
-      
-      // Download the file
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-      // Clean up
-      URL.revokeObjectURL(url);
-      setPdfGenerated(true);
-      
-      // Show success message
-      alert('CV PDF generated successfully!');
-      
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
-    } finally {
-      setIsGeneratingPDF(false);
-    }
+  const goToStep = (stepIndex: number) => {
+    setCurrentStep(stepIndex);
   };
-
-  // Save CV to localStorage for later use
-  const saveCVData = () => {
-    const savedCVs = JSON.parse(localStorage.getItem('savedCVs') || '[]');
-    const cvWithId = {
-      ...cvData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      targetMarket,
-    };
-    
-    savedCVs.push(cvWithId);
-    localStorage.setItem('savedCVs', JSON.stringify(savedCVs));
-  };
-
-  // Update CV data helper function
-  const updateCvData = (section: keyof CVData, data: any) => {
+  // Enhanced data update functions
+  const updateCvData = useCallback((section: keyof CVData, data: any) => {
     setCvData(prev => ({
       ...prev,
       [section]: data
     }));
-  };
+    setUnsavedChanges(true);
+  }, []);
 
-  // Add new item helper functions
-  const addExperience = () => {
-    const newExperience = {
+  const updatePersonalInfo = useCallback((field: keyof PersonalInfo, value: string) => {
+    setCvData(prev => ({
+      ...prev,
+      personalInfo: {
+        ...prev.personalInfo,
+        [field]: value
+      }
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  // Professional photo upload with advanced validation
+  const handlePhotoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Advanced validation
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const minDimension = 200;
+
+    if (!validTypes.includes(file.type)) {
+      showErrorNotification('Please upload a JPEG, PNG, or WebP image');
+      return;
+    }
+
+    if (file.size > maxSize) {
+      showErrorNotification('Image size must be less than 5MB');
+      return;
+    }
+
+    // Check image dimensions
+    const img = new Image();
+    img.onload = () => {
+      if (img.width < minDimension || img.height < minDimension) {
+        showErrorNotification('Image should be at least 200x200 pixels');
+        return;
+      }
+
+      // Process and compress image
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const size = Math.min(img.width, img.height);
+      canvas.width = 400;
+      canvas.height = 400;
+
+      if (ctx) {
+        // Draw cropped and resized image
+        ctx.drawImage(img, 
+          (img.width - size) / 2, (img.height - size) / 2, size, size,
+          0, 0, 400, 400
+        );
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        updatePersonalInfo('photo', dataUrl);
+        showSuccessNotification('Photo uploaded successfully');
+      }
+    };
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        img.src = e.target.result as string;
+      }
+    };
+    reader.readAsDataURL(file);
+  }, [updatePersonalInfo]);
+
+  // Experience management functions
+  const addExperience = useCallback(() => {
+    const newExperience: Experience = {
       id: Date.now().toString(),
       title: '',
       company: '',
@@ -162,60 +537,217 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
       endDate: '',
       current: false,
       description: '',
+      achievements: [],
+      skills: []
     };
-    updateCvData('experience', [...cvData.experience, newExperience]);
-  };
+    
+    setCvData(prev => ({
+      ...prev,
+      experience: [...prev.experience, newExperience]
+    }));
+    setUnsavedChanges(true);
+  }, []);
 
-  const addEducation = () => {
-    const newEducation = {
+  const updateExperience = useCallback((id: string, field: keyof Experience, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      experience: prev.experience.map(exp =>
+        exp.id === id ? { ...exp, [field]: value } : exp
+      )
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  const removeExperience = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      experience: prev.experience.filter(exp => exp.id !== id)
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  const duplicateExperience = useCallback((id: string) => {
+    const expToDuplicate = cvData.experience.find(exp => exp.id === id);
+    if (expToDuplicate) {
+      const newExperience: Experience = {
+        ...expToDuplicate,
+        id: Date.now().toString(),
+        title: expToDuplicate.title + ' (Copy)'
+      };
+      
+      setCvData(prev => ({
+        ...prev,
+        experience: [...prev.experience, newExperience]
+      }));
+      setUnsavedChanges(true);
+    }
+  }, [cvData.experience]);
+
+  // Education management functions
+  const addEducation = useCallback(() => {
+    const newEducation: Education = {
       id: Date.now().toString(),
       degree: '',
       school: '',
       location: '',
       graduationDate: '',
       gpa: '',
+      honors: [],
+      courses: []
     };
-    updateCvData('education', [...cvData.education, newEducation]);
-  };
+    
+    setCvData(prev => ({
+      ...prev,
+      education: [...prev.education, newEducation]
+    }));
+    setUnsavedChanges(true);
+  }, []);
 
-  const addSkill = () => {
-    const newSkill = {
+  const updateEducation = useCallback((id: string, field: keyof Education, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      education: prev.education.map(edu =>
+        edu.id === id ? { ...edu, [field]: value } : edu
+      )
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  const removeEducation = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      education: prev.education.filter(edu => edu.id !== id)
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  // Skills management functions
+  const addSkill = useCallback(() => {
+    const newSkill: Skill = {
       id: Date.now().toString(),
       name: '',
       level: 3,
-      category: 'Technical' as const,
+      category: 'Technical',
+      endorsed: false,
+      yearsOfExperience: 1
     };
-    updateCvData('skills', [...cvData.skills, newSkill]);
-  };
+    
+    setCvData(prev => ({
+      ...prev,
+      skills: [...prev.skills, newSkill]
+    }));
+    setUnsavedChanges(true);
+  }, []);
 
-  const addProject = () => {
-    const newProject = {
+  const updateSkill = useCallback((id: string, field: keyof Skill, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      skills: prev.skills.map(skill =>
+        skill.id === id ? { ...skill, [field]: value } : skill
+      )
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  const removeSkill = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill.id !== id)
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  const addBulkSkills = useCallback((skillNames: string[], category: Skill['category'] = 'Technical') => {
+    const newSkills: Skill[] = skillNames.map(name => ({
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: name.trim(),
+      level: 3,
+      category,
+      endorsed: false,
+      yearsOfExperience: 1
+    }));
+    
+    setCvData(prev => ({
+      ...prev,
+      skills: [...prev.skills, ...newSkills]
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  // Projects management functions
+  const addProject = useCallback(() => {
+    const newProject: Project = {
       id: Date.now().toString(),
       name: '',
       description: '',
       technologies: [],
-      link: '',
-      startDate: '',
-      endDate: '',
+      status: 'Completed',
+      teamSize: 1
     };
-    updateCvData('projects', [...cvData.projects, newProject]);
-  };
+    
+    setCvData(prev => ({
+      ...prev,
+      projects: [...prev.projects, newProject]
+    }));
+    setUnsavedChanges(true);
+  }, []);
 
-  const addCertification = () => {
-    const newCertification = {
+  const updateProject = useCallback((id: string, field: keyof Project, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      projects: prev.projects.map(project =>
+        project.id === id ? { ...project, [field]: value } : project
+      )
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  const removeProject = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      projects: prev.projects.filter(project => project.id !== id)
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  // Certifications management functions
+  const addCertification = useCallback(() => {
+    const newCertification: Certification = {
       id: Date.now().toString(),
       name: '',
       issuer: '',
       date: '',
-      expiryDate: '',
-      credentialId: '',
-      verificationUrl: '',
+      skills: []
     };
-    updateCvData('certifications', [...cvData.certifications, newCertification]);
-  };
+    
+    setCvData(prev => ({
+      ...prev,
+      certifications: [...prev.certifications, newCertification]
+    }));
+    setUnsavedChanges(true);
+  }, []);
 
-  const addReference = () => {
-    const newReference = {
+  const updateCertification = useCallback((id: string, field: keyof Certification, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      certifications: prev.certifications.map(cert =>
+        cert.id === id ? { ...cert, [field]: value } : cert
+      )
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  const removeCertification = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      certifications: prev.certifications.filter(cert => cert.id !== id)
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  // References management functions
+  const addReference = useCallback(() => {
+    const newReference: Reference = {
       id: Date.now().toString(),
       name: '',
       title: '',
@@ -223,402 +755,1163 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
       email: '',
       phone: '',
       relationship: '',
+      permissionGranted: false
     };
-    updateCvData('references', [...cvData.references, newReference]);
-  };
-  // Render section content based on current step
-  const renderSectionContent = () => {
-    const currentStepData = steps[currentStep];
     
-    switch (currentStepData.id) {
-      case 'personal':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    value={cvData.personalInfo.fullName}
-                    onChange={(e) => updateCvData('personalInfo', { ...cvData.personalInfo, fullName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="John Doe"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Professional Title</label>
-                  <input
-                    type="text"
-                    value={cvData.personalInfo.title}
-                    onChange={(e) => updateCvData('personalInfo', { ...cvData.personalInfo, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Software Engineer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                  <input
-                    type="email"
-                    value={cvData.personalInfo.email}
-                    onChange={(e) => updateCvData('personalInfo', { ...cvData.personalInfo, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="john.doe@email.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                    type="tel"
-                    value={cvData.personalInfo.phone}
-                    onChange={(e) => updateCvData('personalInfo', { ...cvData.personalInfo, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                  <input
-                    type="text"
-                    value={cvData.personalInfo.location}
-                    onChange={(e) => updateCvData('personalInfo', { ...cvData.personalInfo, location: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="New York, NY"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
-                  <input
-                    type="url"
-                    value={cvData.personalInfo.linkedin}
-                    onChange={(e) => updateCvData('personalInfo', { ...cvData.personalInfo, linkedin: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="https://linkedin.com/in/johndoe"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+    setCvData(prev => ({
+      ...prev,
+      references: [...prev.references, newReference]
+    }));
+    setUnsavedChanges(true);
+  }, []);
 
-      case 'summary':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Summary</h3>
-              <textarea
-                value={cvData.summary}
-                onChange={(e) => updateCvData('summary', e.target.value)}
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Write a compelling professional summary that highlights your key achievements and career objectives..."
-              />
-            </div>
-          </div>
-        );
+  const updateReference = useCallback((id: string, field: keyof Reference, value: any) => {
+    setCvData(prev => ({
+      ...prev,
+      references: prev.references.map(ref =>
+        ref.id === id ? { ...ref, [field]: value } : ref
+      )
+    }));
+    setUnsavedChanges(true);
+  }, []);
 
-      case 'experience':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Work Experience</h3>
+  const removeReference = useCallback((id: string) => {
+    setCvData(prev => ({
+      ...prev,
+      references: prev.references.filter(ref => ref.id !== id)
+    }));
+    setUnsavedChanges(true);
+  }, []);
+
+  // Smart import functions
+  const importFromLinkedIn = useCallback(async () => {
+    // This would integrate with LinkedIn API in a real implementation
+    showSuccessNotification('LinkedIn import feature coming soon!');
+  }, []);
+
+  const importFromUpload = useCallback(async (file: File) => {
+    // This would parse uploaded CV files
+    showSuccessNotification('CV import feature coming soon!');
+  }, []);
+
+  // AI-powered suggestions
+  const getAISuggestions = useCallback(async (section: string, context: any) => {
+    // This would integrate with AI service for suggestions
+    return {
+      suggestions: [
+        'Consider adding quantified achievements',
+        'Include relevant industry keywords',
+        'Highlight leadership experience'
+      ],
+      improvements: [
+        'Your summary could be more specific about your expertise',
+        'Add action verbs to your experience descriptions'
+      ]
+    };
+  }, []);
+
+  // Advanced validation with detailed feedback
+  const getDetailedValidation = useCallback((data: CVData) => {
+    const validation = {
+      score: 0,
+      sections: {} as any,
+      recommendations: [] as string[],
+      warnings: [] as string[],
+      errors: [] as string[]
+    };
+
+    // Personal Info validation (20 points)
+    let personalScore = 0;
+    if (data.personalInfo.fullName) personalScore += 5;
+    if (data.personalInfo.email && isValidEmail(data.personalInfo.email)) personalScore += 5;
+    if (data.personalInfo.phone) personalScore += 3;
+    if (data.personalInfo.location) personalScore += 3;
+    if (data.personalInfo.linkedin || data.personalInfo.website) personalScore += 4;
+    
+    validation.sections.personalInfo = { score: personalScore, maxScore: 20 };
+    
+    // Summary validation (15 points)
+    let summaryScore = 0;
+    if (data.summary) {
+      if (data.summary.length >= 50) summaryScore += 5;
+      if (data.summary.length >= 100) summaryScore += 5;
+      if (data.summary.includes('experience') || data.summary.includes('years')) summaryScore += 5;
+    }
+    validation.sections.summary = { score: summaryScore, maxScore: 15 };
+
+    // Experience validation (25 points)
+    let experienceScore = 0;
+    if (data.experience.length > 0) experienceScore += 10;
+    if (data.experience.some(exp => exp.description.length > 50)) experienceScore += 10;
+    if (data.experience.some(exp => exp.current)) experienceScore += 5;
+    
+    validation.sections.experience = { score: experienceScore, maxScore: 25 };
+
+    // Education validation (15 points)
+    let educationScore = data.education.length > 0 ? 15 : 0;
+    validation.sections.education = { score: educationScore, maxScore: 15 };
+
+    // Skills validation (15 points)
+    let skillsScore = 0;
+    if (data.skills.length >= 3) skillsScore += 5;
+    if (data.skills.length >= 8) skillsScore += 5;
+    if (data.skills.some(skill => skill.level >= 4)) skillsScore += 5;
+    
+    validation.sections.skills = { score: skillsScore, maxScore: 15 };
+
+    // Calculate total score
+    validation.score = Object.values(validation.sections).reduce((total: number, section: any) => 
+      total + section.score, 0
+    );
+
+    // Generate recommendations
+    if (validation.score < 60) {
+      validation.warnings.push('Your CV needs more content to be competitive');
+    }
+    if (!data.personalInfo.photo && targetMarket !== 'US') {
+      validation.recommendations.push('Consider adding a professional photo');
+    }
+    if (data.experience.length === 0) {
+      validation.errors.push('Add at least one work experience');
+    }
+
+    return validation;
+  }, [targetMarket]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl+S or Cmd+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleAutoSave();
+      }
+      
+      // Ctrl+P or Cmd+P to generate PDF
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        handleGeneratePDF();
+      }
+      
+      // Arrow keys for navigation (when not in input)
+      if (e.target === document.body) {
+        if (e.key === 'ArrowLeft') prevStep();
+        if (e.key === 'ArrowRight') nextStep();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [handleAutoSave, handleGeneratePDF, prevStep, nextStep]);
+
+  // Smart data suggestions based on existing content
+  const getSmartSuggestions = useCallback((section: string) => {
+    const suggestions: { [key: string]: string[] } = {
+      experience: [
+        'Led a team of X developers',
+        'Increased efficiency by X%',
+        'Reduced processing time by X minutes',
+        'Implemented new system resulting in X% improvement',
+        'Managed budget of $X for project delivery'
+      ],
+      skills: {
+        'Technical': ['JavaScript', 'Python', 'React', 'Node.js', 'AWS', 'Docker'],
+        'Soft Skills': ['Leadership', 'Communication', 'Problem Solving', 'Team Collaboration'],
+        'Tools': ['Git', 'Jira', 'Slack', 'Figma', 'Adobe Creative Suite'],
+        'Languages': ['English', 'Spanish', 'French', 'Mandarin']
+      }
+    };
+
+    return suggestions[section] || [];
+  }, []);
+
+  // Template suggestions based on industry
+  const getTemplateSuggestions = useCallback(() => {
+    const templates = {
+      'Software Developer': 'modern-tech',
+      'Designer': 'creative-portfolio',
+      'Manager': 'executive-clean',
+      'Consultant': 'professional-minimal',
+      'Marketing': 'creative-modern'
+    };
+
+    const userTitle = cvData.personalInfo.title.toLowerCase();
+    for (const [role, template] of Object.entries(templates)) {
+      if (userTitle.includes(role.toLowerCase())) {
+        return template;
+      }
+    }
+    return 'modern-ats';
+  }, [cvData.personalInfo.title]);
+  // World-class render functions for each section
+  const renderPersonalInfo = () => (
+    <div className="space-y-8">
+      {/* Professional Photo Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            {cvData.personalInfo.photo ? (
+              <div className="relative">
+                <img
+                  src={cvData.personalInfo.photo}
+                  alt="Professional headshot"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                />
                 <button
-                  onClick={addExperience}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  onClick={() => updatePersonalInfo('photo', '')}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-red-600 transition-all duration-200 shadow-lg"
+                  title="Remove photo"
                 >
-                  Add Experience
+                  ×
                 </button>
               </div>
-              
-              {cvData.experience.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No experience added yet. Click "Add Experience" to get started.</p>
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 border-4 border-white shadow-lg flex items-center justify-center group hover:from-blue-200 hover:to-indigo-200 transition-all duration-200">
+                <Camera className="h-8 w-8 text-gray-500 group-hover:text-blue-600" />
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-600" />
+              Professional Photo
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Add a high-quality headshot to make a strong first impression. {targetMarket !== 'US' && 'Highly recommended for your target market.'}
+            </p>
+            
+            <label className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-sm flex items-center gap-2 w-fit">
+              <Upload className="h-4 w-4" />
+              {cvData.personalInfo.photo ? 'Change Photo' : 'Upload Photo'}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+            </label>
+            
+            <p className="text-xs text-gray-500 mt-2">
+              JPEG, PNG, or WebP. Max 5MB. Square photos work best (400x400px minimum).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Information Grid */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Full Name */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+            <User className="h-4 w-4 text-blue-600" />
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={cvData.personalInfo.fullName}
+            onChange={(e) => updatePersonalInfo('fullName', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="John Smith"
+          />
+          {validationErrors.personalInfo?.includes('Full name is required') && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Full name is required
+            </p>
+          )}
+        </div>
+
+        {/* Professional Title */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+            <Briefcase className="h-4 w-4 text-blue-600" />
+            Professional Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={cvData.personalInfo.title}
+            onChange={(e) => updatePersonalInfo('title', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="Senior Software Engineer"
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+            <Mail className="h-4 w-4 text-blue-600" />
+            Email Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={cvData.personalInfo.email}
+            onChange={(e) => updatePersonalInfo('email', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="john.smith@email.com"
+          />
+          {validationErrors.personalInfo?.some(error => error.includes('email')) && (
+            <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Valid email is required
+            </p>
+          )}
+        </div>
+
+        {/* Phone */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+            <Phone className="h-4 w-4 text-blue-600" />
+            Phone Number
+          </label>
+          <input
+            type="tel"
+            value={cvData.personalInfo.phone}
+            onChange={(e) => updatePersonalInfo('phone', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="+1 (555) 123-4567"
+          />
+        </div>
+
+        {/* Location */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+            <MapPin className="h-4 w-4 text-blue-600" />
+            Location
+          </label>
+          <input
+            type="text"
+            value={cvData.personalInfo.location}
+            onChange={(e) => updatePersonalInfo('location', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="New York, NY"
+          />
+        </div>
+
+        {/* LinkedIn */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+            <Link className="h-4 w-4 text-blue-600" />
+            LinkedIn Profile
+          </label>
+          <input
+            type="url"
+            value={cvData.personalInfo.linkedin}
+            onChange={(e) => updatePersonalInfo('linkedin', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="linkedin.com/in/johnsmith"
+          />
+        </div>
+      </div>
+
+      {/* Additional Links */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+            <Globe className="h-4 w-4 text-blue-600" />
+            Website/Portfolio
+          </label>
+          <input
+            type="url"
+            value={cvData.personalInfo.website}
+            onChange={(e) => updatePersonalInfo('website', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="https://johnsmith.dev"
+          />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+            <Globe className="h-4 w-4 text-blue-600" />
+            GitHub Profile
+          </label>
+          <input
+            type="url"
+            value={cvData.personalInfo.github}
+            onChange={(e) => updatePersonalInfo('github', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400"
+            placeholder="github.com/johnsmith"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSummary = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-purple-600" />
+              Professional Summary <span className="text-red-500">*</span>
+            </h3>
+            <p className="text-sm text-gray-600">
+              Write a compelling 2-3 sentence overview that highlights your expertise and career goals.
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setShowAISuggestions(true)}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 text-sm"
+          >
+            <Brain className="h-4 w-4" />
+            AI Enhance
+          </button>
+        </div>
+
+        <textarea
+          value={cvData.summary}
+          onChange={(e) => updateCvData('summary', e.target.value)}
+          rows={5}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-0 transition-colors text-gray-900 placeholder-gray-400 resize-none"
+          placeholder="Experienced software engineer with 5+ years in full-stack development. Proven track record of leading cross-functional teams and delivering scalable web applications. Seeking to leverage expertise in React and Node.js to drive innovation at a forward-thinking tech company."
+        />
+
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-gray-500">
+              {cvData.summary.length}/300 characters
+            </span>
+            {cvData.summary.length >= 50 && (
+              <span className="text-green-600 text-xs flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                Good length
+              </span>
+            )}
+          </div>
+          
+          {validationErrors.summary && (
+            <p className="text-red-500 text-xs flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {validationErrors.summary[0]}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderExperience = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-blue-600" />
+            Work Experience <span className="text-red-500">*</span>
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Add your professional experience with quantifiable achievements
+          </p>
+        </div>
+        
+        <button
+          onClick={addExperience}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Experience
+        </button>
+      </div>
+
+      {cvData.experience.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+          <Briefcase className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg mb-2">No work experience added yet</p>
+          <p className="text-gray-500 text-sm mb-6">
+            Add your professional experience to showcase your career journey
+          </p>
+          <button
+            onClick={addExperience}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Add Your First Job
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {cvData.experience.map((exp, index) => (
+            <div key={exp.id} className="bg-white rounded-xl border-2 border-gray-100 p-6 hover:border-blue-200 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 text-sm font-bold">{index + 1}</span>
+                  </div>
+                  Experience #{index + 1}
+                </h4>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => duplicateExperience(exp.id)}
+                    className="text-gray-400 hover:text-blue-600 transition-colors p-2"
+                    title="Duplicate"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => removeExperience(exp.id)}
+                    className="text-gray-400 hover:text-red-600 transition-colors p-2"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {cvData.experience.map((exp, index) => (
-                    <div key={exp.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
-                          <input
-                            type="text"
-                            value={exp.title}
-                            onChange={(e) => {
-                              const updated = cvData.experience.map(item => 
-                                item.id === exp.id ? { ...item, title: e.target.value } : item
-                              );
-                              updateCvData('experience', updated);
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Software Engineer"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
-                          <input
-                            type="text"
-                            value={exp.company}
-                            onChange={(e) => {
-                              const updated = cvData.experience.map(item => 
-                                item.id === exp.id ? { ...item, company: e.target.value } : item
-                              );
-                              updateCvData('experience', updated);
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Tech Company Inc."
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                          <input
-                            type="month"
-                            value={exp.startDate}
-                            onChange={(e) => {
-                              const updated = cvData.experience.map(item => 
-                                item.id === exp.id ? { ...item, startDate: e.target.value } : item
-                              );
-                              updateCvData('experience', updated);
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                          <input
-                            type="month"
-                            value={exp.endDate}
-                            disabled={exp.current}
-                            onChange={(e) => {
-                              const updated = cvData.experience.map(item => 
-                                item.id === exp.id ? { ...item, endDate: e.target.value } : item
-                              );
-                              updateCvData('experience', updated);
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={exp.current}
-                            onChange={(e) => {
-                              const updated = cvData.experience.map(item => 
-                                item.id === exp.id ? { ...item, current: e.target.checked, endDate: e.target.checked ? '' : item.endDate } : item
-                              );
-                              updateCvData('experience', updated);
-                            }}
-                            className="mr-2"
-                          />
-                          <span className="text-sm text-gray-600">Currently working here</span>
-                        </label>
-                      </div>
+              </div>
 
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <textarea
-                          value={exp.description}
-                          onChange={(e) => {
-                            const updated = cvData.experience.map(item => 
-                              item.id === exp.id ? { ...item, description: e.target.value } : item
-                            );
-                            updateCvData('experience', updated);
-                          }}
-                          rows={4}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Describe your responsibilities and achievements..."
-                        />
-                      </div>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Job Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={exp.title}
+                    onChange={(e) => updateExperience(exp.id, 'title', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="Senior Software Engineer"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Company <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={exp.company}
+                    onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="Tech Innovations Inc."
+                  />
+                </div>
+              </div>
 
-                      <button
-                        onClick={() => {
-                          const updated = cvData.experience.filter(item => item.id !== exp.id);
-                          updateCvData('experience', updated);
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={exp.location}
+                    onChange={(e) => updateExperience(exp.id, 'location', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="San Francisco, CA"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="month"
+                    value={exp.startDate}
+                    onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date
+                  </label>
+                  <div className="space-y-3">
+                    <input
+                      type="month"
+                      value={exp.endDate}
+                      onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
+                      disabled={exp.current}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors disabled:bg-gray-100 disabled:text-gray-400"
+                    />
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={exp.current}
+                        onChange={(e) => {
+                          updateExperience(exp.id, 'current', e.target.checked);
+                          if (e.target.checked) {
+                            updateExperience(exp.id, 'endDate', '');
+                          }
                         }}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                      >
-                        Remove Experience
-                      </button>
-                    </div>
-                  ))}
+                        className="w-4 h-4 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-600">Currently working here</span>
+                    </label>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Job Description & Achievements <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    onClick={() => getAISuggestions('experience', exp)}
+                    className="text-purple-600 hover:text-purple-700 text-sm flex items-center gap-1"
+                  >
+                    <Lightbulb className="h-4 w-4" />
+                    AI Suggestions
+                  </button>
+                </div>
+                
+                <textarea
+                  value={exp.description}
+                  onChange={(e) => updateExperience(exp.id, 'description', e.target.value)}
+                  rows={5}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors resize-none"
+                  placeholder="• Led development of customer portal, resulting in 40% increase in user satisfaction&#10;• Implemented microservices architecture, reducing system downtime by 60%&#10;• Mentored 3 junior developers and conducted weekly code reviews"
+                />
+                
+                <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Use bullet points and include quantifiable achievements (numbers, percentages, dollar amounts)
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {validationErrors.experience && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                {validationErrors.experience[0]}
+              </p>
             </div>
           </div>
-        );
+        </div>
+      )}
+    </div>
+  );
 
+  const renderActiveSection = () => {
+    const currentSection = sections[currentStep];
+    
+    switch (currentSection.id) {
+      case 'personal':
+        return renderPersonalInfo();
+      case 'summary':
+        return renderSummary();
+      case 'experience':
+        return renderExperience();
       case 'education':
+        return renderEducation();
       case 'skills':
+        return renderSkills();
       case 'projects':
+        return renderProjects();
+      case 'certifications':
+        return renderCertifications();
+      case 'references':
+        return renderReferences();
+      default:
+        return <div className="text-center py-8 text-gray-500">Section coming soon...</div>;
+    }
+  };
+
+  // Placeholder render functions for remaining sections
+  const renderEducation = () => <div className="text-center py-8">Education section - Implementation continues in Section 4</div>;
+  const renderSkills = () => <div className="text-center py-8">Skills section - Implementation continues in Section 4</div>;
+  const renderProjects = () => <div className="text-center py-8">Projects section - Implementation continues in Section 4</div>;
+  const renderCertifications = () => <div className="text-center py-8">Certifications section - Implementation continues in Section 4</div>;
+  const renderReferences = () => <div className="text-center py-8">References section - Implementation continues in Section 4</div>;
+  // Complete remaining render functions
+  const renderEducation = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-blue-600" />
+            Education <span className="text-red-500">*</span>
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Add your educational background and qualifications
+          </p>
+        </div>
+        
+        <button
+          onClick={addEducation}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Education
+        </button>
+      </div>
+
+      {cvData.education.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+          <GraduationCap className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg mb-2">No education added yet</p>
+          <p className="text-gray-500 text-sm mb-6">
+            Add your academic achievements and qualifications
+          </p>
+          <button
+            onClick={addEducation}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Add Education
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {cvData.education.map((edu, index) => (
+            <div key={edu.id} className="bg-white rounded-xl border-2 border-gray-100 p-6 hover:border-blue-200 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-green-600 text-sm font-bold">{index + 1}</span>
+                  </div>
+                  Education #{index + 1}
+                </h4>
+                
+                <button
+                  onClick={() => removeEducation(edu.id)}
+                  className="text-gray-400 hover:text-red-600 transition-colors p-2"
+                  title="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Degree <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={edu.degree}
+                    onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="Bachelor of Science in Computer Science"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    School/University <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={edu.school}
+                    onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="Stanford University"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={edu.location}
+                    onChange={(e) => updateEducation(edu.id, 'location', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="Stanford, CA"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Graduation Date
+                  </label>
+                  <input
+                    type="month"
+                    value={edu.graduationDate}
+                    onChange={(e) => updateEducation(edu.id, 'graduationDate', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    GPA (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={edu.gpa}
+                    onChange={(e) => updateEducation(edu.id, 'gpa', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="3.8/4.0"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderSkills = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Star className="h-5 w-5 text-blue-600" />
+            Skills & Expertise <span className="text-red-500">*</span>
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Showcase your technical and soft skills
+          </p>
+        </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={addSkill}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Skill
+          </button>
+        </div>
+      </div>
+
+      {/* Bulk skill input */}
+      <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
+        <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+          <Zap className="h-4 w-4 text-indigo-600" />
+          Quick Add Skills
+        </h4>
+        <input
+          type="text"
+          placeholder="Type skills separated by commas (e.g., JavaScript, React, Node.js)"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-0 transition-colors"
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              const input = e.target as HTMLInputElement;
+              const skills = input.value.split(',').map(s => s.trim()).filter(s => s);
+              if (skills.length > 0) {
+                addBulkSkills(skills, 'Technical');
+                input.value = '';
+              }
+            }
+          }}
+        />
+        <p className="text-xs text-gray-500 mt-2">Press Enter to add multiple skills at once</p>
+      </div>
+
+      {cvData.skills.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+          <Star className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg mb-2">No skills added yet</p>
+          <p className="text-gray-500 text-sm mb-6">
+            Add your technical and soft skills to showcase your expertise
+          </p>
+          <button
+            onClick={addSkill}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Add Skills
+          </button>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-4">
+          {cvData.skills.map((skill, index) => (
+            <div key={skill.id} className="bg-white rounded-xl border-2 border-gray-100 p-4 hover:border-blue-200 transition-colors">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">Skill #{index + 1}</span>
+                <button
+                  onClick={() => removeSkill(skill.id)}
+                  className="text-gray-400 hover:text-red-600 transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={skill.name}
+                  onChange={(e) => updateSkill(skill.id, 'name', e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
+                  placeholder="JavaScript"
+                />
+                
+                <select
+                  value={skill.category}
+                  onChange={(e) => updateSkill(skill.id, 'category', e.target.value)}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
+                >
+                  <option value="Technical">Technical</option>
+                  <option value="Soft Skills">Soft Skills</option>
+                  <option value="Languages">Languages</option>
+                  <option value="Tools">Tools</option>
+                  <option value="Frameworks">Frameworks</option>
+                </select>
+
+                <div>
+                  <label className="block text-xs text-gray-600 mb-2">
+                    Proficiency Level: {skill.level}/5
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      value={skill.level}
+                      onChange={(e) => updateSkill(skill.id, 'level', parseInt(e.target.value))}
+                      className="flex-1"
+                    />
+                    <div className="flex gap-1">
+                      {[1,2,3,4,5].map(num => (
+                        <div key={num} className={`w-2 h-2 rounded-full ${num <= skill.level ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderProjects = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Target className="h-5 w-5 text-blue-600" />
+            Projects (Optional)
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Showcase your best work and personal projects
+          </p>
+        </div>
+        
+        <button
+          onClick={addProject}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Project
+        </button>
+      </div>
+
+      {cvData.projects.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+          <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg mb-2">No projects added yet</p>
+          <p className="text-gray-500 text-sm mb-6">
+            Projects help demonstrate your practical skills and initiative
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {cvData.projects.map((project, index) => (
+            <div key={project.id} className="bg-white rounded-xl border-2 border-gray-100 p-6 hover:border-blue-200 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                    <span className="text-purple-600 text-sm font-bold">{index + 1}</span>
+                  </div>
+                  Project #{index + 1}
+                </h4>
+                
+                <button
+                  onClick={() => removeProject(project.id)}
+                  className="text-gray-400 hover:text-red-600 transition-colors p-2"
+                  title="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Project Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={project.name}
+                    onChange={(e) => updateProject(project.id, 'name', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="E-commerce Platform"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={project.status}
+                    onChange={(e) => updateProject(project.id, 'status', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                  >
+                    <option value="Completed">Completed</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Planned">Planned</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={project.description}
+                  onChange={(e) => updateProject(project.id, 'description', e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors resize-none"
+                  placeholder="Built a full-stack e-commerce platform with user authentication, payment processing, and admin dashboard..."
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    GitHub Link
+                  </label>
+                  <input
+                    type="url"
+                    value={project.github}
+                    onChange={(e) => updateProject(project.id, 'github', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="https://github.com/username/project"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Live Demo
+                  </label>
+                  <input
+                    type="url"
+                    value={project.link}
+                    onChange={(e) => updateProject(project.id, 'link', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+                    placeholder="https://myproject.com"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // Update renderActiveSection to include all sections
+  const updatedRenderActiveSection = () => {
+    const currentSection = sections[currentStep];
+    
+    switch (currentSection.id) {
+      case 'personal':
+        return renderPersonalInfo();
+      case 'summary':
+        return renderSummary();
+      case 'experience':
+        return renderExperience();
+      case 'education':
+        return renderEducation();
+      case 'skills':
+        return renderSkills();
+      case 'projects':
+        return renderProjects();
       case 'certifications':
       case 'references':
         return (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Section Coming Soon</h3>
-            <p className="text-gray-600">The {currentStepData.title} section is under development.</p>
+          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+            <Award className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg mb-2">Section Coming Soon</p>
+            <p className="text-gray-500 text-sm">
+              {currentSection.title} section will be available in the next update
+            </p>
           </div>
         );
-
       default:
-        return (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Section Coming Soon</h3>
-            <p className="text-gray-600">This section is under development.</p>
-          </div>
-        );
+        return <div className="text-center py-8 text-gray-500">Section not found</div>;
     }
   };
+
+  // Main component JSX return
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* Enhanced Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
+            {/* Left side */}
             <div className="flex items-center gap-4">
               <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
               >
                 <ArrowLeft className="h-5 w-5" />
                 Back
               </button>
-              <h1 className="text-xl font-semibold text-gray-900">CV Builder</h1>
+              
+              <div className="border-l border-gray-300 pl-4">
+                <h1 className="text-xl font-bold text-gray-900">CV Builder</h1>
+                <p className="text-xs text-gray-600">
+                  {completionPercentage}% Complete • Target: {targetMarket}
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            {/* Right side */}
+            <div className="flex items-center gap-3">
               {/* Auto-save status */}
               <div className="flex items-center gap-2">
-                {autoSaveStatus === 'saved' && (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="text-sm">Saved</span>
-                  </div>
-                )}
-                {autoSaveStatus === 'saving' && (
+                {autoSaveStatus.status === 'saving' && (
                   <div className="flex items-center gap-2 text-blue-600">
                     <Loader className="h-4 w-4 animate-spin" />
                     <span className="text-sm">Saving...</span>
                   </div>
                 )}
-              </div>
-
-              {/* Progress indicator */}
-              <div className="text-sm text-gray-600">
-                Step {currentStep + 1} of {steps.length}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-gray-900">
-                {steps[currentStep].title}
-              </h2>
-              <span className="text-sm text-gray-500">
-                {steps[currentStep].description}
-              </span>
-            </div>
-            
-            {/* Progress bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-              ></div>
-            </div>
-
-            {/* Step indicators */}
-            <div className="flex justify-between mt-4">
-              {steps.map((step, index) => (
-                <div
-                  key={step.id}
-                  className={`flex flex-col items-center ${
-                    index <= currentStep ? 'text-blue-600' : 'text-gray-400'
-                  }`}
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      index <= currentStep
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-500'
-                    }`}
-                  >
-                    {index < currentStep ? (
-                      <CheckCircle className="h-4 w-4" />
-                    ) : (
-                      index + 1
-                    )}
+                {autoSaveStatus.status === 'saved' && (
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="text-sm">Saved</span>
                   </div>
-                  <span className="text-xs mt-1 text-center max-w-20">
-                    {step.title}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+                )}
+                {autoSaveStatus.status === 'error' && (
+                  <div className="flex items-center gap-2 text-red-600">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm">Error</span>
+                  </div>
+                )}
+              </div>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderSectionContent()}
-
-        {/* Navigation */}
-        <div className="mt-8 flex justify-between items-center">
-          <button
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${
-              currentStep === 0
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Previous
-          </button>
-
-          {currentStep < steps.length - 1 ? (
-            <button
-              onClick={nextStep}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Next
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          ) : (
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  saveCVData();
-                  alert('CV saved successfully!');
-                }}
-                className="flex items-center gap-2 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              {/* Preview mode selector */}
+              <select
+                value={previewMode}
+                onChange={(e) => setPreviewMode(e.target.value as any)}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-2"
               >
-                <FileText className="h-4 w-4" />
-                Save CV
-              </button>
-              
+                <option value="desktop">Desktop</option>
+                <option value="mobile">Mobile</option>
+                <option value="print">Print</option>
+              </select>
+
+              {/* Generate PDF button */}
               <button
                 onClick={handleGeneratePDF}
-                disabled={isGeneratingPDF}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${
+                disabled={isGeneratingPDF || completionPercentage < 60}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all ${
                   isGeneratingPDF
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : completionPercentage < 60
                     ? 'bg-gray-400 cursor-not-allowed'
                     : pdfGenerated
                     ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                } text-white`}
+                    : 'bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl'
+                }`}
+                title={completionPercentage < 60 ? 'Complete at least 60% to generate PDF' : ''}
               >
                 {isGeneratingPDF ? (
                   <>
@@ -628,7 +1921,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
                 ) : pdfGenerated ? (
                   <>
                     <CheckCircle className="h-4 w-4" />
-                    Generated ✓
+                    Generated
                   </>
                 ) : (
                   <>
@@ -638,8 +1931,148 @@ const CVBuilder: React.FC<CVBuilderProps> = ({ onBack, targetMarket }) => {
                 )}
               </button>
             </div>
-          )}
+          </div>
         </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {sections[currentStep].title}
+              </h2>
+              <p className="text-sm text-gray-600">
+                {sections[currentStep].description} • Est. {sections[currentStep].estimatedTime}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-medium text-gray-900">
+                {completionPercentage}% Complete
+              </div>
+              <div className="text-xs text-gray-500">
+                Step {currentStep + 1} of {sections.length}
+              </div>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+              style={{ width: `${completionPercentage}%` }}
+            >
+              {completionPercentage > 15 && (
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+              )}
+            </div>
+          </div>
+
+          {/* Step indicators */}
+          <div className="flex justify-between">
+            {sections.map((section, index) => (
+              <div
+                key={section.id}
+                className={`flex flex-col items-center cursor-pointer transition-colors ${
+                  index <= currentStep ? 'text-blue-600' : 'text-gray-400'
+                }`}
+                onClick={() => goToStep(index)}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium mb-1 transition-all ${
+                    index < currentStep
+                      ? 'bg-green-500 text-white'
+                      : index === currentStep
+                      ? 'bg-blue-600 text-white ring-2 ring-blue-200'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  {index < currentStep ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : (
+                    section.icon
+                  )}
+                </div>
+                <span className="text-xs text-center max-w-16 leading-tight">
+                  {section.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="p-8">
+            {updatedRenderActiveSection()}
+          </div>
+
+          {/* Navigation Footer */}
+          <div className="bg-gray-50 px-8 py-6 border-t border-gray-200">
+            <div className="flex justify-between items-center">
+              <button
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                  currentStep === 0
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-600 text-white hover:bg-gray-700 shadow-md hover:shadow-lg'
+                }`}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </button>
+
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-600">
+                  {unsavedChanges && (
+                    <span className="flex items-center gap-1 text-amber-600">
+                      <AlertCircle className="h-4 w-4" />
+                      Unsaved changes
+                    </span>
+                  )}
+                </div>
+
+                {currentStep < sections.length - 1 ? (
+                  <button
+                    onClick={nextStep}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-all shadow-md hover:shadow-lg"
+                  >
+                    Next
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleAutoSave}
+                      className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-all shadow-md hover:shadow-lg"
+                    >
+                      <Save className="h-4 w-4" />
+                      Save & Finish
+                    </button>
+                    
+                    <button
+                      onClick={handleGeneratePDF}
+                      disabled={isGeneratingPDF}
+                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download PDF
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Keyboard shortcuts hint */}
+      <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-3 py-2 rounded-lg text-xs opacity-75">
+        Ctrl+S to save • Ctrl+P for PDF • ← → to navigate
       </div>
     </div>
   );
