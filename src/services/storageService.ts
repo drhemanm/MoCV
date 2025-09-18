@@ -273,6 +273,10 @@ class StorageService {
   }
 }
 
-// Export singleton instance
-export const storageService = new StorageService();
-export default storageService;
+// Create singleton instance
+const storageServiceInstance = new StorageService();
+
+// Export both named and default exports for compatibility
+export { StorageService };
+export const storageService = storageServiceInstance;
+export default storageServiceInstance;
