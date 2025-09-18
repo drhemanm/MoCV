@@ -1,34 +1,94 @@
 // src/components/CVBuilder.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Save, Download, Eye, Wand2, ArrowLeft, ArrowRight, 
-  Plus, Trash2, Upload, Sparkles, Brain, Target,
-  User, Briefcase, GraduationCap, Award, Code2, 
-  FileText, Link, Mail, Phone, MapPin, Calendar,
-  CheckCircle, AlertCircle, Loader2, Edit3, ExternalLink
+import {
+  User, FileText, Briefcase, GraduationCap, Code2, Target, Award, Users,
+  Plus, Trash2, Eye, Download, Save, ArrowLeft, ArrowRight, MoreVertical,
+  Settings, Sparkles, Bot, RotateCcw, CheckCircle, AlertCircle, ChevronUp,
+  Bold, Italic, Underline, Link, List, ListOrdered, AlignLeft, ChevronDown
 } from 'lucide-react';
-import { CVData, TargetMarket, CVTemplate } from '../types';
-import { StorageService } from '../services/storageService';
-import { AIService } from '../services/aiService';
-import { TemplateService } from '../services/templateService';
-import { PDFGenerator } from '../services/pdfGenerator';
 
 interface CVBuilderProps {
-  initialData?: Partial<CVData>;
-  targetMarket?: TargetMarket;
-  selectedTemplate?: CVTemplate;
-  onSave?: (cvData: CVData) => void;
-  onPreview?: (cvData: CVData) => void;
+  targetMarket?: any;
+  template?: any;
+  onComplete?: (cvData: any) => void;
+  onBack?: () => void;
+  initialData?: any;
 }
 
-const CVBuilder: React.FC<CVBuilderProps> = ({ 
-  initialData, 
-  targetMarket = 'mauritius', 
-  selectedTemplate,
-  onSave,
-  onPreview 
+interface ValidationErrors {
+  [key: string]: string;
+}
+
+interface CVData {
+  personalInfo: {
+    fullName: string;
+    title: string;
+    email: string;
+    phone: string;
+    location: string;
+    linkedin: string;
+    website: string;
+  };
+  summary: string;
+  experience: Array<{
+    id: string;
+    position: string;
+    employer: string;
+    city: string;
+    startDate: { month: string; year: string };
+    endDate: { month: string; year: string };
+    present: boolean;
+    description: string;
+  }>;
+  education: Array<{
+    id: string;
+    degree: string;
+    school: string;
+    city: string;
+    startDate: { month: string; year: string };
+    endDate: { month: string; year: string };
+    present: boolean;
+    description: string;
+  }>;
+  skills: Array<{
+    id: string;
+    name: string;
+    level: string;
+  }>;
+  projects: Array<{
+    id: string;
+    name: string;
+    description: string;
+    technologies: string[];
+    link: string;
+  }>;
+  certifications: Array<{
+    id: string;
+    name: string;
+    issuer: string;
+    date: string;
+    expiryDate?: string;
+  }>;
+  references: Array<{
+    id: string;
+    name: string;
+    title: string;
+    company: string;
+    email: string;
+    phone: string;
+    relationship: string;
+  }>;
+}
+
+const CVBuilder: React.FC<CVBuilderProps> = ({
+  targetMarket,
+  template,
+  onComplete,
+  onBack,
+  initialData
 }) => {
   // State management
+  const [currentStep, setCurrentStep] = useState(0);
   const [cvData, setCvData] = useState<CVData>({
     personalInfo: {
       fullName: '',
@@ -37,8 +97,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       phone: '',
       location: '',
       linkedin: '',
-      website: '',
-      photo: ''
+      website: ''
     },
     summary: '',
     experience: [],
@@ -46,179 +105,171 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     skills: [],
     projects: [],
     certifications: [],
-    ...initialData
+    references: []
   });
 
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
-  
-  // FIXED: Added preview mode state
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
-  // Services
-  const storageService = new StorageService();
-  const aiService = new AIService();
-  const templateService = new TemplateService();
-  const pdfGenerator = new PDFGenerator();
+  // Months for dropdowns
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
-  // Auto-save functionality
-  const autoSaveTimer = useRef<NodeJS.Timeout>();
+  // Years for dropdowns (current year + 10 years back and forward)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
 
-  useEffect(() => {
-    // Auto-save every 30 seconds
-    if (autoSaveTimer.current) {
-      clearTimeout(autoSaveTimer.current);
-    }
-    
-    autoSaveTimer.current = setTimeout(() => {
-      handleAutoSave();
-    }, 30000);
+  // Skill levels
+  const skillLevels = [
+    'Beginner',
+    'Intermediate', 
+    'Advanced',
+    'Expert',
+    'Native/Fluent'
+  ];
 
-    return () => {
-      if (autoSaveTimer.current) {
-        clearTimeout(autoSaveTimer.current);
-      }
-    };
-  }, [cvData]);
-
-  const handleAutoSave = async () => {
-    setAutoSaveStatus('saving');
-    try {
-      storageService.saveDraft(cvData);
-      setAutoSaveStatus('saved');
-    } catch (error) {
-      setAutoSaveStatus('error');
-      console.error('Auto-save failed:', error);
-    }
+  // Pre-defined skills for suggestions
+  const skillSuggestions = {
+    technical: ['JavaScript', 'Python', 'React', 'Node.js', 'HTML/CSS', 'SQL', 'Git'],
+    soft: ['Communication', 'Teamwork', 'Problem Solving', 'Time Management', 'Adaptability', 'Leadership', 'Critical Thinking']
   };
 
-  // FIXED: Added preview toggle function
-  const togglePreview = () => {
-    console.log('Preview toggle clicked, current mode:', isPreviewMode);
-    setIsPreviewMode(!isPreviewMode);
-    console.log('Preview mode will be:', !isPreviewMode);
-  };
-
-  // Step configuration
+  // Form steps configuration
   const steps = [
     {
       id: 'personal',
       title: 'Personal Information',
       icon: User,
-      description: 'Your basic contact details'
+      description: 'Your basic contact details',
+      required: true
     },
     {
       id: 'summary',
       title: 'Professional Summary',
       icon: FileText,
-      description: 'Your elevator pitch'
+      description: 'Your elevator pitch',
+      required: true
     },
     {
       id: 'experience',
-      title: 'Work Experience',
+      title: 'Employment',
       icon: Briefcase,
-      description: 'Your professional journey'
+      description: 'Your professional journey',
+      required: true
     },
     {
       id: 'education',
       title: 'Education',
       icon: GraduationCap,
-      description: 'Your academic background'
+      description: 'Your academic background',
+      required: true
     },
     {
       id: 'skills',
       title: 'Skills',
       icon: Code2,
-      description: 'Your technical and soft skills'
+      description: 'Your technical and soft skills',
+      required: true
     },
     {
       id: 'projects',
       title: 'Projects',
       icon: Target,
-      description: 'Your notable projects'
+      description: 'Your notable projects',
+      required: false
     },
     {
       id: 'certifications',
       title: 'Certifications',
       icon: Award,
-      description: 'Your professional certifications'
+      description: 'Your professional certifications',
+      required: false
+    },
+    {
+      id: 'references',
+      title: 'References',
+      icon: Users,
+      description: 'Professional references',
+      required: false
     }
   ];
 
-  // Validation
-  const validateStep = (stepIndex: number): boolean => {
-    const step = steps[stepIndex];
-    const errors: Record<string, string> = {};
-
-    switch (step.id) {
-      case 'personal':
-        if (!cvData.personalInfo.fullName.trim()) {
-          errors.fullName = 'Full name is required';
-        }
-        if (!cvData.personalInfo.email.trim()) {
-          errors.email = 'Email is required';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cvData.personalInfo.email)) {
-          errors.email = 'Please enter a valid email';
-        }
-        if (!cvData.personalInfo.phone.trim()) {
-          errors.phone = 'Phone number is required';
-        }
-        break;
-      case 'summary':
-        if (!cvData.summary.trim()) {
-          errors.summary = 'Professional summary is required';
-        } else if (cvData.summary.trim().length < 50) {
-          errors.summary = 'Summary should be at least 50 characters';
-        }
-        break;
-      case 'experience':
-        if (cvData.experience.length === 0) {
-          errors.experience = 'At least one work experience is required';
-        }
-        break;
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Navigation
-  const nextStep = () => {
-    if (validateStep(currentStep) && currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  // Data handlers
-  const updatePersonalInfo = (field: string, value: string) => {
-    setCvData(prev => ({
-      ...prev,
-      personalInfo: {
-        ...prev.personalInfo,
-        [field]: value
+  // Auto-save functionality
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (cvData.personalInfo.fullName || cvData.summary) {
+        setAutoSaveStatus('saving');
+        localStorage.setItem('mocv_draft', JSON.stringify(cvData));
+        setTimeout(() => setAutoSaveStatus('saved'), 1000);
       }
-    }));
-  };
+    }, 2000);
 
+    return () => clearTimeout(timer);
+  }, [cvData]);
+
+  // Rich text editor component
+  const RichTextEditor = ({ value, onChange, placeholder }: { 
+    value: string; 
+    onChange: (value: string) => void; 
+    placeholder: string;
+  }) => (
+    <div className="border border-gray-300 rounded-lg">
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-4 py-3 border-0 rounded-t-lg focus:ring-0 focus:outline-none resize-none"
+        rows={4}
+      />
+      <div className="border-t border-gray-200 px-4 py-2 bg-gray-50 rounded-b-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button className="p-1 text-gray-600 hover:text-gray-800 rounded">
+              <Bold className="h-4 w-4" />
+            </button>
+            <button className="p-1 text-gray-600 hover:text-gray-800 rounded">
+              <Italic className="h-4 w-4" />
+            </button>
+            <button className="p-1 text-gray-600 hover:text-gray-800 rounded">
+              <Underline className="h-4 w-4" />
+            </button>
+            <button className="p-1 text-gray-600 hover:text-gray-800 rounded">
+              <Link className="h-4 w-4" />
+            </button>
+            <button className="p-1 text-gray-600 hover:text-gray-800 rounded">
+              <List className="h-4 w-4" />
+            </button>
+            <button className="p-1 text-gray-600 hover:text-gray-800 rounded">
+              <ListOrdered className="h-4 w-4" />
+            </button>
+            <button className="p-1 text-gray-600 hover:text-gray-800 rounded flex items-center gap-1">
+              <AlignLeft className="h-4 w-4" />
+              <ChevronDown className="h-3 w-3" />
+            </button>
+          </div>
+          <button className="flex items-center gap-2 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-50">
+            <Sparkles className="h-4 w-4" />
+            AI Suggestions
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Experience functions
   const addExperience = () => {
     const newExp = {
       id: `exp_${Date.now()}`,
-      title: '',
-      company: '',
-      location: '',
-      startDate: '',
-      endDate: '',
-      current: false,
+      position: '',
+      employer: '',
+      city: '',
+      startDate: { month: '', year: '' },
+      endDate: { month: '', year: '' },
+      present: false,
       description: ''
     };
     setCvData(prev => ({
@@ -243,14 +294,17 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     }));
   };
 
+  // Education functions
   const addEducation = () => {
     const newEdu = {
       id: `edu_${Date.now()}`,
       degree: '',
       school: '',
-      location: '',
-      graduationDate: '',
-      gpa: ''
+      city: '',
+      startDate: { month: '', year: '' },
+      endDate: { month: '', year: '' },
+      present: false,
+      description: ''
     };
     setCvData(prev => ({
       ...prev,
@@ -258,7 +312,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     }));
   };
 
-  const updateEducation = (id: string, field: string, value: string) => {
+  const updateEducation = (id: string, field: string, value: any) => {
     setCvData(prev => ({
       ...prev,
       education: prev.education.map(edu =>
@@ -274,12 +328,12 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     }));
   };
 
-  const addSkill = () => {
+  // Skills functions
+  const addSkill = (skillName: string = '') => {
     const newSkill = {
       id: `skill_${Date.now()}`,
-      name: '',
-      level: 3,
-      category: 'technical'
+      name: skillName,
+      level: ''
     };
     setCvData(prev => ({
       ...prev,
@@ -303,698 +357,617 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     }));
   };
 
-  const addProject = () => {
-    const newProject = {
-      id: `proj_${Date.now()}`,
+  // References functions
+  const addReference = () => {
+    const newRef = {
+      id: `ref_${Date.now()}`,
       name: '',
-      description: '',
-      technologies: [],
-      link: ''
+      title: '',
+      company: '',
+      email: '',
+      phone: '',
+      relationship: ''
     };
     setCvData(prev => ({
       ...prev,
-      projects: [...prev.projects, newProject]
+      references: [...prev.references, newRef]
     }));
   };
 
-  const updateProject = (id: string, field: string, value: any) => {
+  const updateReference = (id: string, field: string, value: string) => {
     setCvData(prev => ({
       ...prev,
-      projects: prev.projects.map(proj =>
-        proj.id === id ? { ...proj, [field]: value } : proj
+      references: prev.references.map(ref =>
+        ref.id === id ? { ...ref, [field]: value } : ref
       )
     }));
   };
 
-  const removeProject = (id: string) => {
+  const removeReference = (id: string) => {
     setCvData(prev => ({
       ...prev,
-      projects: prev.projects.filter(proj => proj.id !== id)
+      references: prev.references.filter(ref => ref.id !== id)
     }));
   };
 
-  const addCertification = () => {
-    const newCert = {
-      id: `cert_${Date.now()}`,
-      name: '',
-      issuer: '',
-      date: ''
-    };
-    setCvData(prev => ({
-      ...prev,
-      certifications: [...prev.certifications, newCert]
-    }));
-  };
-
-  const updateCertification = (id: string, field: string, value: string) => {
-    setCvData(prev => ({
-      ...prev,
-      certifications: prev.certifications.map(cert =>
-        cert.id === id ? { ...cert, [field]: value } : cert
-      )
-    }));
-  };
-
-  const removeCertification = (id: string) => {
-    setCvData(prev => ({
-      ...prev,
-      certifications: prev.certifications.filter(cert => cert.id !== id)
-    }));
-  };
-
-  // AI Enhancement
-  const enhanceWithAI = async (section: string, content: string) => {
-    setIsLoading(true);
-    try {
-      const enhanced = await aiService.enhanceContent(content, section, targetMarket);
-      return enhanced;
-    } catch (error) {
-      console.error('AI enhancement failed:', error);
-      return content;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Actions
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const savedCV = storageService.saveCV({
-        data: cvData,
-        templateId: selectedTemplate?.id || 'modern-professional',
-        targetMarket,
-        name: `${cvData.personalInfo.fullName} - CV`,
-        lastModified: new Date()
-      });
-      
-      if (onSave) {
-        onSave(cvData);
+  // Toggle section expansion
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
       }
-      
-      // Show success message
-      setAutoSaveStatus('saved');
-    } catch (error) {
-      console.error('Save failed:', error);
-      setAutoSaveStatus('error');
-    } finally {
-      setIsSaving(false);
-    }
+      return newSet;
+    });
   };
 
-  const handlePreview = () => {
-    if (onPreview) {
-      onPreview(cvData);
-    }
-  };
+  // Render different sections based on current step
+  const renderSectionContent = () => {
+    const currentStepData = steps[currentStep];
 
-  const handleDownload = async () => {
-    setIsLoading(true);
-    try {
-      await pdfGenerator.generatePDF(cvData, selectedTemplate);
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // FIXED: Added CV preview rendering function
-  const renderCVPreview = () => {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8 min-h-[800px]">
-          {/* CV Header */}
-          <div className="text-center border-b-2 border-gray-300 pb-6 mb-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              {cvData.personalInfo?.fullName || 'Your Full Name'}
-            </h1>
-            <p className="text-xl text-gray-600 mb-4">
-              {cvData.personalInfo?.title || 'Your Professional Title'}
-            </p>
-            
-            {/* Contact Info */}
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-600">
-              {cvData.personalInfo?.email && (
-                <div className="flex items-center gap-1">
-                  <Mail className="h-4 w-4" />
-                  {cvData.personalInfo.email}
-                </div>
-              )}
-              {cvData.personalInfo?.phone && (
-                <div className="flex items-center gap-1">
-                  <Phone className="h-4 w-4" />
-                  {cvData.personalInfo.phone}
-                </div>
-              )}
-              {cvData.personalInfo?.location && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  {cvData.personalInfo.location}
-                </div>
-              )}
-              {cvData.personalInfo?.linkedin && (
-                <div className="flex items-center gap-1">
-                  <Link className="h-4 w-4" />
-                  LinkedIn
-                </div>
-              )}
-              {cvData.personalInfo?.website && (
-                <div className="flex items-center gap-1">
-                  <ExternalLink className="h-4 w-4" />
-                  Portfolio
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Professional Summary */}
-          {cvData.summary && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
-                Professional Summary
-              </h2>
-              <p className="text-gray-700 leading-relaxed text-lg">{cvData.summary}</p>
-            </div>
-          )}
-
-          {/* Experience */}
-          {cvData.experience && cvData.experience.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
-                Professional Experience
-              </h2>
-              <div className="space-y-6">
-                {cvData.experience.map((exp, index) => (
-                  <div key={index} className="border-l-4 border-orange-300 pl-6">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {exp.title || 'Job Title'}
-                    </h3>
-                    <p className="text-orange-600 font-medium text-lg mb-2">
-                      {exp.company || 'Company Name'}
-                      {exp.location && ` • ${exp.location}`}
-                    </p>
-                    <p className="text-gray-600 mb-3">
-                      {exp.startDate || 'Start Date'} - {exp.current ? 'Present' : (exp.endDate || 'End Date')}
-                    </p>
-                    {exp.description && (
-                      <p className="text-gray-700 leading-relaxed">{exp.description}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Education */}
-          {cvData.education && cvData.education.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
-                Education
-              </h2>
-              <div className="space-y-4">
-                {cvData.education.map((edu, index) => (
-                  <div key={index} className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {edu.degree || 'Degree'}
-                      </h3>
-                      <p className="text-orange-600 font-medium">{edu.school || 'School Name'}</p>
-                      {edu.location && <p className="text-gray-600">{edu.location}</p>}
-                      {edu.gpa && <p className="text-gray-600">GPA: {edu.gpa}</p>}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-gray-600">{edu.graduationDate || 'Graduation Date'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Skills */}
-          {cvData.skills && cvData.skills.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
-                Skills
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {cvData.skills.map((skill, index) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <div className="font-medium text-gray-900 mb-2">{skill.name}</div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-orange-500 h-2 rounded-full transition-all"
-                          style={{ width: `${skill.level * 20}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-gray-600">{skill.level}/5</span>
-                    </div>
-                    {skill.category && (
-                      <div className="text-xs text-gray-500 mt-1 capitalize">{skill.category}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Projects */}
-          {cvData.projects && cvData.projects.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
-                Projects
-              </h2>
-              <div className="space-y-6">
-                {cvData.projects.map((project, index) => (
-                  <div key={index} className="bg-gray-50 p-6 rounded-lg">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {project.name || 'Project Name'}
-                    </h3>
-                    {project.description && (
-                      <p className="text-gray-700 mb-3">{project.description}</p>
-                    )}
-                    {project.technologies && project.technologies.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {project.technologies.map((tech, i) => (
-                          <span key={i} className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {project.link && (
-                      <a href={project.link} className="text-orange-600 hover:underline flex items-center gap-1">
-                        <ExternalLink className="h-4 w-4" />
-                        View Project
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Certifications */}
-          {cvData.certifications && cvData.certifications.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
-                Certifications
-              </h2>
-              <div className="space-y-4">
-                {cvData.certifications.map((cert, index) => (
-                  <div key={index} className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {cert.name || 'Certification Name'}
-                      </h3>
-                      <p className="text-orange-600">{cert.issuer || 'Issuing Organization'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-gray-600">{cert.date || 'Issue Date'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!cvData.personalInfo?.fullName && !cvData.summary && 
-           (!cvData.experience || cvData.experience.length === 0) && (
-            <div className="text-center py-16 text-gray-400">
-              <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <h3 className="text-xl font-medium mb-2">Your CV Preview</h3>
-              <p>Start filling out your information to see your CV come to life!</p>
-              <button
-                onClick={() => setIsPreviewMode(false)}
-                className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-              >
-                Start Building
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Render step content (existing code)
-  const renderStepContent = () => {
-    const step = steps[currentStep];
-
-    switch (step.id) {
-      case 'personal':
+    switch (currentStepData.id) {
+      case 'skills':
         return (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  value={cvData.personalInfo.fullName}
-                  onChange={(e) => updatePersonalInfo('fullName', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    validationErrors.fullName ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="John Doe"
-                />
-                {validationErrors.fullName && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.fullName}</p>
-                )}
+                <h2 className="text-2xl font-bold text-gray-900">Skills</h2>
+                <p className="text-gray-600">Add your technical and soft skills</p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Professional Title
-                </label>
-                <input
-                  type="text"
-                  value={cvData.personalInfo.title}
-                  onChange={(e) => updatePersonalInfo('title', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Software Engineer"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  value={cvData.personalInfo.email}
-                  onChange={(e) => updatePersonalInfo('email', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    validationErrors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="john@example.com"
-                />
-                {validationErrors.email && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  value={cvData.personalInfo.phone}
-                  onChange={(e) => updatePersonalInfo('phone', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    validationErrors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="+230 5xxx xxxx"
-                />
-                {validationErrors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.phone}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={cvData.personalInfo.location}
-                  onChange={(e) => updatePersonalInfo('location', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Port Louis, Mauritius"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  LinkedIn Profile
-                </label>
-                <input
-                  type="url"
-                  value={cvData.personalInfo.linkedin}
-                  onChange={(e) => updatePersonalInfo('linkedin', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="https://linkedin.com/in/johndoe"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website/Portfolio
-                </label>
-                <input
-                  type="url"
-                  value={cvData.personalInfo.website}
-                  onChange={(e) => updatePersonalInfo('website', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="https://johndoe.com"
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'summary':
-        return (
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Professional Summary *
-                </label>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
                 <button
-                  onClick={() => enhanceWithAI('summary', cvData.summary)}
-                  disabled={isLoading}
-                  className="flex items-center px-3 py-1 text-sm bg-orange-100 text-orange-600 rounded-lg hover:bg-orange-200 disabled:opacity-50"
+                  onClick={() => toggleSection('skills')}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
                 >
-                  {isLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Wand2 className="h-4 w-4 mr-1" />}
-                  Enhance with AI
+                  <ChevronUp className="h-5 w-5" />
                 </button>
               </div>
-              <textarea
-                value={cvData.summary}
-                onChange={(e) => setCvData(prev => ({ ...prev, summary: e.target.value }))}
-                rows={6}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  validationErrors.summary ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Write a compelling summary that highlights your key strengths, experience, and career objectives..."
-              />
-              {validationErrors.summary && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.summary}</p>
-              )}
-              <p className="mt-2 text-sm text-gray-500">
-                {cvData.summary.length}/500 characters • Aim for 2-3 sentences highlighting your key value proposition
-              </p>
+            </div>
+
+            {/* Skills Form */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Skill
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="Enter skill name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Level
+                  </label>
+                  <div className="relative">
+                    <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                      <option value="">Make a choice</option>
+                      {skillLevels.map(level => (
+                        <option key={level} value={level}>{level}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+
+            {/* Skill Suggestions */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex flex-wrap gap-3">
+                {skillSuggestions.soft.map(skill => (
+                  <button
+                    key={skill}
+                    onClick={() => addSkill(skill)}
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {skill}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => addSkill()}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <Plus className="h-4 w-4" />
+                Add skill
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
+                <Sparkles className="h-4 w-4" />
+                AI Suggestions
+                <RotateCcw className="h-4 w-4" />
+              </button>
             </div>
           </div>
         );
 
-      // ... [Rest of the existing step content - experience, education, skills, projects, certifications]
-      // I'll keep the existing implementation for brevity
-      
+      case 'experience':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Employment</h2>
+                <p className="text-gray-600">Add your work experience</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => toggleSection('experience')}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                >
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Experience Form */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Position
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="e.g. Software Engineer"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Employer
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="Company name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="e.g. Port Louis"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start date
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Month</option>
+                          {months.map((month, index) => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Year</option>
+                          {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End date
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Month</option>
+                          {months.map((month, index) => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Year</option>
+                          {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3">
+                      <div className="relative">
+                        <input type="checkbox" className="sr-only" />
+                        <div className="w-12 h-6 bg-gray-200 rounded-full cursor-pointer">
+                          <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded-full shadow transform translate-x-0 transition-transform"></div>
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-700">Present</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <RichTextEditor 
+                    value=""
+                    onChange={() => {}}
+                    placeholder="Start typing here..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'education':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Education</h2>
+                <p className="text-gray-600">Add your educational background</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => toggleSection('education')}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                >
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Education Form */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Education
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                    placeholder="e.g. Bachelor of Computer Science"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      School
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="University name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="e.g. Reduit"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start date
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Month</option>
+                          {months.map((month, index) => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Year</option>
+                          {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End date
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Month</option>
+                          {months.map((month, index) => (
+                            <option key={month} value={month}>{month}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                      <div className="relative">
+                        <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                          <option value="">Year</option>
+                          {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3">
+                      <div className="relative">
+                        <input type="checkbox" className="sr-only" />
+                        <div className="w-12 h-6 bg-gray-200 rounded-full cursor-pointer">
+                          <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded-full shadow transform translate-x-0 transition-transform"></div>
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-700">Present</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <RichTextEditor 
+                    value=""
+                    onChange={() => {}}
+                    placeholder="Start typing here..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'references':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">References</h2>
+                <p className="text-gray-600">Add professional references</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                  <MoreVertical className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => toggleSection('references')}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                >
+                  <ChevronUp className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Reference Form */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reference Name
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="John Smith"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Job Title
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="Senior Manager"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Company
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="ABC Corporation"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Relationship
+                    </label>
+                    <div className="relative">
+                      <select className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer">
+                        <option value="">Select relationship</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="colleague">Colleague</option>
+                        <option value="mentor">Mentor</option>
+                        <option value="client">Client</option>
+                        <option value="other">Other</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="john@company.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="+230 123 4567"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+                <button className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="h-5 w-5" />
+                </button>
+                <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  Done
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={addReference}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <Plus className="h-4 w-4" />
+                Add reference
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50">
+                <Sparkles className="h-4 w-4" />
+                AI Suggestions
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
+
       default:
-        return <div>Step content for {step.title} goes here...</div>;
+        return (
+          <div className="text-center py-12">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Section Coming Soon</h3>
+            <p className="text-gray-600">This section is under development.</p>
+          </div>
+        );
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">CV Builder</h1>
-              <div className="ml-4 flex items-center space-x-2">
-                {autoSaveStatus === 'saving' && (
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Saving...
-                  </div>
-                )}
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                Back
+              </button>
+              <h1 className="text-xl font-semibold text-gray-900">CV Builder</h1>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Auto-save status */}
+              <div className="flex items-center gap-2">
                 {autoSaveStatus === 'saved' && (
-                  <div className="flex items-center text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Saved
-                  </div>
-                )}
-                {autoSaveStatus === 'error' && (
-                  <div className="flex items-center text-sm text-red-600">
-                    <AlertCircle className="h-4 w-4 mr-1" />
-                    Save Failed
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="text-sm">Saved</span>
                   </div>
                 )}
               </div>
-            </div>
 
-            <div className="flex items-center space-x-4">
-              {/* FIXED: Updated preview button */}
-              <button
-                onClick={togglePreview}
-                className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all ${
-                  isPreviewMode 
-                    ? 'text-white bg-green-500 hover:bg-green-600' 
-                    : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
-                }`}
-              >
-                {isPreviewMode ? <Edit3 className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-                {isPreviewMode ? 'Edit CV' : 'Preview CV'}
-              </button>
-
-              <button
-                onClick={handleDownload}
-                disabled={isLoading}
-                className="flex items-center px-4 py-2 text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50"
-              >
-                {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                Download PDF
-              </button>
-
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center px-4 py-2 text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                Save CV
+              <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <Download className="h-4 w-4" />
+                Generate CV
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* FIXED: Main content now switches between edit and preview mode */}
-      {isPreviewMode ? (
-        /* Preview Mode - Full Screen CV Preview */
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6 flex justify-between items-center">
-            <h2 className="text-2xl font-semibold text-gray-900">CV Preview</h2>
-            <div className="text-sm text-gray-600">
-              This is how your CV will look when exported to PDF
-            </div>
-          </div>
-          {renderCVPreview()}
-        </div>
-      ) : (
-        /* Edit Mode - Form Interface */
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex gap-8">
-            {/* Steps Sidebar */}
-            <div className="w-80 flex-shrink-0">
-              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">CV Sections</h2>
-                <nav className="space-y-2">
-                  {steps.map((step, index) => {
-                    const StepIcon = step.icon;
-                    const isActive = currentStep === index;
-                    const isCompleted = index < currentStep;
-
-                    return (
-                      <button
-                        key={step.id}
-                        onClick={() => setCurrentStep(index)}
-                        className={`w-full flex items-center p-3 rounded-lg text-left transition-colors ${
-                          isActive 
-                            ? 'bg-orange-100 text-orange-700 border-l-4 border-orange-500' 
-                            : isCompleted
-                            ? 'bg-green-50 text-green-700'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <StepIcon className={`h-5 w-5 mr-3 ${
-                          isActive ? 'text-orange-500' : isCompleted ? 'text-green-500' : 'text-gray-400'
-                        }`} />
-                        <div>
-                          <div className="font-medium">{step.title}</div>
-                          <div className="text-xs text-gray-500">{step.description}</div>
-                        </div>
-                        {isCompleted && (
-                          <CheckCircle className="h-4 w-4 ml-auto text-green-500" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </nav>
-              </div>
-            </div>
-
-            {/* Main Content - Full Width */}
-            <div className="flex-1">
-              <div className="bg-white rounded-lg shadow-sm">
-                {/* Step Header */}
-                <div className="border-b border-gray-200 px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        {steps[currentStep].title}
-                      </h2>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {steps[currentStep].description}
-                      </p>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Step {currentStep + 1} of {steps.length}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step Content */}
-                <div className="p-6">
-                  {renderStepContent()}
-                </div>
-
-                {/* Navigation */}
-                <div className="border-t border-gray-200 px-6 py-4">
-                  <div className="flex justify-between">
-                    <button
-                      onClick={prevStep}
-                      disabled={currentStep === 0}
-                      className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Previous
-                    </button>
-
-                    <button
-                      onClick={nextStep}
-                      disabled={currentStep === steps.length - 1}
-                      className="flex items-center px-4 py-2 text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AI Assistant Panel */}
-      {aiAssistantOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">AI Assistant</h3>
-              <button
-                onClick={() => setAiAssistantOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
-            <p className="text-gray-600">
-              AI assistance is coming soon! This will help you optimize your CV content for better results.
-            </p>
-          </div>
-        </div>
-      )}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderSectionContent()}
+      </div>
     </div>
   );
 };
