@@ -4,9 +4,6 @@
   "version": "1.0.0",
   "type": "module",
   "description": "AI-powered CV/Resume builder with multi-market optimization",
-  "author": "MoCV.mu Team",
-  "license": "MIT",
-  "keywords": ["cv", "resume", "builder", "ai", "mauritius", "job"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -20,16 +17,11 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
     "security:audit": "npm audit --audit-level=high",
-    "security:fix": "npm audit fix",
-    "prepare": "husky install",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "build:analyze": "vite build --mode analyze",
     "clean": "rimraf dist coverage playwright-report test-results",
-    "deploy": "npm run build && npm run test:run && npm run test:e2e",
-    "postinstall": "patch-package"
+    "prepare": "husky install"
   },
   "dependencies": {
     "@types/node": "^24.0.14",
@@ -52,7 +44,6 @@
     "react-router-dom": "^6.20.1",
     "zustand": "^4.4.7",
     "react-hot-toast": "^2.4.1",
-    "framer-motion": "^10.16.16",
     "dompurify": "^3.0.7",
     "@types/dompurify": "^3.0.5"
   },
@@ -84,30 +75,10 @@
     "husky": "^8.0.3",
     "lint-staged": "^15.2.0",
     "prettier": "^3.1.1",
-    "@types/prettier": "^3.0.0",
     "rimraf": "^5.0.5",
-    "patch-package": "^8.0.0",
-    "vite-bundle-analyzer": "^0.7.0",
-    "vite-plugin-pwa": "^0.17.4",
-    "workbox-window": "^7.0.0",
-    "@types/express": "^4.17.21",
-    "express": "^4.18.2",
-    "express-rate-limit": "^7.1.5",
-    "express-validator": "^7.0.1",
-    "helmet": "^7.1.0",
-    "cors": "^2.8.5",
-    "@types/cors": "^2.8.17",
-    "dotenv": "^16.3.1",
-    "nodemon": "^3.0.2",
-    "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3",
-    "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-security": "^1.7.1",
     "eslint-plugin-import": "^2.29.1",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
-    "vite-plugin-eslint": "^1.8.1",
-    "@rollup/plugin-visualizer": "^5.12.0"
+    "eslint-config-prettier": "^9.1.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -118,28 +89,8 @@
       "prettier --write"
     ]
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "npm run type-check && npm run test:run"
-    }
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ],
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/mocv-builder.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/mocv-builder/issues"
-  },
-  "homepage": "https://mocv.mu"
+  }
 }
