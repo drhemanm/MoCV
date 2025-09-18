@@ -1,361 +1,278 @@
-// src/services/storageService.ts
+// src/services/storageService.ts - Updated to use cloud storage
+import { cloudStorageService } from './cloudStorageService';
 
-export interface StorageOptions {
-  encrypt?: boolean;
-  compress?: boolean;
-  expiry?: number; // milliseconds
+export interface SavedCV {
+  id: string;
+  name: string;
+  data: any;
+  templateId: string;
+  targetMarket: string;
+  lastModified: Date | string;
+  createdAt?: Date | string;
+  version?: number;
+  tags?: string[];
+  isPublic?: boolean;
 }
 
-export interface StorageItem<T = any> {
-  data: T;
-  timestamp: number;
-  expiry?: number;
-  version?: string;
-}
+class StorageService {
+  private migrationCompleted: boolean;
 
-export class StorageService {
-  private static readonly STORAGE_PREFIX = 'mocv_';
-  private static readonly CURRENT_VERSION = '1.0.0';
-
-  /**
-   * Store data in localStorage with optional expiry and encryption
-   */
-  static setItem<T>(
-    key: string, 
-    value: T, 
-    options: StorageOptions = {}
-  ): boolean {
-    try {
-      const storageItem: StorageItem<T> = {
-        data: value,
-        timestamp: Date.now(),
-        version: this.CURRENT_VERSION,
-        ...(options.expiry && { expiry: Date.now() + options.expiry })
-      };
-
-      const serialized = JSON.stringify(storageItem);
-      const finalData = options.encrypt ? this.encrypt(serialized) : serialized;
-      
-      localStorage.setItem(this.STORAGE_PREFIX + key, finalData);
-      return true;
-    } catch (error) {
-      console.error('Storage setItem failed:', error);
-      return false;
+  constructor() {
+    this.migrationCompleted = localStorage.getItem('mocv_migration_completed') === 'true';
+    
+    // Auto-migrate on first use
+    if (!this.migrationCompleted) {
+      this.migrateToCloud();
     }
   }
 
-  /**
-   * Retrieve data from localStorage with expiry checking
-   */
-  static getItem<T>(key: string, options: StorageOptions = {}): T | null {
+  // CV Management
+  async saveCV(cvData: {
+    data: any;
+    templateId: string;
+    targetMarket: string;
+    name: string;
+    lastModified: Date;
+    tags?: string[];
+    isPublic?: boolean;
+  }): Promise<SavedCV> {
     try {
-      const stored = localStorage.getItem(this.STORAGE_PREFIX + key);
-      if (!stored) return null;
+      const id = await cloudStorageService.saveCV({
+        name: cvData.name,
+        data: cvData.data,
+        templateId: cvData.templateId,
+        targetMarket: cvData.targetMarket,
+        tags: cvData.tags,
+        isPublic: cvData.isPublic
+      });
 
-      const decrypted = options.encrypt ? this.decrypt(stored) : stored;
-      const storageItem: StorageItem<T> = JSON.parse(decrypted);
-
-      // Check expiry
-      if (storageItem.expiry && Date.now() > storageItem.expiry) {
-        this.removeItem(key);
-        return null;
-      }
-
-      return storageItem.data;
+      return {
+        id,
+        ...cvData,
+        createdAt: new Date(),
+        version: 1
+      };
     } catch (error) {
-      console.error('Storage getItem failed:', error);
+      console.error('Failed to save CV to cloud, using local fallback:', error);
+      
+      // Fallback to localStorage
+      return this.saveToLocalStorage(cvData);
+    }
+  }
+
+  async updateCV(id: string, updates: Partial<SavedCV>): Promise<SavedCV> {
+    try {
+      await cloudStorageService.updateCV(id, {
+        ...updates,
+        updatedAt: new Date()
+      });
+
+      const updatedCV = await cloudStorageService.getCV(id);
+      return updatedCV as SavedCV;
+    } catch (error) {
+      console.error('Failed to update CV in cloud:', error);
+      throw new Error('Failed to update CV. Please try again.');
+    }
+  }
+
+  async getCV(id: string): Promise<SavedCV | null> {
+    try {
+      const cv = await cloudStorageService.getCV(id);
+      return cv as SavedCV;
+    } catch (error) {
+      console.error('Failed to get CV from cloud:', error);
       return null;
     }
   }
 
-  /**
-   * Remove item from localStorage
-   */
-  static removeItem(key: string): boolean {
+  async getAllCVs(): Promise<SavedCV[]> {
     try {
-      localStorage.removeItem(this.STORAGE_PREFIX + key);
-      return true;
+      const cvs = await cloudStorageService.getUserCVs();
+      return cvs.map(cv => ({
+        id: cv.id!,
+        name: cv.name,
+        data: cv.data,
+        templateId: cv.templateId,
+        targetMarket: cv.targetMarket,
+        lastModified: cv.updatedAt instanceof Date ? cv.updatedAt : new Date(cv.updatedAt),
+        createdAt: cv.createdAt instanceof Date ? cv.createdAt : new Date(cv.createdAt),
+        version: cv.version,
+        tags: cv.tags,
+        isPublic: cv.isPublic
+      }));
     } catch (error) {
-      console.error('Storage removeItem failed:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Clear all app-related items from localStorage
-   */
-  static clear(): boolean {
-    try {
-      const keys = Object.keys(localStorage).filter(key => 
-        key.startsWith(this.STORAGE_PREFIX)
-      );
+      console.error('Failed to get CVs from cloud:', error);
       
-      keys.forEach(key => localStorage.removeItem(key));
-      return true;
-    } catch (error) {
-      console.error('Storage clear failed:', error);
-      return false;
+      // Fallback to local storage
+      return this.getLocalCVs();
     }
   }
 
-  /**
-   * Get all stored keys (without prefix)
-   */
-  static getAllKeys(): string[] {
+  async deleteCV(id: string): Promise<void> {
     try {
-      return Object.keys(localStorage)
-        .filter(key => key.startsWith(this.STORAGE_PREFIX))
-        .map(key => key.replace(this.STORAGE_PREFIX, ''));
+      await cloudStorageService.deleteCV(id);
     } catch (error) {
-      console.error('Storage getAllKeys failed:', error);
-      return [];
+      console.error('Failed to delete CV from cloud:', error);
+      throw new Error('Failed to delete CV. Please try again.');
     }
   }
 
-  /**
-   * Check if key exists and is not expired
-   */
-  static hasItem(key: string): boolean {
-    return this.getItem(key) !== null;
-  }
-
-  /**
-   * Get storage usage information
-   */
-  static getStorageInfo(): {
-    used: number;
-    available: number;
-    total: number;
-    itemCount: number;
-  } {
+  // Draft Management
+  async saveDraft(data: any, cvId?: string): Promise<void> {
     try {
-      let used = 0;
-      const keys = this.getAllKeys();
+      await cloudStorageService.saveDraft(data, cvId);
+    } catch (error) {
+      console.error('Failed to save draft to cloud:', error);
       
-      keys.forEach(key => {
-        const item = localStorage.getItem(this.STORAGE_PREFIX + key);
-        if (item) used += item.length;
-      });
-
-      // Rough estimate of localStorage limit (5MB for most browsers)
-      const total = 5 * 1024 * 1024; // 5MB in characters
-      const available = total - used;
-
-      return {
-        used,
-        available,
-        total,
-        itemCount: keys.length
-      };
-    } catch (error) {
-      console.error('Storage info failed:', error);
-      return { used: 0, available: 0, total: 0, itemCount: 0 };
+      // Fallback to localStorage
+      localStorage.setItem('mocv_current_draft', JSON.stringify({ data, cvId }));
     }
   }
 
-  /**
-   * Store CV data with automatic versioning
-   */
-  static saveCVData(cvId: string, cvData: any): boolean {
-    return this.setItem(`cv_${cvId}`, cvData, {
-      expiry: 30 * 24 * 60 * 60 * 1000 // 30 days
+  async getDraft(cvId?: string): Promise<any> {
+    try {
+      const draft = await cloudStorageService.getDraft(cvId);
+      return draft?.data || null;
+    } catch (error) {
+      console.error('Failed to get draft from cloud:', error);
+      
+      // Fallback to localStorage
+      const localDraft = localStorage.getItem('mocv_current_draft');
+      return localDraft ? JSON.parse(localDraft).data : null;
+    }
+  }
+
+  async clearDraft(cvId?: string): Promise<void> {
+    try {
+      await cloudStorageService.clearDraft(cvId);
+    } catch (error) {
+      console.error('Failed to clear draft:', error);
+    }
+  }
+
+  // Real-time updates
+  subscribeToChanges(callback: (cvs: SavedCV[]) => void): () => void {
+    return cloudStorageService.subscribeToUserCVs((cloudCVs) => {
+      const cvs = cloudCVs.map(cv => ({
+        id: cv.id!,
+        name: cv.name,
+        data: cv.data,
+        templateId: cv.templateId,
+        targetMarket: cv.targetMarket,
+        lastModified: cv.updatedAt instanceof Date ? cv.updatedAt : new Date(cv.updatedAt),
+        createdAt: cv.createdAt instanceof Date ? cv.createdAt : new Date(cv.createdAt),
+        version: cv.version,
+        tags: cv.tags,
+        isPublic: cv.isPublic
+      }));
+      callback(cvs);
     });
   }
 
-  /**
-   * Retrieve CV data by ID
-   */
-  static getCVData(cvId: string): any | null {
-    return this.getItem(`cv_${cvId}`);
-  }
-
-  /**
-   * Get all saved CV IDs
-   */
-  static getAllCVIds(): string[] {
-    return this.getAllKeys()
-      .filter(key => key.startsWith('cv_'))
-      .map(key => key.replace('cv_', ''));
-  }
-
-  /**
-   * Delete CV data
-   */
-  static deleteCVData(cvId: string): boolean {
-    return this.removeItem(`cv_${cvId}`);
-  }
-
-  /**
-   * Store user preferences
-   */
-  static saveUserPreferences(preferences: any): boolean {
-    return this.setItem('user_preferences', preferences);
-  }
-
-  /**
-   * Get user preferences
-   */
-  static getUserPreferences(): any | null {
-    return this.getItem('user_preferences');
-  }
-
-  /**
-   * Store template customizations
-   */
-  static saveTemplateCustomizations(templateId: string, customizations: any): boolean {
-    return this.setItem(`template_${templateId}`, customizations);
-  }
-
-  /**
-   * Get template customizations
-   */
-  static getTemplateCustomizations(templateId: string): any | null {
-    return this.getItem(`template_${templateId}`);
-  }
-
-  /**
-   * Store recent activity/history
-   */
-  static addToHistory(action: string, data: any): boolean {
-    const history = this.getItem('action_history') || [];
-    const newEntry = {
-      id: Date.now().toString(),
-      action,
-      data,
-      timestamp: Date.now()
-    };
-
-    // Keep last 50 entries
-    const updatedHistory = [newEntry, ...history.slice(0, 49)];
-    return this.setItem('action_history', updatedHistory);
-  }
-
-  /**
-   * Get action history
-   */
-  static getHistory(limit: number = 20): any[] {
-    const history = this.getItem('action_history') || [];
-    return history.slice(0, limit);
-  }
-
-  /**
-   * Export all data for backup
-   */
-  static exportAllData(): string {
+  // Migration from localStorage
+  private async migrateToCloud(): Promise<void> {
     try {
-      const allData: Record<string, any> = {};
-      const keys = this.getAllKeys();
+      console.log('🔄 Migrating local data to cloud...');
       
-      keys.forEach(key => {
-        const value = this.getItem(key);
-        if (value !== null) {
-          allData[key] = value;
-        }
-      });
-
-      return JSON.stringify({
-        version: this.CURRENT_VERSION,
-        exportDate: new Date().toISOString(),
-        data: allData
-      }, null, 2);
-    } catch (error) {
-      console.error('Export failed:', error);
-      return '';
-    }
-  }
-
-  /**
-   * Import data from backup
-   */
-  static importData(backupData: string): boolean {
-    try {
-      const parsed = JSON.parse(backupData);
+      const result = await cloudStorageService.migrateLocalData();
       
-      if (!parsed.data || typeof parsed.data !== 'object') {
-        throw new Error('Invalid backup format');
+      console.log(`✅ Migration completed: ${result.success} successful, ${result.failed} failed`);
+      
+      if (result.success > 0) {
+        // Show user notification about migration
+        this.showMigrationNotification(result.success, result.failed);
       }
-
-      // Clear existing data
-      this.clear();
-
-      // Import all data
-      Object.entries(parsed.data).forEach(([key, value]) => {
-        this.setItem(key, value);
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Import failed:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Simple encryption (for basic obfuscation, not security)
-   */
-  private static encrypt(data: string): string {
-    // Simple base64 encoding for basic obfuscation
-    // In production, use proper encryption libraries
-    return btoa(unescape(encodeURIComponent(data)));
-  }
-
-  /**
-   * Simple decryption
-   */
-  private static decrypt(data: string): string {
-    try {
-      return decodeURIComponent(escape(atob(data)));
-    } catch (error) {
-      console.error('Decryption failed:', error);
-      return data; // Return original if decryption fails
-    }
-  }
-
-  /**
-   * Clean expired items
-   */
-  static cleanExpiredItems(): number {
-    let cleanedCount = 0;
-    
-    try {
-      const keys = this.getAllKeys();
       
-      keys.forEach(key => {
-        const stored = localStorage.getItem(this.STORAGE_PREFIX + key);
-        if (!stored) return;
-
-        try {
-          const storageItem: StorageItem = JSON.parse(stored);
-          if (storageItem.expiry && Date.now() > storageItem.expiry) {
-            this.removeItem(key);
-            cleanedCount++;
-          }
-        } catch (error) {
-          // If we can't parse it, it might be corrupted, so remove it
-          this.removeItem(key);
-          cleanedCount++;
-        }
-      });
+      this.migrationCompleted = true;
     } catch (error) {
-      console.error('Cleanup failed:', error);
+      console.error('Migration failed:', error);
     }
-
-    return cleanedCount;
   }
 
-  /**
-   * Check if localStorage is available
-   */
-  static isAvailable(): boolean {
+  private showMigrationNotification(success: number, failed: number): void {
+    const message = failed > 0 
+      ? `Migrated ${success} CVs to cloud. ${failed} failed to migrate.`
+      : `Successfully migrated ${success} CVs to cloud storage!`;
+    
+    // You can replace this with your toast notification system
+    if ('Notification' in window) {
+      new Notification('MoCV Migration', { body: message });
+    } else {
+      console.log('Migration:', message);
+    }
+  }
+
+  // Legacy localStorage methods (fallback)
+  private saveToLocalStorage(cvData: any): SavedCV {
+    const savedCVs = this.getLocalCVs();
+    const newCV: SavedCV = {
+      id: `local_${Date.now()}`,
+      ...cvData,
+      createdAt: new Date(),
+      version: 1
+    };
+    
+    savedCVs.push(newCV);
+    localStorage.setItem('mocv_saved_cvs', JSON.stringify(savedCVs));
+    
+    return newCV;
+  }
+
+  private getLocalCVs(): SavedCV[] {
+    const saved = localStorage.getItem('mocv_saved_cvs');
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  // Utility methods
+  isCloudEnabled(): boolean {
+    return cloudStorageService.isConnected();
+  }
+
+  getDeviceId(): string {
+    return cloudStorageService.getDeviceId();
+  }
+
+  // Export/Import functionality
+  async exportAllData(): Promise<string> {
+    const cvs = await this.getAllCVs();
+    return JSON.stringify({
+      cvs,
+      exportDate: new Date().toISOString(),
+      deviceId: this.getDeviceId()
+    }, null, 2);
+  }
+
+  async importData(jsonData: string): Promise<{ success: number; failed: number }> {
     try {
-      const test = '__storage_test__';
-      localStorage.setItem(test, test);
-      localStorage.removeItem(test);
-      return true;
+      const data = JSON.parse(jsonData);
+      const cvs = data.cvs || [];
+      
+      let success = 0;
+      let failed = 0;
+      
+      for (const cv of cvs) {
+        try {
+          await this.saveCV({
+            data: cv.data,
+            templateId: cv.templateId,
+            targetMarket: cv.targetMarket,
+            name: `${cv.name} (Imported)`,
+            lastModified: new Date(),
+            tags: [...(cv.tags || []), 'imported']
+          });
+          success++;
+        } catch {
+          failed++;
+        }
+      }
+      
+      return { success, failed };
     } catch (error) {
-      return false;
+      throw new Error('Invalid import data format');
     }
   }
 }
 
-export default StorageService;
+// Export singleton instance
+export const storageService = new StorageService();
+export default storageService;
