@@ -1,18 +1,25 @@
-// src/components/CVBuilder.tsx - SECTION 1: Imports, Interfaces & State
+// src/components/CVBuilder.tsx - SECTION 1: Imports, Interfaces & State (UPDATED WITH SAVE FUNCTIONALITY)
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   User, FileText, Briefcase, GraduationCap, Code2, Target, Award, Users,
   Plus, Trash2, Eye, Download, Save, ArrowLeft, ArrowRight, MoreVertical,
   Settings, Sparkles, Bot, RotateCcw, CheckCircle, AlertCircle, ChevronUp,
-  Bold, Italic, Underline, Link, List, ListOrdered, AlignLeft, ChevronDown
+  Bold, Italic, Underline, Link, List, ListOrdered, AlignLeft, ChevronDown,
+  BookOpen
 } from 'lucide-react';
+
+// Import the new services and components
+import { CVStorageService } from '../services/CVStorageService';
+import SaveCVDialog from './SaveCVDialog';
 
 interface CVBuilderProps {
   targetMarket?: any;
   template?: any;
   onComplete?: (cvData: any) => void;
   onBack?: () => void;
+  onNavigateToLibrary?: () => void;
   initialData?: any;
+  editingCvId?: string; // For editing existing CVs
 }
 
 interface ValidationErrors {
@@ -233,7 +240,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
   template,
   onComplete,
   onBack,
-  initialData
+  onNavigateToLibrary,
+  initialData,
+  editingCvId
 }) => {
   // Main state management
   const [currentStep, setCurrentStep] = useState(0);
@@ -258,6 +267,14 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // NEW: Save functionality state
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(!!editingCvId);
+
+  // Storage service instance
+  const storageService = CVStorageService.getInstance();
 
   // Individual form state management - FIXED PERFORMANCE
   const [currentExperience, setCurrentExperience] = useState({
@@ -394,7 +411,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
       required: false
     }
   ];
-  // src/components/CVBuilder.tsx - SECTION 2: Auto-save, Navigation & Helper Functions
+  // src/components/CVBuilder.tsx - SECTION 2: Auto-save, Navigation & Enhanced Helper Functions with Save Features
 
   // Auto-save functionality with debouncing
   useEffect(() => {
@@ -414,9 +431,16 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     return () => clearTimeout(timer);
   }, [cvData]);
 
-  // Load initial data from localStorage or props
+  // Load initial data from localStorage, props, or editing CV
   useEffect(() => {
-    if (initialData) {
+    if (editingCvId) {
+      // Load existing CV for editing
+      const existingCV = storageService.getCV(editingCvId);
+      if (existingCV) {
+        setCvData(existingCV.data);
+        setIsEditMode(true);
+      }
+    } else if (initialData) {
       setCvData(initialData);
     } else {
       try {
@@ -429,7 +453,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
         console.error('Failed to load saved draft:', error);
       }
     }
-  }, [initialData]);
+  }, [initialData, editingCvId, storageService]);
 
   // Navigation functions
   const nextStep = useCallback(() => {
@@ -630,6 +654,45 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     }));
   }, []);
 
+  // NEW: Save functionality handlers
+  const handleSaveCV = useCallback(async (name: string, tags: string[], description?: string) => {
+    setIsSaving(true);
+    try {
+      if (isEditMode && editingCvId) {
+        // Update existing CV
+        await storageService.updateCV(editingCvId, cvData, {
+          name,
+          tags,
+          description
+        });
+        console.log('CV updated successfully:', editingCvId);
+      } else {
+        // Save new CV
+        const cvId = await storageService.saveCV(cvData, {
+          name,
+          tags,
+          description
+        });
+        console.log('New CV saved with ID:', cvId);
+      }
+      
+      // Clear the draft since it's now saved
+      localStorage.removeItem('mocv_draft');
+      
+      // Navigate to library or complete
+      if (onNavigateToLibrary) {
+        onNavigateToLibrary();
+      } else if (onComplete) {
+        onComplete(cvData);
+      }
+    } catch (error) {
+      console.error('Failed to save CV:', error);
+      throw error; // Let the dialog handle the error display
+    } finally {
+      setIsSaving(false);
+    }
+  }, [cvData, isEditMode, editingCvId, storageService, onNavigateToLibrary, onComplete]);
+
   // Validation functions
   const validateCurrentStep = useCallback(() => {
     const currentStepData = steps[currentStep];
@@ -765,7 +828,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     resetCurrentSkill
   ]);
 
-  // Handle final completion
+  // NEW: Handle final completion with save option
   const handleComplete = useCallback(() => {
     const requiredComplete = [
       cvData.personalInfo.fullName && cvData.personalInfo.email && cvData.personalInfo.phone,
@@ -776,15 +839,30 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
     ].every(Boolean);
 
     if (!requiredComplete) {
-      alert('Please complete all required sections before generating your CV.');
+      alert('Please complete all required sections before saving your CV.');
       return;
     }
 
-    // Clear the draft from localStorage since we're completing
-    localStorage.removeItem('mocv_draft');
-    onComplete && onComplete(cvData);
-  }, [cvData, onComplete]);
-  // src/components/CVBuilder.tsx - SECTION 3: Form Rendering Functions (Personal, Summary, Experience, Education)
+    // Show save dialog instead of directly completing
+    setShowSaveDialog(true);
+  }, [cvData]);
+
+  // NEW: Quick save functionality (for auto-save to permanent storage)
+  const handleQuickSave = useCallback(async () => {
+    if (!cvData.personalInfo.fullName) {
+      alert('Please enter your name before saving.');
+      return;
+    }
+
+    const defaultName = `${cvData.personalInfo.fullName} CV - ${new Date().toLocaleDateString()}`;
+    
+    try {
+      await handleSaveCV(defaultName, [], 'Quick save');
+    } catch (error) {
+      console.error('Quick save failed:', error);
+      alert('Failed to save CV. Please try again.');
+    }
+  }, [cvData.personalInfo.fullName, handleSaveCV]);
 
   // Optimized change handlers with useCallback
   const handlePersonalInfoChange = useCallback((field: string, value: string) => {
@@ -805,6 +883,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
   const handleEducationDescriptionChange = useCallback((value: string) => {
     setCurrentEducation(prev => ({ ...prev, description: value }));
   }, []);
+  // src/components/CVBuilder.tsx - SECTION 3: Form Rendering Functions with Save Integration
 
   // Form rendering function for current step
   const renderCurrentStepContent = () => {
@@ -820,6 +899,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 <p className="text-gray-600">Your basic contact details</p>
               </div>
               <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleQuickSave}
+                  disabled={isSaving || !cvData.personalInfo.fullName}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Quick save current progress"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSaving ? 'Saving...' : 'Quick Save'}
+                </button>
                 <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
                   <MoreVertical className="h-5 w-5" />
                 </button>
@@ -1427,7 +1515,7 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
             </div>
           </div>
         );
-		// src/components/CVBuilder.tsx - SECTION 4: Skills, Projects, Certifications, References & Main Component Structure
+		// src/components/CVBuilder.tsx - SECTION 4: Skills, Projects, Certifications, References & Main Component Structure with Save Dialog
 
       case 'skills':
         return (
@@ -1979,7 +2067,9 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 <ArrowLeft className="h-5 w-5" />
                 Back
               </button>
-              <h1 className="text-xl font-semibold text-gray-900">CV Builder</h1>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {isEditMode ? 'Edit CV' : 'CV Builder'}
+              </h1>
             </div>
 
             <div className="flex items-center gap-4">
@@ -2005,12 +2095,23 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                 )}
               </div>
 
+              {/* NEW: CV Library button */}
+              {onNavigateToLibrary && (
+                <button 
+                  onClick={onNavigateToLibrary}
+                  className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  My CVs
+                </button>
+              )}
+
               <button 
                 onClick={handleComplete}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
-                <Download className="h-4 w-4" />
-                Generate CV
+                <Save className="h-4 w-4" />
+                {isEditMode ? 'Update CV' : 'Save CV'}
               </button>
             </div>
           </div>
@@ -2160,8 +2261,8 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
                         onClick={handleComplete}
                         className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       >
-                        <Download className="h-4 w-4" />
-                        Complete CV
+                        <Save className="h-4 w-4" />
+                        {isEditMode ? 'Update CV' : 'Save CV'}
                       </button>
                     ) : (
                       <button
@@ -2200,6 +2301,15 @@ const CVBuilder: React.FC<CVBuilderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Save CV Dialog */}
+      <SaveCVDialog 
+        isOpen={showSaveDialog}
+        onClose={() => setShowSaveDialog(false)}
+        onSave={handleSaveCV}
+        defaultName={`${cvData.personalInfo.fullName || 'My'} CV - ${new Date().toLocaleDateString()}`}
+        isLoading={isSaving}
+      />
     </div>
   );
 };
