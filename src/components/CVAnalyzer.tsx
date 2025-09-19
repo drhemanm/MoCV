@@ -1,4 +1,3 @@
-// src/components/CVAnalyzer.tsx
 import React, { useState, useRef, useCallback } from 'react';
 import { 
   Upload, FileText, Scan, BarChart3, CheckCircle, AlertTriangle, 
@@ -19,46 +18,33 @@ interface CVAnalyzerProps {
   onBack: () => void;
 }
 
-interface DetailedSectionAnalysis {
+interface DetailedAnalysis {
+  originalCV: string;
+  improvedCV: string | null;
   score: number;
-  issues: Array<{
-    type: 'critical' | 'warning' | 'suggestion';
-    title: string;
-    description: string;
-    before: string;
-    after: string;
-    impact: string;
-  }>;
-  strengths: string[];
-  content?: string;
-}
-
-interface IntelligentAnalysis {
-  overallScore: number;
   atsCompatibility: number;
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
   sections: {
-    contact: DetailedSectionAnalysis;
-    summary: DetailedSectionAnalysis;
-    experience: DetailedSectionAnalysis;
-    skills: DetailedSectionAnalysis;
-    education: DetailedSectionAnalysis;
+    contact: { score: number; issues: string[]; content: string };
+    summary: { score: number; issues: string[]; content: string };
+    experience: { score: number; issues: string[]; content: string };
+    skills: { score: number; issues: string[]; content: string };
+    education: { score: number; issues: string[]; content: string };
   };
-  keywordAnalysis: {
-    found: string[];
-    missing: string[];
-    density: number;
-  };
+  keywordMatches: string[];
+  missingKeywords: string[];
   improvements: Array<{
+    id: string;
     section: string;
     type: 'critical' | 'warning' | 'suggestion';
     title: string;
     description: string;
     before: string;
     after: string;
-    applied?: boolean;
+    applied: boolean;
   }>;
-  originalCV: string;
-  improvedCV?: string;
 }
 
 const CVAnalyzer: React.FC<CVAnalyzerProps> = ({
@@ -75,16 +61,13 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({
   const [analysisStage, setAnalysisStage] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<IntelligentAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<DetailedAnalysis | null>(null);
   const [showImprovedVersion, setShowImprovedVersion] = useState(false);
   const [isImproving, setIsImproving] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-  const [appliedImprovements, setAppliedImprovements] = useState<Set<number>>(new Set());
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  // File validation and extraction (keeping existing methods)
+  // File validation
   const validateFile = (file: File): string | null => {
     const maxSize = 10 * 1024 * 1024; // 10MB
     const allowedTypes = [
@@ -99,123 +82,127 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({
     return null;
   };
 
+  // Extract text from file (mock implementation for demo)
   const extractTextFromFile = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
-      reader.onload = async (e) => {
+      reader.onload = (e) => {
         const result = e.target?.result;
         if (typeof result === 'string') {
           resolve(result);
-        } else if (result instanceof ArrayBuffer) {
-          // Simulate extraction for demo - in production, use proper PDF/DOCX parsers
+        } else {
+          // For demo purposes - in production, use proper PDF/DOCX parsers
           resolve(`John Doe
 Software Developer
 Email: john.doe@email.com | Phone: +230 123 4567 | LinkedIn: linkedin.com/in/johndoe
 Port Louis, Mauritius
 
 PROFESSIONAL SUMMARY
-Experienced software developer with background in web development. Worked on various projects and improved system performance.
+Experienced software developer with background in web development. Worked on various projects.
 
 EXPERIENCE
 Software Developer - TechCorp Mauritius (2020-2023)
 - Developed web applications
 - Worked with team members
 - Fixed bugs and issues
-- Improved system performance
 
 Junior Developer - StartupMU (2018-2020)  
 - Created websites
 - Learned new technologies
-- Helped with projects
 
 EDUCATION
 Bachelor of Computer Science
 University of Mauritius (2014-2018)
 
 SKILLS
-JavaScript, HTML, CSS, React, Node.js, Database, Communication, Problem solving`);
+JavaScript, HTML, CSS, React, Communication`);
         }
       };
       
       reader.onerror = () => reject(new Error('Failed to read file'));
-      
-      if (file.type === 'text/plain') {
-        reader.readAsText(file);
-      } else {
-        reader.readAsArrayBuffer(file);
-      }
+      reader.readAsText(file);
     });
   };
 
-  // Intelligent CV Analysis Engine
-  const performIntelligentAnalysis = async (text: string): Promise<IntelligentAnalysis> => {
+  // Detailed CV Analysis Engine
+  const performDetailedAnalysis = async (cvText: string): Promise<DetailedAnalysis> => {
     const stages = [
-      { stage: 'Parsing CV structure and extracting sections...', duration: 1000 },
-      { stage: 'Analyzing contact information completeness...', duration: 800 },
-      { stage: 'Evaluating professional summary effectiveness...', duration: 1200 },
-      { stage: 'Assessing work experience descriptions...', duration: 1500 },
-      { stage: 'Reviewing skills presentation and relevance...', duration: 1000 },
-      { stage: 'Checking education section and qualifications...', duration: 800 },
-      { stage: 'Performing keyword optimization analysis...', duration: 1200 },
-      { stage: 'Calculating ATS compatibility score...', duration: 800 },
-      { stage: 'Generating specific improvement recommendations...', duration: 1000 }
+      'Parsing CV structure...',
+      'Analyzing contact information...',
+      'Evaluating professional summary...',
+      'Assessing work experience...',
+      'Reviewing skills section...',
+      'Checking education details...',
+      'Performing keyword analysis...',
+      'Calculating ATS compatibility...',
+      'Generating improvement recommendations...'
     ];
 
     let progress = 0;
-    
-    for (const { stage, duration } of stages) {
+    for (const stage of stages) {
       setAnalysisStage(stage);
-      
-      const steps = 12;
-      const stepDuration = duration / steps;
-      const progressIncrement = (100 / stages.length) / steps;
-      
-      for (let i = 0; i < steps; i++) {
-        await new Promise(resolve => setTimeout(resolve, stepDuration));
-        progress += progressIncrement;
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        progress += 100 / (stages.length * 10);
         setAnalysisProgress(Math.min(progress, 100));
       }
     }
 
     // Parse CV sections
-    const sections = parseCV(text);
+    const sections = parseCV(cvText);
     
-    // Analyze each section in detail
-    const contactAnalysis = analyzeContactSection(sections.contact);
-    const summaryAnalysis = analyzeSummarySection(sections.summary);
-    const experienceAnalysis = analyzeExperienceSection(sections.experience, targetMarket);
-    const skillsAnalysis = analyzeSkillsSection(sections.skills, targetMarket);
-    const educationAnalysis = analyzeEducationSection(sections.education);
+    // Analyze each section
+    const contactAnalysis = analyzeContact(sections.contact);
+    const summaryAnalysis = analyzeSummary(sections.summary);
+    const experienceAnalysis = analyzeExperience(sections.experience, targetMarket);
+    const skillsAnalysis = analyzeSkills(sections.skills, targetMarket);
+    const educationAnalysis = analyzeEducation(sections.education);
     
-    // Keyword analysis
-    const keywordAnalysis = performKeywordAnalysis(text, targetMarket);
-    
-    // Calculate overall scores
+    // Calculate scores
     const sectionScores = [
       contactAnalysis.score,
-      summaryAnalysis.score, 
+      summaryAnalysis.score,
       experienceAnalysis.score,
       skillsAnalysis.score,
       educationAnalysis.score
     ];
-    
     const overallScore = Math.round(sectionScores.reduce((a, b) => a + b) / sectionScores.length);
-    const atsCompatibility = calculateATSCompatibility(text, keywordAnalysis);
 
-    // Generate comprehensive improvements
-    const improvements = generateSmartImprovements(
+    // Keyword analysis
+    const keywordAnalysis = performKeywordAnalysis(cvText, targetMarket);
+    const atsCompatibility = calculateATSScore(cvText, keywordAnalysis);
+
+    // Generate improvements
+    const improvements = generateImprovements(
       contactAnalysis,
-      summaryAnalysis, 
+      summaryAnalysis,
       experienceAnalysis,
       skillsAnalysis,
       educationAnalysis,
       keywordAnalysis
     );
 
+    // Compile strengths and weaknesses
+    const strengths = [
+      ...contactAnalysis.score > 70 ? ['Professional contact information'] : [],
+      ...summaryAnalysis.score > 70 ? ['Clear professional summary'] : [],
+      ...experienceAnalysis.score > 70 ? ['Detailed work experience'] : [],
+      ...skillsAnalysis.score > 70 ? ['Comprehensive skills section'] : [],
+      ...educationAnalysis.score > 70 ? ['Educational background provided'] : []
+    ];
+
+    const weaknesses = improvements.filter(imp => imp.type === 'critical').map(imp => imp.title);
+    const suggestions = improvements.filter(imp => imp.type !== 'critical').map(imp => imp.title);
+
     return {
-      overallScore,
+      originalCV: cvText,
+      improvedCV: null,
+      score: overallScore,
       atsCompatibility,
+      strengths,
+      weaknesses,
+      suggestions,
       sections: {
         contact: contactAnalysis,
         summary: summaryAnalysis,
@@ -223,9 +210,9 @@ JavaScript, HTML, CSS, React, Node.js, Database, Communication, Problem solving`
         skills: skillsAnalysis,
         education: educationAnalysis
       },
-      keywordAnalysis,
-      improvements,
-      originalCV: text
+      keywordMatches: keywordAnalysis.found,
+      missingKeywords: keywordAnalysis.missing,
+      improvements
     };
   };
 
@@ -233,12 +220,13 @@ JavaScript, HTML, CSS, React, Node.js, Database, Communication, Problem solving`
   const parseCV = (text: string) => {
     const lowerText = text.toLowerCase();
     
-    // Extract contact information
-    const emailMatch = text.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
-    const phoneMatch = text.match(/(\+\d{1,3}[- ]?)?\d{3}[- ]?\d{3}[- ]?\d{4}/);
-    const linkedInMatch = text.match(/linkedin\.com\/in\/[\w-]+/i);
+    const contactInfo = {
+      email: text.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/)?.[0] || '',
+      phone: text.match(/(\+\d{1,3}[- ]?)?\d{3}[- ]?\d{3}[- ]?\d{4}/)?.[0] || '',
+      linkedin: text.match(/linkedin\.com\/in\/[\w-]+/i)?.[0] || '',
+      location: text.match(/(mauritius|port louis|quatre bornes|rose hill|curepipe)/gi)?.[0] || ''
+    };
     
-    // Find section boundaries
     const summaryStart = Math.max(
       lowerText.indexOf('summary'),
       lowerText.indexOf('objective'),
@@ -248,430 +236,172 @@ JavaScript, HTML, CSS, React, Node.js, Database, Communication, Problem solving`
     const experienceStart = Math.max(
       lowerText.indexOf('experience'),
       lowerText.indexOf('employment'),
-      lowerText.indexOf('work history')
+      lowerText.indexOf('work')
     );
     
     const skillsStart = Math.max(
       lowerText.indexOf('skills'),
-      lowerText.indexOf('technical skills'),
-      lowerText.indexOf('competencies')
+      lowerText.indexOf('technical skills')
     );
     
     const educationStart = Math.max(
       lowerText.indexOf('education'),
-      lowerText.indexOf('qualifications'),
-      lowerText.indexOf('academic')
+      lowerText.indexOf('qualifications')
     );
 
     return {
-      contact: {
-        email: emailMatch?.[0] || '',
-        phone: phoneMatch?.[0] || '',
-        linkedin: linkedInMatch?.[0] || '',
-        location: extractLocation(text)
-      },
-      summary: extractSection(text, summaryStart, [experienceStart, skillsStart, educationStart]),
-      experience: extractSection(text, experienceStart, [skillsStart, educationStart]),
-      skills: extractSection(text, skillsStart, [educationStart]),
-      education: extractSection(text, educationStart, [])
+      contact: contactInfo,
+      summary: extractSection(text, summaryStart, experienceStart),
+      experience: extractSection(text, experienceStart, skillsStart),
+      skills: extractSection(text, skillsStart, educationStart),
+      education: extractSection(text, educationStart, text.length)
     };
   };
 
-  const extractLocation = (text: string): string => {
-    const locationPatterns = [
-      /(?:port louis|quatre bornes|rose hill|curepipe|beau bassin|phoenix|vacoas|floreal|mauritius)/gi,
-      /(?:street|st|avenue|ave|road|rd|lane|ln|drive|dr)[\s,]/gi
-    ];
-    
-    for (const pattern of locationPatterns) {
-      const match = text.match(pattern);
-      if (match) return match[0];
-    }
-    return '';
+  const extractSection = (text: string, start: number, end: number): string => {
+    if (start === -1) return '';
+    const endPos = end === -1 ? text.length : end;
+    return text.substring(start, endPos).trim();
   };
 
-  const extractSection = (text: string, startIndex: number, endIndices: number[]): string => {
-    if (startIndex === -1) return '';
-    
-    const validEndIndices = endIndices.filter(i => i > startIndex && i !== -1);
-    const endIndex = validEndIndices.length > 0 ? Math.min(...validEndIndices) : text.length;
-    
-    return text.substring(startIndex, endIndex).trim();
-  };
-
-  // Section Analysis Functions
-  const analyzeContactSection = (contact: any): DetailedSectionAnalysis => {
-    const issues = [];
+  // Section analyzers
+  const analyzeContact = (contact: any) => {
     let score = 100;
-
+    const issues = [];
+    
     if (!contact.email) {
-      issues.push({
-        type: 'critical' as const,
-        title: 'Missing Professional Email',
-        description: 'Your CV must include a professional email address for employers to contact you',
-        before: 'No email address provided',
-        after: 'john.doe@email.com',
-        impact: 'Critical - Employers cannot contact you without an email'
-      });
+      issues.push('Missing professional email address');
       score -= 30;
     }
-
     if (!contact.phone) {
-      issues.push({
-        type: 'critical' as const,
-        title: 'No Phone Number Listed',
-        description: 'Include a phone number for immediate communication opportunities',
-        before: 'No phone number',
-        after: '+230 123 4567',
-        impact: 'High - Reduces callback opportunities'
-      });
+      issues.push('No phone number provided');
       score -= 25;
     }
-
     if (!contact.linkedin) {
-      issues.push({
-        type: 'warning' as const,
-        title: 'LinkedIn Profile Missing',
-        description: 'Add your LinkedIn profile to showcase professional network and endorsements',
-        before: 'No LinkedIn profile',
-        after: 'LinkedIn: linkedin.com/in/yourname',
-        impact: 'Medium - Missed networking and credibility opportunity'
-      });
+      issues.push('LinkedIn profile not included');
+      score -= 20;
+    }
+    if (!contact.location) {
+      issues.push('Location not specified');
       score -= 15;
     }
 
-    if (!contact.location) {
-      issues.push({
-        type: 'suggestion' as const,
-        title: 'Location Not Specified',
-        description: 'Include your location to help employers assess commute and local availability',
-        before: 'No location mentioned',
-        after: 'Port Louis, Mauritius',
-        impact: 'Low - Helps with local job matching'
-      });
-      score -= 10;
-    }
-
-    const strengths = [];
-    if (contact.email) strengths.push('Professional email address included');
-    if (contact.phone) strengths.push('Phone number provided for direct contact');
-    if (contact.linkedin) strengths.push('LinkedIn profile shows professional online presence');
-    if (contact.location) strengths.push('Location helps with job matching');
-
     return {
       score: Math.max(score, 0),
       issues,
-      strengths: strengths.length > 0 ? strengths : ['Basic contact structure present']
+      content: `${contact.email} | ${contact.phone} | ${contact.linkedin} | ${contact.location}`
     };
   };
 
-  const analyzeSummarySection = (summary: string): DetailedSectionAnalysis => {
-    const issues = [];
+  const analyzeSummary = (summary: string) => {
     let score = 100;
+    const issues = [];
     
     if (!summary || summary.length < 50) {
-      issues.push({
-        type: 'critical' as const,
-        title: 'Professional Summary Too Brief or Missing',
-        description: 'Your professional summary should be 3-4 sentences highlighting your key value proposition',
-        before: summary || 'No professional summary',
-        after: 'Results-driven software developer with 5+ years of experience building scalable web applications. Proven track record of improving system performance by 40% and leading cross-functional teams of 8+ developers. Specialized in React.js and Node.js with expertise in cloud deployment and agile methodologies.',
-        impact: 'Critical - Summary is often the first thing recruiters read'
-      });
+      issues.push('Professional summary too brief or missing');
       score -= 40;
     } else {
-      // Check for specific improvements in existing summary
       if (!/\d/.test(summary)) {
-        issues.push({
-          type: 'warning' as const,
-          title: 'No Quantifiable Achievements in Summary',
-          description: 'Add specific numbers, percentages, or metrics to demonstrate impact',
-          before: 'Experienced developer with background in web development',
-          after: 'Experienced developer with 5+ years building web applications, improving performance by 35%',
-          impact: 'High - Quantified results grab attention and show measurable value'
-        });
+        issues.push('No quantifiable achievements mentioned');
         score -= 20;
       }
-
-      if (summary.length > 500) {
-        issues.push({
-          type: 'suggestion' as const,
-          title: 'Summary Too Lengthy',
-          description: 'Keep professional summary concise (3-4 sentences, 150-200 words)',
-          before: 'Very long summary paragraph...',
-          after: 'Concise 3-4 sentence summary focusing on key achievements and skills',
-          impact: 'Medium - Recruiters prefer scannable, concise summaries'
-        });
+      if (summary.length > 300) {
+        issues.push('Summary too lengthy - keep it concise');
         score -= 15;
-      }
-
-      const keywordDensity = calculateKeywordDensity(summary, targetMarket);
-      if (keywordDensity < 2) {
-        issues.push({
-          type: 'warning' as const,
-          title: 'Lacks Industry-Specific Keywords',
-          description: 'Include relevant keywords from your target job descriptions',
-          before: 'Generic description without industry terms',
-          after: 'Include specific technologies, methodologies, and skills relevant to your field',
-          impact: 'High - ATS systems and recruiters search for specific keywords'
-        });
-        score -= 25;
       }
     }
 
-    const strengths = [];
-    if (summary && summary.length >= 50) strengths.push('Professional summary section exists');
-    if (/\d/.test(summary)) strengths.push('Includes quantifiable metrics');
-    if (summary && summary.length <= 300) strengths.push('Appropriate length for scannable reading');
-
-    return {
-      score: Math.max(score, 0),
-      issues,
-      strengths: strengths.length > 0 ? strengths : [],
-      content: summary
-    };
+    return { score: Math.max(score, 0), issues, content: summary };
   };
 
-  const analyzeExperienceSection = (experience: string, targetMarket: TargetMarket | null): DetailedSectionAnalysis => {
-    const issues = [];
+  const analyzeExperience = (experience: string, targetMarket: TargetMarket | null) => {
     let score = 100;
-
+    const issues = [];
+    
     if (!experience || experience.length < 100) {
-      issues.push({
-        type: 'critical' as const,
-        title: 'Work Experience Section Inadequate',
-        description: 'Provide detailed work history with specific responsibilities and achievements',
-        before: experience || 'No work experience listed',
-        after: `Senior Software Developer - TechCorp Mauritius (Jan 2020 - Present)
-• Led development of customer portal serving 10,000+ users, increasing user satisfaction by 45%
-• Reduced system load times by 60% through code optimization and database restructuring
-• Mentored team of 5 junior developers, improving code review efficiency by 30%
-• Technologies: React.js, Node.js, PostgreSQL, AWS`,
-        impact: 'Critical - Experience is the most important section for most roles'
-      });
+      issues.push('Work experience section inadequate');
       score -= 50;
     } else {
-      // Check for specific issues in experience descriptions
-      const bulletPoints = experience.split('\n').filter(line => line.trim().startsWith('-') || line.trim().startsWith('•'));
+      const bulletPoints = experience.split('\n').filter(line => 
+        line.trim().startsWith('-') || line.trim().startsWith('•')
+      );
       
       if (bulletPoints.length < 3) {
-        issues.push({
-          type: 'warning' as const,
-          title: 'Insufficient Detail in Job Descriptions',
-          description: 'Each role should have 3-5 bullet points describing key responsibilities and achievements',
-          before: '- Developed web applications\n- Worked with team',
-          after: '• Developed 15+ responsive web applications using React.js, serving 5,000+ daily users\n• Collaborated with cross-functional team of 8 members to deliver projects 20% faster\n• Implemented automated testing, reducing bug reports by 40%',
-          impact: 'High - Detailed descriptions help recruiters understand your capabilities'
-        });
+        issues.push('Insufficient detail in job descriptions');
         score -= 25;
       }
-
-      const hasQuantifiableResults = bulletPoints.some(point => /\d+%|\d+\+|\$\d+|\d+ years?/i.test(point));
-      if (!hasQuantifiableResults) {
-        issues.push({
-          type: 'critical' as const,
-          title: 'No Quantifiable Achievements',
-          description: 'Add specific numbers, percentages, dollar amounts, or timeframes to show impact',
-          before: 'Improved system performance and user satisfaction',
-          after: 'Improved system performance by 35% and increased user satisfaction scores from 7.2 to 9.1',
-          impact: 'Critical - Numbers prove your value and impact to employers'
-        });
+      
+      if (!/\d+%|\d+ years?|\d+\+|\$\d+/i.test(experience)) {
+        issues.push('No quantifiable achievements');
         score -= 30;
       }
-
-      const hasWeakVerbs = experience.match(/\b(worked|helped|assisted|was responsible|did|handled)\b/gi);
-      if (hasWeakVerbs && hasWeakVerbs.length > 2) {
-        issues.push({
-          type: 'warning' as const,
-          title: 'Weak Action Verbs Used',
-          description: 'Replace passive language with strong action verbs that demonstrate leadership and impact',
-          before: 'Worked on projects, helped with development, was responsible for testing',
-          after: 'Led cross-platform projects, architected scalable solutions, implemented comprehensive testing protocols',
-          impact: 'Medium - Strong verbs convey leadership and proactive contribution'
-        });
+      
+      if (/\b(worked|helped|assisted|was responsible)\b/gi.test(experience)) {
+        issues.push('Uses weak action verbs');
         score -= 20;
       }
-
-      // Check for technology mentions if tech role
-      if (targetMarket?.id === 'technology') {
-        const hasTechnologies = /\b(javascript|python|react|node|sql|aws|azure|docker|kubernetes|git)\b/gi.test(experience);
-        if (!hasTechnologies) {
-          issues.push({
-            type: 'warning' as const,
-            title: 'Missing Technical Skills in Experience',
-            description: 'Mention specific technologies, frameworks, and tools used in each role',
-            before: 'Developed web applications and databases',
-            after: 'Developed responsive web applications using React.js, Node.js, and PostgreSQL database',
-            impact: 'High - Technical roles require specific technology mentions'
-          });
-          score -= 25;
-        }
-      }
     }
 
-    const strengths = [];
-    if (experience && experience.length >= 100) strengths.push('Substantial work experience provided');
-    if (/\d+%|\d+\+|\$\d+/i.test(experience)) strengths.push('Includes quantifiable achievements');
-    if (/\b(led|managed|developed|implemented|created|optimized|increased|reduced)\b/gi.test(experience)) {
-      strengths.push('Uses strong action verbs');
-    }
-
-    return {
-      score: Math.max(score, 0),
-      issues,
-      strengths: strengths.length > 0 ? strengths : [],
-      content: experience
-    };
+    return { score: Math.max(score, 0), issues, content: experience };
   };
 
-  const analyzeSkillsSection = (skills: string, targetMarket: TargetMarket | null): DetailedSectionAnalysis => {
-    const issues = [];
+  const analyzeSkills = (skills: string, targetMarket: TargetMarket | null) => {
     let score = 100;
-
+    const issues = [];
+    
     if (!skills || skills.length < 20) {
-      issues.push({
-        type: 'critical' as const,
-        title: 'Skills Section Missing or Inadequate',
-        description: 'Create a comprehensive skills section with technical and soft skills relevant to your target role',
-        before: skills || 'No skills section',
-        after: `TECHNICAL SKILLS:
-• Programming: JavaScript, Python, TypeScript, Java
-• Frontend: React.js, Vue.js, HTML5, CSS3, Tailwind CSS  
-• Backend: Node.js, Express.js, Django, RESTful APIs
-• Databases: PostgreSQL, MongoDB, Redis
-• Cloud: AWS (EC2, S3, Lambda), Docker, Kubernetes
-• Tools: Git, Jenkins, Jira, Postman
-
-SOFT SKILLS:
-• Project Management & Team Leadership
-• Cross-functional Collaboration
-• Problem-solving & Critical Thinking`,
-        impact: 'Critical - Skills section is crucial for ATS keyword matching'
-      });
+      issues.push('Skills section missing or inadequate');
       score -= 40;
     } else {
-      // Analyze existing skills
-      const skillsList = skills.toLowerCase();
+      const skillsLower = skills.toLowerCase();
       
-      // Check organization
-      if (!skillsList.includes('technical') && !skillsList.includes('soft')) {
-        issues.push({
-          type: 'suggestion' as const,
-          title: 'Skills Not Categorized',
-          description: 'Organize skills into categories (Technical Skills, Soft Skills, Languages, etc.) for better readability',
-          before: 'JavaScript, Communication, Python, Teamwork, SQL',
-          after: 'TECHNICAL SKILLS: JavaScript, Python, SQL\nSOFT SKILLS: Communication, Teamwork, Leadership',
-          impact: 'Medium - Organized skills are easier for recruiters to scan'
-        });
-        score -= 15;
-      }
-
-      // Check for target market relevance
       if (targetMarket?.id === 'technology') {
-        const techKeywords = ['javascript', 'python', 'react', 'node', 'sql', 'git', 'aws', 'docker'];
-        const foundTechSkills = techKeywords.filter(keyword => skillsList.includes(keyword));
-        
-        if (foundTechSkills.length < 3) {
-          issues.push({
-            type: 'warning' as const,
-            title: 'Insufficient Technical Skills for Technology Roles',
-            description: 'Add more relevant programming languages, frameworks, and tools',
-            before: 'Basic programming skills listed',
-            after: 'JavaScript, React.js, Node.js, Python, SQL, Git, AWS, Docker',
-            impact: 'High - Technology roles require specific technical competencies'
-          });
+        const techSkills = ['javascript', 'python', 'react', 'node', 'sql'];
+        const foundTechSkills = techSkills.filter(skill => skillsLower.includes(skill));
+        if (foundTechSkills.length < 2) {
+          issues.push('Insufficient technical skills for technology role');
           score -= 25;
         }
       }
-
-      // Check for soft skills
-      const softSkillKeywords = ['communication', 'leadership', 'teamwork', 'problem', 'management'];
-      const hasSoftSkills = softSkillKeywords.some(keyword => skillsList.includes(keyword));
       
-      if (!hasSoftSkills) {
-        issues.push({
-          type: 'suggestion' as const,
-          title: 'Missing Soft Skills',
-          description: 'Include important soft skills like communication, leadership, and problem-solving',
-          before: 'Only technical skills listed',
-          after: 'Add: Leadership, Communication, Problem-solving, Team Collaboration',
-          impact: 'Medium - Employers value both technical and interpersonal skills'
-        });
+      if (!skillsLower.includes('communication') && !skillsLower.includes('leadership')) {
+        issues.push('Missing soft skills');
         score -= 20;
       }
     }
 
-    const strengths = [];
-    if (skills && skills.length >= 20) strengths.push('Skills section present with adequate detail');
-    if (/technical|soft|programming|languages/i.test(skills)) strengths.push('Skills are categorized for easy reading');
-    
-    return {
-      score: Math.max(score, 0),
-      issues,
-      strengths: strengths.length > 0 ? strengths : [],
-      content: skills
-    };
+    return { score: Math.max(score, 0), issues, content: skills };
   };
 
-  const analyzeEducationSection = (education: string): DetailedSectionAnalysis => {
-    const issues = [];
+  const analyzeEducation = (education: string) => {
     let score = 100;
-
+    const issues = [];
+    
     if (!education || education.length < 20) {
-      issues.push({
-        type: 'warning' as const,
-        title: 'Education Section Incomplete',
-        description: 'Include your educational background with degree, institution, and graduation year',
-        before: education || 'No education listed',
-        after: `Bachelor of Computer Science
-University of Mauritius, Reduit
-Graduated: May 2020
-Relevant Coursework: Data Structures, Database Systems, Software Engineering
-Academic Achievement: Dean's List (2019, 2020)`,
-        impact: 'Medium - Education validates your foundational knowledge'
-      });
+      issues.push('Education section incomplete');
       score -= 25;
     } else {
-      // Check for dates
-      if (!/\d{4}|\d{2}\/\d{4}/i.test(education)) {
-        issues.push({
-          type: 'suggestion' as const,
-          title: 'Missing Graduation Dates',
-          description: 'Include graduation year or expected graduation date',
-          before: 'Bachelor of Computer Science\nUniversity of Mauritius',
-          after: 'Bachelor of Computer Science\nUniversity of Mauritius - Graduated 2020',
-          impact: 'Low - Dates help employers understand your timeline'
-        });
-        score -= 10;
-      }
-
-      // Check for relevant coursework (for recent graduates)
-      if (!education.toLowerCase().includes('coursework') && !education.toLowerCase().includes('project')) {
-        issues.push({
-          type: 'suggestion' as const,
-          title: 'Consider Adding Relevant Details',
-          description: 'For recent graduates, include relevant coursework, projects, or academic achievements',
-          before: 'Basic degree information only',
-          after: 'Add: Relevant Coursework, Final Year Project, Academic Honors, GPA (if 3.5+)',
-          impact: 'Low - Additional details can strengthen your profile'
-        });
+      if (!/\d{4}/.test(education)) {
+        issues.push('Missing graduation dates');
         score -= 15;
       }
     }
 
-    const strengths = [];
-    if (education && education.length >= 20) strengths.push('Education section provides basic qualification details');
-    if (/\d{4}/.test(education)) strengths.push('Includes graduation timeline');
-    if (/coursework|project|gpa|honors/i.test(education)) strengths.push('Enhanced with additional academic details');
-
-    return {
-      score: Math.max(score, 0),
-      issues,
-      strengths: strengths.length > 0 ? strengths : []
-    };
+    return { score: Math.max(score, 0), issues, content: education };
   };
 
+  // Keyword analysis
   const performKeywordAnalysis = (text: string, targetMarket: TargetMarket | null) => {
+    const getMarketKeywords = (marketId: string) => {
+      const keywords = {
+        technology: ['JavaScript', 'Python', 'React', 'Node.js', 'SQL', 'Git', 'AWS', 'API'],
+        finance: ['Financial Analysis', 'Excel', 'Budget', 'Compliance', 'Risk Management'],
+        marketing: ['Digital Marketing', 'SEO', 'Analytics', 'Campaign', 'Brand Management'],
+        general: ['Communication', 'Leadership', 'Project Management', 'Problem Solving']
+      };
+      return keywords[marketId as keyof typeof keywords] || keywords.general;
+    };
+
     const marketKeywords = getMarketKeywords(targetMarket?.id || 'general');
     const textLower = text.toLowerCase();
     
@@ -682,193 +412,195 @@ Academic Achievement: Dean's List (2019, 2020)`,
     const missing = marketKeywords.filter(keyword => 
       !textLower.includes(keyword.toLowerCase())
     );
-    
-    const density = (found.length / marketKeywords.length) * 100;
-    
-    return { found, missing, density };
+
+    return { found, missing };
   };
 
-  const getMarketKeywords = (marketId: string): string[] => {
-    const keywordSets = {
-      technology: [
-        'JavaScript', 'Python', 'React', 'Node.js', 'SQL', 'Git', 'AWS', 'Docker',
-        'API', 'Database', 'Agile', 'Scrum', 'DevOps', 'CI/CD', 'Testing',
-        'Frontend', 'Backend', 'Full Stack', 'Cloud', 'Microservices'
-      ],
-      finance: [
-        'Financial Analysis', 'Excel', 'Financial Modeling', 'Risk Management', 'Accounting',
-        'Budget', 'Forecasting', 'Compliance', 'Audit', 'Investment', 'Portfolio',
-        'Banking', 'Insurance', 'Regulatory', 'GAAP', 'Financial Reporting'
-      ],
-      marketing: [
-        'Digital Marketing', 'SEO', 'SEM', 'Social Media', 'Content Marketing', 'Analytics',
-        'Google Analytics', 'Campaign Management', 'Brand Management', 'Lead Generation',
-        'Email Marketing', 'PPC', 'Conversion Optimization', 'Marketing Automation'
-      ],
-      general: [
-        'Communication', 'Leadership', 'Team Management', 'Project Management', 
-        'Problem Solving', 'Critical Thinking', 'Time Management', 'Collaboration',
-        'Customer Service', 'Data Analysis', 'Strategic Planning', 'Process Improvement'
-      ]
-    };
-    
-    return keywordSets[marketId as keyof typeof keywordSets] || keywordSets.general;
-  };
-
-  const calculateKeywordDensity = (text: string, targetMarket: TargetMarket | null): number => {
-    const keywords = getMarketKeywords(targetMarket?.id || 'general');
-    const textLower = text.toLowerCase();
-    return keywords.filter(keyword => textLower.includes(keyword.toLowerCase())).length;
-  };
-
-  const calculateATSCompatibility = (text: string, keywordAnalysis: any): number => {
+  const calculateATSScore = (text: string, keywordAnalysis: any) => {
     let score = 100;
     
-    // Keyword density penalty
-    if (keywordAnalysis.density < 30) score -= 25;
-    else if (keywordAnalysis.density < 50) score -= 15;
+    const keywordDensity = (keywordAnalysis.found.length / 
+      (keywordAnalysis.found.length + keywordAnalysis.missing.length)) * 100;
     
-    // Check for ATS-unfriendly formatting
-    if (text.includes('|') || text.includes('•') || text.includes('→')) score -= 5; // Some symbols may cause issues
-    if (text.split('\n').filter(line => line.trim().length > 80).length > 3) score -= 10; // Very long lines
-    
-    // Check for essential sections
+    if (keywordDensity < 30) score -= 25;
     if (!text.toLowerCase().includes('experience')) score -= 20;
     if (!text.toLowerCase().includes('skills')) score -= 15;
-    if (!text.toLowerCase().includes('education')) score -= 10;
     
     return Math.max(score, 40);
   };
 
-  const generateSmartImprovements = (
-    contact: DetailedSectionAnalysis,
-    summary: DetailedSectionAnalysis,
-    experience: DetailedSectionAnalysis,
-    skills: DetailedSectionAnalysis,
-    education: DetailedSectionAnalysis,
-    keywordAnalysis: any
-  ) => {
+  // Generate improvements
+  const generateImprovements = (contact: any, summary: any, experience: any, skills: any, education: any, keywordAnalysis: any) => {
     const improvements = [];
-    
-    // Add all section issues as improvements
-    const sections = { contact, summary, experience, skills, education };
-    
-    Object.entries(sections).forEach(([sectionName, analysis]) => {
-      analysis.issues.forEach(issue => {
-        improvements.push({
-          section: sectionName,
-          ...issue
-        });
+    let id = 1;
+
+    // Contact improvements
+    contact.issues.forEach((issue: string) => {
+      improvements.push({
+        id: `contact-${id++}`,
+        section: 'contact',
+        type: 'critical' as const,
+        title: issue,
+        description: getImprovementDescription(issue),
+        before: getBeforeExample(issue),
+        after: getAfterExample(issue),
+        applied: false
       });
     });
-    
-    // Add keyword-specific improvements
-    if (keywordAnalysis.density < 40) {
+
+    // Summary improvements
+    summary.issues.forEach((issue: string) => {
       improvements.push({
-        section: 'keywords',
+        id: `summary-${id++}`,
+        section: 'summary',
         type: 'warning' as const,
-        title: 'Low Keyword Density',
-        description: `Your CV contains only ${keywordAnalysis.found.length} of ${keywordAnalysis.found.length + keywordAnalysis.missing.length} relevant keywords`,
-        before: `Missing keywords: ${keywordAnalysis.missing.slice(0, 5).join(', ')}`,
-        after: `Incorporate these keywords naturally: ${keywordAnalysis.missing.slice(0, 5).join(', ')}`,
-        impact: 'High - Improves ATS scanning and recruiter search visibility'
+        title: issue,
+        description: getImprovementDescription(issue),
+        before: getBeforeExample(issue),
+        after: getAfterExample(issue),
+        applied: false
       });
-    }
-    
-    // Sort by priority
-    const priority = { critical: 0, warning: 1, suggestion: 2 };
-    improvements.sort((a, b) => priority[a.type] - priority[b.type]);
-    
+    });
+
+    // Experience improvements
+    experience.issues.forEach((issue: string) => {
+      improvements.push({
+        id: `experience-${id++}`,
+        section: 'experience',
+        type: 'critical' as const,
+        title: issue,
+        description: getImprovementDescription(issue),
+        before: getBeforeExample(issue),
+        after: getAfterExample(issue),
+        applied: false
+      });
+    });
+
     return improvements;
   };
 
-  // Apply individual improvement
-  const applyImprovement = (improvementIndex: number) => {
-    setAppliedImprovements(prev => new Set([...prev, improvementIndex]));
+  const getImprovementDescription = (issue: string): string => {
+    const descriptions: { [key: string]: string } = {
+      'Missing professional email address': 'Add a professional email address for employers to contact you',
+      'No phone number provided': 'Include a phone number for direct communication',
+      'LinkedIn profile not included': 'Add your LinkedIn profile to show professional network',
+      'Professional summary too brief or missing': 'Write a compelling 3-4 sentence professional summary',
+      'No quantifiable achievements mentioned': 'Add specific numbers and percentages to show impact',
+      'Work experience section inadequate': 'Provide detailed job descriptions with achievements',
+      'No quantifiable achievements': 'Include metrics like percentages, dollar amounts, or timeframes',
+      'Uses weak action verbs': 'Replace passive language with strong action verbs'
+    };
+    return descriptions[issue] || 'Improve this section for better impact';
   };
 
-  // Apply all improvements and generate enhanced CV
+  const getBeforeExample = (issue: string): string => {
+    const examples: { [key: string]: string } = {
+      'Missing professional email address': 'No email provided',
+      'Professional summary too brief or missing': 'Experienced developer.',
+      'No quantifiable achievements mentioned': 'Improved system performance and helped team',
+      'Uses weak action verbs': 'Worked on projects, helped with development'
+    };
+    return examples[issue] || 'Current content needs improvement';
+  };
+
+  const getAfterExample = (issue: string): string => {
+    const examples: { [key: string]: string } = {
+      'Missing professional email address': 'john.doe@email.com',
+      'Professional summary too brief or missing': 'Results-driven software developer with 5+ years experience building scalable applications serving 10,000+ users',
+      'No quantifiable achievements mentioned': 'Improved system performance by 35% and led team of 8 developers',
+      'Uses weak action verbs': 'Led cross-platform projects, architected scalable solutions'
+    };
+    return examples[issue] || 'Improved content with specific examples';
+  };
+
+  // Apply improvements
   const applyAllImprovements = async () => {
     if (!analysis) return;
-    
+
     setIsImproving(true);
     
     // Simulate improvement process
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    for (let i = 0; i <= 100; i += 10) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setAnalysisProgress(i);
+    }
+
+    // Generate improved CV
+    const improvedCV = generateImprovedCV(analysis);
     
-    // Generate comprehensive improved version
-    const improvedCV = generateComprehensiveImprovedCV(analysis);
-    
+    // Mark all improvements as applied
+    const updatedImprovements = analysis.improvements.map(imp => ({
+      ...imp,
+      applied: true
+    }));
+
     setAnalysis({
       ...analysis,
-      improvedCV
+      improvedCV,
+      improvements: updatedImprovements
     });
-    
-    // Mark all as applied
-    setAppliedImprovements(new Set(analysis.improvements.map((_, i) => i)));
+
     setIsImproving(false);
     setShowImprovedVersion(true);
   };
 
-  const generateComprehensiveImprovedCV = (analysis: IntelligentAnalysis): string => {
-    const sections = [];
-    
-    // Enhanced header
-    sections.push(`JOHN DOE
-Senior Software Developer
-📧 john.doe@email.com | 📱 +230 123 4567 | 🔗 linkedin.com/in/johndoe
-📍 Port Louis, Mauritius`);
-    
-    // Enhanced professional summary
-    sections.push(`PROFESSIONAL SUMMARY
-Results-driven software developer with 5+ years of experience building scalable web applications serving 10,000+ users. 
-Proven track record of improving system performance by 40% and leading cross-functional teams of 8+ developers. 
-Specialized in React.js and Node.js with expertise in cloud deployment and agile methodologies. 
-Seeking to leverage technical expertise and leadership skills in a senior development role.`);
-    
-    // Enhanced experience
-    sections.push(`PROFESSIONAL EXPERIENCE
+  // Generate improved CV
+  const generateImprovedCV = (analysis: DetailedAnalysis): string => {
+    let improved = analysis.originalCV;
 
-Senior Software Developer | TechCorp Mauritius | Jan 2020 - Present
-• Led development of customer portal serving 10,000+ users, increasing user satisfaction by 45%
-• Reduced system load times by 60% through code optimization and database restructuring  
-• Mentored team of 5 junior developers, improving code review efficiency by 30%
-• Implemented CI/CD pipeline using Jenkins and Docker, reducing deployment time by 50%
-• Technologies: React.js, Node.js, PostgreSQL, AWS, Docker, Jenkins
+    // Add missing contact info
+    if (!improved.includes('@')) {
+      improved = 'john.doe@email.com | +230 123 4567 | linkedin.com/in/johndoe | Port Louis, Mauritius\n\n' + improved;
+    }
 
-Junior Software Developer | StartupMU | Jun 2018 - Dec 2019
-• Developed 15+ responsive web applications using React.js and Express.js
-• Collaborated with UX/UI designers to improve user experience, increasing engagement by 25%
-• Built RESTful APIs handling 1,000+ requests per minute
-• Participated in agile development process with 2-week sprints
-• Technologies: JavaScript, React.js, Express.js, MongoDB, Git`);
-    
-    // Enhanced skills
-    sections.push(`TECHNICAL SKILLS
-Programming Languages: JavaScript, TypeScript, Python, Java
-Frontend Technologies: React.js, Vue.js, HTML5, CSS3, Tailwind CSS, Bootstrap
-Backend Technologies: Node.js, Express.js, Django, RESTful APIs, GraphQL
-Databases: PostgreSQL, MongoDB, Redis, MySQL
-Cloud & DevOps: AWS (EC2, S3, Lambda), Docker, Kubernetes, Jenkins, CI/CD
-Tools & Methods: Git, Agile/Scrum, Jira, Postman, Jest, Linux
+    // Enhance summary
+    if (analysis.sections.summary.score < 70) {
+      const summaryRegex = /(professional summary|summary|objective)([\s\S]*?)(?=\n[A-Z]|\nEXPERIENCE|\nSKILLS|$)/i;
+      improved = improved.replace(summaryRegex, 
+        'PROFESSIONAL SUMMARY\nResults-driven professional with 5+ years of experience. Proven track record of improving performance by 35% and leading cross-functional teams. Specialized in delivering high-quality solutions and exceeding targets by 20%.'
+      );
+    }
 
-SOFT SKILLS
-• Team Leadership & Project Management
-• Cross-functional Collaboration  
-• Problem-solving & Critical Thinking
-• Client Communication & Stakeholder Management`);
-    
-    // Enhanced education
-    sections.push(`EDUCATION
-Bachelor of Computer Science
-University of Mauritius, Reduit | Graduated: May 2018
-Relevant Coursework: Data Structures, Algorithms, Database Systems, Software Engineering
-Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce Platform`);
-    
-    return sections.join('\n\n');
+    // Enhance experience bullets
+    improved = improved.replace(
+      /^- (.*)/gm,
+      (match, content) => {
+        if (content.toLowerCase().includes('developed') || content.toLowerCase().includes('worked')) {
+          return `- ${content} (improved efficiency by 25% and increased user satisfaction by 40%)`;
+        }
+        return match;
+      }
+    );
+
+    // Add missing keywords
+    const missingKeywords = analysis.missingKeywords.slice(0, 3);
+    if (missingKeywords.length > 0) {
+      improved += `\n\nADDITIONAL SKILLS\n${missingKeywords.join(' • ')} • Project Management • Team Leadership`;
+    }
+
+    return improved;
   };
 
-  // File handling methods (keeping existing)
+  // Download functionality
+  const downloadCV = (content: string, filename: string) => {
+    try {
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      setUploadError('Failed to download file. Please try again.');
+    }
+  };
+
+  // File handling
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
@@ -906,30 +638,6 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
     }
   };
 
-  const downloadCV = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
-      return newSet;
-    });
-  };
-
   const handleAnalyze = async () => {
     let textToAnalyze = '';
     
@@ -944,8 +652,8 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
       textToAnalyze = cvText.trim();
     }
 
-    if (!textToAnalyze || textToAnalyze.length < 100) {
-      setUploadError('Please provide sufficient CV content to analyze (at least 100 characters)');
+    if (!textToAnalyze || textToAnalyze.length < 50) {
+      setUploadError('Please provide sufficient CV content to analyze');
       return;
     }
 
@@ -954,19 +662,19 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
     setUploadError(null);
 
     try {
-      const intelligentAnalysis = await performIntelligentAnalysis(textToAnalyze);
-      setAnalysis(intelligentAnalysis);
+      const detailedAnalysis = await performDetailedAnalysis(textToAnalyze);
+      setAnalysis(detailedAnalysis);
       
-      // Convert for parent component if needed
+      // Convert for parent component
       const standardAnalysis: CVAnalysis = {
-        score: intelligentAnalysis.overallScore,
-        strengths: Object.values(intelligentAnalysis.sections).flatMap(s => s.strengths),
-        weaknesses: intelligentAnalysis.improvements.filter(i => i.type === 'critical').map(i => i.title),
-        suggestions: intelligentAnalysis.improvements.map(i => i.title),
-        sections: {},
-        atsCompatibility: intelligentAnalysis.atsCompatibility,
-        keywordMatches: intelligentAnalysis.keywordAnalysis.found,
-        missingKeywords: intelligentAnalysis.keywordAnalysis.missing
+        score: detailedAnalysis.score,
+        strengths: detailedAnalysis.strengths,
+        weaknesses: detailedAnalysis.weaknesses,
+        suggestions: detailedAnalysis.suggestions,
+        sections: detailedAnalysis.sections,
+        atsCompatibility: detailedAnalysis.atsCompatibility,
+        keywordMatches: detailedAnalysis.keywordMatches,
+        missingKeywords: detailedAnalysis.missingKeywords
       };
       
       onAnalysisComplete(standardAnalysis, textToAnalyze);
@@ -982,19 +690,13 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
     setCvFile(null);
     setCvText('');
     setUploadError(null);
-    setIsAnalyzing(false);
-    setAnalysisProgress(0);
-    setAnalysisStage('');
     setAnalysis(null);
     setShowImprovedVersion(false);
-    setExpandedSections(new Set());
-    setAppliedImprovements(new Set());
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setIsImproving(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Analysis Results View
+  // Analysis Results Display
   if (analysis) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -1004,23 +706,21 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
             <div className="flex items-center gap-4">
               <BackButton onClick={handleReset} variant="minimal" />
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900">Intelligent CV Analysis</h1>
-                <p className="text-gray-600 mt-1">
-                  Comprehensive analysis with specific, actionable improvements
-                </p>
+                <h1 className="text-3xl font-bold text-gray-900">CV Analysis Results</h1>
+                <p className="text-gray-600 mt-1">Detailed analysis with specific improvements</p>
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => downloadCV(analysis.originalCV, 'original-cv.txt')}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  Original
+                  Original CV
                 </button>
                 {analysis.improvedCV && (
                   <button
-                    onClick={() => downloadCV(analysis.improvedCV!, 'enhanced-cv.txt')}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    onClick={() => downloadCV(analysis.improvedCV!, 'improved-cv.txt')}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
                     Enhanced CV
@@ -1035,69 +735,73 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
             {/* Main Content */}
             <div className="xl:col-span-3">
-              {/* Score Overview */}
+              {/* Scores Overview */}
               <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {/* Overall Score */}
                   <div className="text-center">
                     <div className="relative w-24 h-24 mx-auto mb-4">
                       <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
-                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" fill="none" stroke="#e5e7eb" strokeWidth="2"/>
-                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" fill="none" 
-                          stroke={analysis.overallScore >= 80 ? "#10b981" : analysis.overallScore >= 60 ? "#f59e0b" : "#ef4444"} 
-                          strokeWidth="2" strokeDasharray={`${analysis.overallScore}, 100`}/>
+                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" 
+                          fill="none" stroke="#e5e7eb" strokeWidth="2"/>
+                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" 
+                          fill="none" stroke={analysis.score >= 80 ? "#10b981" : analysis.score >= 60 ? "#f59e0b" : "#ef4444"} 
+                          strokeWidth="2" strokeDasharray={`${analysis.score}, 100`}/>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-gray-900">{analysis.overallScore}</span>
+                        <span className="text-2xl font-bold">{analysis.score}</span>
                       </div>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">Overall Score</h3>
+                    <h3 className="text-lg font-bold">Overall Score</h3>
                   </div>
 
                   {/* ATS Compatibility */}
                   <div className="text-center">
                     <div className="relative w-24 h-24 mx-auto mb-4">
                       <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
-                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" fill="none" stroke="#e5e7eb" strokeWidth="2"/>
-                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" fill="none" 
-                          stroke="#3b82f6" strokeWidth="2" strokeDasharray={`${analysis.atsCompatibility}, 100`}/>
+                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" 
+                          fill="none" stroke="#e5e7eb" strokeWidth="2"/>
+                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" 
+                          fill="none" stroke="#3b82f6" strokeWidth="2" strokeDasharray={`${analysis.atsCompatibility}, 100`}/>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-gray-900">{analysis.atsCompatibility}</span>
+                        <span className="text-2xl font-bold">{analysis.atsCompatibility}</span>
                       </div>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">ATS Compatible</h3>
+                    <h3 className="text-lg font-bold">ATS Compatible</h3>
                   </div>
 
-                  {/* Keyword Match */}
+                  {/* Keywords */}
                   <div className="text-center">
                     <div className="relative w-24 h-24 mx-auto mb-4">
                       <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
-                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" fill="none" stroke="#e5e7eb" strokeWidth="2"/>
-                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" fill="none" 
-                          stroke="#8b5cf6" strokeWidth="2" strokeDasharray={`${analysis.keywordAnalysis.density}, 100`}/>
+                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" 
+                          fill="none" stroke="#e5e7eb" strokeWidth="2"/>
+                        <path d="m18,2.0845 a 15.9155,15.9155 0 0,1 0,31.831 a 15.9155,15.9155 0 0,1 0,-31.831" 
+                          fill="none" stroke="#8b5cf6" strokeWidth="2" 
+                          strokeDasharray={`${(analysis.keywordMatches.length / (analysis.keywordMatches.length + analysis.missingKeywords.length)) * 100}, 100`}/>
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-gray-900">{Math.round(analysis.keywordAnalysis.density)}</span>
+                        <span className="text-2xl font-bold">{analysis.keywordMatches.length}</span>
                       </div>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">Keyword Match</h3>
+                    <h3 className="text-lg font-bold">Keywords Found</h3>
                   </div>
                 </div>
               </div>
 
-              {/* Detailed Improvements */}
+              {/* Improvements Section */}
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900">Specific Improvements</h3>
+                  <h3 className="text-2xl font-bold">Specific Improvements</h3>
                   <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                     {analysis.improvements.length} Issues Found
                   </span>
                 </div>
 
-                <div className="space-y-4">
-                  {analysis.improvements.map((improvement, index) => (
-                    <div key={index} className={`border rounded-xl p-6 ${
+                <div className="space-y-6">
+                  {analysis.improvements.map((improvement) => (
+                    <div key={improvement.id} className={`border rounded-xl p-6 ${
                       improvement.type === 'critical' ? 'border-red-200 bg-red-50' :
                       improvement.type === 'warning' ? 'border-yellow-200 bg-yellow-50' :
                       'border-blue-200 bg-blue-50'
@@ -1110,37 +814,32 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
                             'bg-blue-100'
                           }`}>
                             {improvement.type === 'critical' ? (
-                              <AlertTriangle className={`h-5 w-5 text-red-600`} />
+                              <AlertTriangle className="h-5 w-5 text-red-600" />
                             ) : improvement.type === 'warning' ? (
-                              <AlertCircle className={`h-5 w-5 text-yellow-600`} />
+                              <AlertCircle className="h-5 w-5 text-yellow-600" />
                             ) : (
-                              <Sparkles className={`h-5 w-5 text-blue-600`} />
+                              <Sparkles className="h-5 w-5 text-blue-600" />
                             )}
                           </div>
                           <div>
                             <h4 className="font-bold text-gray-900">{improvement.title}</h4>
-                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                               improvement.type === 'critical' ? 'bg-red-100 text-red-800' :
                               improvement.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-blue-100 text-blue-800'
                             }`}>
-                              {improvement.type}
+                              {improvement.section} • {improvement.type}
                             </span>
                           </div>
                         </div>
                         
-                        {!appliedImprovements.has(index) ? (
-                          <button
-                            onClick={() => applyImprovement(index)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            Apply
-                          </button>
-                        ) : (
+                        {improvement.applied ? (
                           <div className="flex items-center gap-2 text-green-600">
                             <Check className="h-4 w-4" />
                             <span className="text-sm font-medium">Applied</span>
                           </div>
+                        ) : (
+                          <span className="text-xs text-gray-500">Not applied</span>
                         )}
                       </div>
 
@@ -1160,26 +859,17 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
                           </div>
                         </div>
                       </div>
-                      
-                      <div className={`mt-3 text-sm font-medium ${
-                        improvement.type === 'critical' ? 'text-red-800' :
-                        improvement.type === 'warning' ? 'text-yellow-800' :
-                        'text-blue-800'
-                      }`}>
-                        Impact: {improvement.impact}
-                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Side Panel */}
+            {/* Sidebar */}
             <div className="space-y-6">
-              {/* Quick Actions */}
+              {/* Actions */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
-                
+                <h3 className="text-xl font-bold mb-4">Actions</h3>
                 <div className="space-y-3">
                   {!analysis.improvedCV ? (
                     <button
@@ -1190,7 +880,7 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
                       {isImproving ? (
                         <>
                           <ButtonSpinner />
-                          Enhancing CV...
+                          Applying Improvements...
                         </>
                       ) : (
                         <>
@@ -1203,14 +893,14 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <div className="flex items-center gap-2 text-green-800 mb-2">
                         <Check className="h-5 w-5" />
-                        <span className="font-semibold">CV Enhanced!</span>
+                        <span className="font-semibold">Improvements Applied!</span>
                       </div>
                       <p className="text-green-700 text-sm mb-3">
-                        Your CV has been professionally enhanced with all improvements applied.
+                        Your CV has been enhanced with all recommendations.
                       </p>
                       <button
                         onClick={() => setShowImprovedVersion(!showImprovedVersion)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
                       >
                         {showImprovedVersion ? 'Hide' : 'View'} Enhanced CV
                       </button>
@@ -1219,7 +909,7 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
                   
                   <button
                     onClick={onCreateNew}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
                   >
                     <Edit className="h-4 w-4" />
                     Build New CV
@@ -1227,7 +917,7 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
                   
                   <button
                     onClick={handleReset}
-                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
                   >
                     <RefreshCw className="h-4 w-4" />
                     Analyze Another CV
@@ -1235,28 +925,20 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
                 </div>
               </div>
 
-              {/* Section Breakdown */}
+              {/* Section Scores */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Section Breakdown</h3>
-                
+                <h3 className="text-xl font-bold mb-4">Section Breakdown</h3>
                 <div className="space-y-3">
-                  {Object.entries(analysis.sections).map(([sectionName, section]) => (
-                    <div key={sectionName} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${
-                            section.score >= 80 ? 'bg-green-500' :
-                            section.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`} />
-                          <span className="font-medium capitalize">{sectionName}</span>
-                        </div>
-                        <span className="text-sm font-bold">{section.score}/100</span>
+                  {Object.entries(analysis.sections).map(([section, data]) => (
+                    <div key={section} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="font-medium capitalize">{section}</span>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${
+                          data.score >= 80 ? 'bg-green-500' :
+                          data.score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`} />
+                        <span className="font-bold">{data.score}/100</span>
                       </div>
-                      {section.issues.length > 0 && (
-                        <div className="mt-2 text-sm text-gray-600">
-                          {section.issues.length} issue{section.issues.length !== 1 ? 's' : ''} found
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -1264,17 +946,15 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
 
               {/* Keywords */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Keyword Analysis</h3>
-                
+                <h3 className="text-xl font-bold mb-4">Keywords</h3>
                 <div className="space-y-4">
                   <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-green-800">Found Keywords</span>
-                      <span className="text-sm text-green-600">{analysis.keywordAnalysis.found.length}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {analysis.keywordAnalysis.found.slice(0, 6).map((keyword, index) => (
-                        <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                    <h4 className="font-semibold text-green-800 mb-2">
+                      Found ({analysis.keywordMatches.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {analysis.keywordMatches.slice(0, 6).map((keyword, i) => (
+                        <span key={i} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
                           {keyword}
                         </span>
                       ))}
@@ -1282,13 +962,12 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
                   </div>
                   
                   <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-red-800">Missing Keywords</span>
-                      <span className="text-sm text-red-600">{analysis.keywordAnalysis.missing.length}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {analysis.keywordAnalysis.missing.slice(0, 6).map((keyword, index) => (
-                        <span key={index} className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">
+                    <h4 className="font-semibold text-red-800 mb-2">
+                      Missing ({analysis.missingKeywords.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {analysis.missingKeywords.slice(0, 6).map((keyword, i) => (
+                        <span key={i} className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">
                           {keyword}
                         </span>
                       ))}
@@ -1303,18 +982,18 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
           {showImprovedVersion && analysis.improvedCV && (
             <div className="mt-8 bg-white rounded-2xl shadow-lg p-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Enhanced CV Preview</h3>
+                <h3 className="text-2xl font-bold">Enhanced CV</h3>
                 <div className="flex gap-3">
                   <button
                     onClick={() => navigator.clipboard.writeText(analysis.improvedCV!)}
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2"
                   >
                     <Copy className="h-4 w-4" />
                     Copy
                   </button>
                   <button
                     onClick={() => downloadCV(analysis.improvedCV!, 'enhanced-cv.txt')}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
                     Download
@@ -1323,7 +1002,7 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
               </div>
               
               <div className="bg-gray-50 rounded-lg p-6">
-                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
+                <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
                   {analysis.improvedCV}
                 </pre>
               </div>
@@ -1334,30 +1013,7 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
     );
   }
 
-  // Upload Interface (keeping existing UI)
-  const analysisFeatures = [
-    {
-      icon: Brain,
-      title: 'Intelligent Analysis',
-      description: 'AI analyzes each CV section with specific, actionable feedback'
-    },
-    {
-      icon: Target,
-      title: 'Before/After Examples',
-      description: 'See exactly what to change with clear before and after comparisons'
-    },
-    {
-      icon: Shield,
-      title: 'ATS Optimization',
-      description: 'Ensure your CV passes through Applicant Tracking Systems'
-    },
-    {
-      icon: Sparkles,
-      title: 'Professional Enhancement',
-      description: 'Transform your CV with industry-specific improvements'
-    }
-  ];
-
+  // Main Upload Interface
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
@@ -1366,9 +1022,9 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
           <div className="flex items-center gap-4">
             <BackButton onClick={onBack} variant="minimal" />
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900">Intelligent CV Analyzer</h1>
+              <h1 className="text-3xl font-bold text-gray-900">CV Analyzer</h1>
               <p className="text-gray-600 mt-1">
-                Get specific, actionable feedback with before/after examples
+                Get detailed analysis and specific improvements for your CV
               </p>
             </div>
           </div>
@@ -1376,9 +1032,226 @@ Academic Achievement: Dean's List (2017, 2018) | Final Year Project: E-commerce 
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
+        {/* Progress Indicator */}
+        {isAnalyzing && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-6">
+                  <LoadingSpinner />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Analyzing Your CV</h3>
+                <p className="text-gray-600 mb-6">{analysisStage}</p>
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${analysisProgress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-500">{Math.round(analysisProgress)}% complete</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Upload Methods */}
         {!uploadMethod && (
-          <div className="text-center mb-12">
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Brain className="h-10 w-10 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold mb-4">Intelligent CV Analysis</h2>
+              <p className="text-xl text-gray-600 mb-8">
+                Upload your CV and get detailed feedback with specific improvements
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+              {/* File Upload */}
+              <button
+                onClick={() => setUploadMethod('file')}
+                className="group p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-left"
+              >
+                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-200">
+                  <Upload className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Upload File</h3>
+                <p className="text-gray-600 mb-4">
+                  Upload your CV as PDF, Word document, or text file
+                </p>
+                <div className="text-blue-600 font-semibold flex items-center gap-2">
+                  Choose file <ArrowRight className="h-4 w-4" />
+                </div>
+              </button>
+
+              {/* Text Input */}
+              <button
+                onClick={() => setUploadMethod('text')}
+                className="group p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-left"
+              >
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-200">
+                  <FileText className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Paste Text</h3>
+                <p className="text-gray-600 mb-4">
+                  Copy and paste your CV text directly into the analyzer
+                </p>
+                <div className="text-green-600 font-semibold flex items-center gap-2">
+                  Enter text <ArrowRight className="h-4 w-4" />
+                </div>
+              </button>
+            </div>
+
+            {/* Features */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { icon: Brain, title: 'AI Analysis', desc: 'Intelligent content analysis' },
+                { icon: Target, title: 'Specific Feedback', desc: 'Actionable improvements' },
+                { icon: Shield, title: 'ATS Optimized', desc: 'Pass applicant systems' },
+                { icon: Award, title: 'Professional', desc: 'Industry standards' }
+              ].map((feature, index) => (
+                <div key={index} className="bg-white/70 rounded-xl p-6 text-center">
+                  <feature.icon className="h-8 w-8 text-blue-600 mx-auto mb-3" />
+                  <h4 className="font-bold mb-2">{feature.title}</h4>
+                  <p className="text-sm text-gray-600">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* File Upload Interface */}
+        {uploadMethod === 'file' && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold">Upload Your CV</h3>
+                <button
+                  onClick={() => setUploadMethod(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div
+                className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+                  dragActive 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : cvFile 
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-300 hover:border-blue-400'
+                }`}
+                onDrop={handleDrop}
+                onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                onDragLeave={() => setDragActive(false)}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleFileSelect}
+                />
+                
+                {cvFile ? (
+                  <div>
+                    <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                    <p className="text-xl font-semibold text-green-800 mb-2">File Selected</p>
+                    <p className="text-green-600">{cvFile.name}</p>
+                  </div>
+                ) : (
+                  <div>
+                    <Upload className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-xl font-semibold mb-2">Drop your CV here</p>
+                    <p className="text-gray-500 mb-4">or click to browse</p>
+                    <p className="text-sm text-gray-400">
+                      Supports PDF, Word documents, and text files (Max 10MB)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {uploadError && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-800">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">{uploadError}</span>
+                  </div>
+                </div>
+              )}
+
+              {cvFile && (
+                <button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing}
+                  className="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-3"
+                >
+                  <Scan className="h-5 w-5" />
+                  Analyze CV
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Text Input Interface */}
+        {uploadMethod === 'text' && (
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold">Paste Your CV Text</h3>
+                <button
+                  onClick={() => setUploadMethod(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <textarea
+                value={cvText}
+                onChange={(e) => setCvText(e.target.value)}
+                placeholder="Paste your complete CV text here..."
+                className="w-full h-96 p-4 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+
+              <div className="flex justify-between items-center mt-4">
+                <p className="text-sm text-gray-500">
+                  {cvText.length} characters
+                </p>
+                {cvText.length >= 50 && (
+                  <span className="text-green-600 text-sm font-medium">
+                    Ready to analyze
+                  </span>
+                )}
+              </div>
+
+              {uploadError && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-800">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">{uploadError}</span>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || cvText.length < 50}
+                className="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-3"
+              >
+                <Scan className="h-5 w-5" />
+                Analyze CV
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default CVAnalyzer;
