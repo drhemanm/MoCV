@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { TargetMarket, CVAnalysis } from '../types';
 import { BackButton } from './BackButton';
-import { LoadingSpinner, ButtonSpinner } from './LoadingSpinner';
+import LoadingSpinner, { ButtonSpinner } from './LoadingSpinner';
 
 interface CVAnalyzerProps {
   targetMarket: TargetMarket | null;
