@@ -1,0 +1,40 @@
+// api/health.ts
+import { VercelRequest, VercelResponse } from '@vercel/node';
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  try {
+    // Health check response
+    return res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      services: {
+        api: 'operational',
+        ai: process.env.OPENAI_API_KEY ? 'available' : 'limited',
+        enhance: 'operational',
+        chat: 'operational'
+      },
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    
+    return res.status(500).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Health check failed'
+    });
+  }
+}
