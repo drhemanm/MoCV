@@ -407,6 +407,24 @@ const AppContent: React.FC = () => {
     }
   }, [navigateToStep, addToast, handleError]);
 
+  // Chat Assistant handlers
+  const handleChatToggle = useCallback(() => {
+    setIsChatOpen(!isChatOpen);
+    
+    // Log chat usage for analytics
+    if (config.isDevelopment) {
+      console.log('💬 Chat assistant toggled:', !isChatOpen ? 'opened' : 'closed');
+    }
+  }, [isChatOpen]);
+
+  const handleChatClose = useCallback(() => {
+    setIsChatOpen(false);
+    
+    if (config.isDevelopment) {
+      console.log('💬 Chat assistant closed');
+    }
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Clean Header with version info in development */}
@@ -648,10 +666,11 @@ const AppContent: React.FC = () => {
 
       <Footer />
 
-      {/* Chat Assistant with AI awareness */}
+      {/* Chat Assistant with AI awareness and enhanced integration */}
       <ChatAssistant 
         isOpen={isChatOpen} 
-        onToggle={() => setIsChatOpen(!isChatOpen)}
+        onClose={handleChatClose}
+        onToggle={handleChatToggle}
       />
       
       {/* XP Notification */}
@@ -693,6 +712,7 @@ const AppContent: React.FC = () => {
           <div>AI: {config.isAIEnabled ? '✅' : '❌'}</div>
           <div>Theme: {currentTheme.name}</div>
           <div>Templates: {templates.length}</div>
+          <div>Chat: {isChatOpen ? 'Open' : 'Closed'}</div>
         </div>
       )}
     </div>
